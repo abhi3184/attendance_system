@@ -1,0 +1,111 @@
+.login-page {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  background-color: #f9fafb;
+}
+
+.login-left {
+  flex: 1; /* left image */
+  background: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+  position: relative;
+}
+
+.login-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(75, 0, 130, 0.5); /* dark lavender overlay */
+}
+
+.login-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+   background: url('../assets/background/bg.49756b7c711696d95133fa95451f8e13.svg')
+}
+
+.login-form {
+  width: 100%;
+  max-width: 450px; /* increased size */
+  background-color: #ffffff;
+  padding: 3rem; /* increased padding */
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15); /* slightly bigger shadow */
+}
+
+.login-form h2 {
+  font-size: 2rem; /* bigger heading */
+  font-weight: 700;
+  color: #6a0dad;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.login-form label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: #374151;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 0.75rem 0.75rem; /* bigger inputs */
+  margin-bottom: 1.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.login-form input:focus {
+  border-color: #6a0dad;
+  box-shadow: 0 0 0 3px rgba(106, 13, 173, 0.2);
+}
+
+.login-form button {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  background-color: #6a0dad;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-form button:hover {
+  background-color: #4b0082;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.login-form .forgot-password {
+  display: block;
+  margin-top: 0.75rem;
+  text-align: right;
+  font-size: 0.875rem;
+  color: #6a0dad;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .login-page {
+    flex-direction: column;
+  }
+  .login-left {
+    display: none; /* hide image on mobile */
+  }
+  .login-right {
+    width: 100%;
+    flex: none;
+    padding: 2rem;
+  }
+}
