@@ -141,7 +141,7 @@ export default function Leave() {
             </h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-100">
+                <thead className="bg-purple-100">
                   <tr>
                     <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Date</th>
                     <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Description</th>

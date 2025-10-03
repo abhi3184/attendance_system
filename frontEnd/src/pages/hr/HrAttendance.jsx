@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-const attendanceData = [...Array(50)].map((_, i) => ({
+const attendanceData = [...Array(100)].map((_, i) => ({
   id: i + 1,
   name: `Employee ${i + 1}`,
   date: `2025-10-${(i % 30) + 1}`,
@@ -17,15 +17,12 @@ export default function HrAttendance() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-full p-4">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">Attendance</h1>
-
-      {/* Search */}
+    <div className="flex-1 flex flex-col h-full p-4">      {/* Search */}
       <div className="mb-4">
         <input
           type="text"
           placeholder="Search employee..."
-          className="border rounded-lg px-4 py-2 w-full sm:w-1/3 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+          className="border rounded-lg text-xs px-4 py-2 w-full sm:w-1/3 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -36,13 +33,13 @@ export default function HrAttendance() {
         {/* Table Header */}
         <div className="overflow-x-auto">
           <table className="w-full table-auto divide-y divide-gray-200">
-            <thead className="bg-gray-50 sticky top-0 z-10">
+            <thead className="bg-purple-100 sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/4">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-In</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-Out</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-In</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-Out</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Status</th>
               </tr>
             </thead>
           </table>
@@ -60,15 +57,16 @@ export default function HrAttendance() {
                   transition={{ delay: idx * 0.005 }}
                   whileHover={{ backgroundColor: "rgba(243,232,255,0.2)" }}
                 >
-                  <td className="px-6 py-3 whitespace-nowrap w-1/4">{emp.name}</td>
-                  <td className="px-6 py-3 whitespace-nowrap w-1/6">{emp.date}</td>
-                  <td className="px-6 py-3 whitespace-nowrap w-1/6">{emp.checkIn}</td>
-                  <td className="px-6 py-3 whitespace-nowrap w-1/6">{emp.checkOut}</td>
-                  <td className="px-6 py-3 whitespace-nowrap w-1/6">
+                  <td className="px-6 py-2 text-xs whitespace-nowrap w-1/4">{emp.name}</td>
+                  <td className="px-6 py-2 text-xs whitespace-nowrap w-1/6">{emp.date}</td>
+                  <td className="px-6 py-2 text-xs whitespace-nowrap w-1/6">{emp.checkIn}</td>
+                  <td className="px-6 py-2 text-xs whitespace-nowrap w-1/6">{emp.checkOut}</td>
+                  <td className="px-6 py-2 text-xs whitespace-nowrap w-1/6">
                     <span
-                      className={`px-2 py-1 rounded text-white text-sm font-medium ${
-                        emp.status === "Present" ? "bg-green-600" : "bg-red-600"
-                      }`}
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${emp.status === "Present"
+                          ? "bg-green-100 text-green-700 border-green-200"
+                          : "bg-red-100 text-red-700 border-red-200"
+                        }`}
                     >
                       {emp.status}
                     </span>
