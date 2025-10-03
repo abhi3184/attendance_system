@@ -1,7 +1,7 @@
 from routes.employee import employee
 from routes.forgotPass import forgotPass
 from routes.employeeRegistration import registration
-from routes.login import authentication
+from routes.auth.auth import authentication
 from .attendance.attendance import attendance
 from .leave.leave import leave
 

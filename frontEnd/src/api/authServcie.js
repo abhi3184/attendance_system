@@ -1,6 +1,6 @@
 import apiClient from "./apiClient";
 
-export const checkEmail = (email) => apiClient.get("/employee/getEmployeeByEmail", {
+export const checkEmail = (email) => apiClient.get("/auth/getEmployeeByEmail", {
       params: { email }  // sends ?email=xxx
 });
 
