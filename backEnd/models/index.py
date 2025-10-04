@@ -4,6 +4,8 @@ from models.roles import roles
 from models.ipaddress import ipAddress
 from models.attendance import attendanceTable
 from models.leave import LeaveStatus,Leave
+from models.employee_address import employeeAddressTable
+from models.employee_education import employeeEducationTable
 
 __all__ = [
     "employeeTable",
@@ -11,5 +13,7 @@ __all__ = [
     "ipAddress",
     "attendanceTable",
     "Leave",
-    "LeaveStatus"
+    "LeaveStatus",
+    "employeeAddressTable",
+    "employeeEducationTable"
 ]

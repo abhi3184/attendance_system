@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
-const leaveRequests = [...Array(50)].map((_, i) => ({
+const leaveRequests = [...Array(5)].map((_, i) => ({
   id: i + 1,
   name: `Employee ${i + 1}`,
   type: ["Casual", "Sick", "Paid"][i % 3],
@@ -22,13 +22,13 @@ export default function LeaveRequests() {
   const handleReject = id => alert(`❌ Rejected leave for ID ${id}`);
 
   return (
-    <div className="flex-1 flex flex-col h-full p-4">
+    <div className="flex-1 max-h-full flex flex-col p-4 bg-white rounded-xl shadow-md">
       {/* Search Bar */}
       <div className="mb-6">
         <input
           type="text"
           placeholder="Search employee..."
-          className="border rounded-lg px-4 py-2 text-xs w-full sm:w-1/3 
+          className="border border-gray-300 rounded-lg px-4 py-2 text-xs w-full sm:w-1/3 
                      focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm text-sm"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -36,25 +36,25 @@ export default function LeaveRequests() {
       </div>
 
       {/* Leave Requests Table */}
-      <div className="flex-1 flex flex-col bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden">
         {/* Table Header */}
         <div className="overflow-x-auto">
           <table className="w-full table-auto divide-y divide-gray-200">
             <thead className="bg-purple-100 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[25%]">
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[25%]">
                   Name
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[15%]">
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[15%]">
                   Type
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
                   From
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
                   To
                 </th>
-                <th className="py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+                <th className="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
                   Actions
                 </th>
               </tr>
@@ -65,7 +65,7 @@ export default function LeaveRequests() {
         {/* Table Body (Scrollable) */}
         <div className="flex-1 overflow-y-auto pb-4">
           <table className="w-full table-auto divide-y divide-gray-200">
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-white divide-y divide-gray-200">
               {filtered.map((req, idx) => (
                 <motion.tr
                   key={req.id}
@@ -81,7 +81,9 @@ export default function LeaveRequests() {
                   {/* Type */}
                   <td className="px-4 py-2 text-xs w-[15%] text-center">
                     <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${req.type === "Casual"
+                      className={`inline-flex justify-center items-center text-center
+      px-2.5 py-1 rounded-full text-xs font-semibold border w-20
+      ${req.type === "Casual"
                           ? "bg-yellow-100 text-yellow-700 border-yellow-200"
                           : req.type === "Sick"
                             ? "bg-red-100 text-red-700 border-red-200"

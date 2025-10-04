@@ -5,6 +5,7 @@ import PrivateRoute from "./components/ProtectedRoutes";
 import RoleRedirect from "./components/Roleredirect";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "react-hot-toast";
 
 const Login = lazy(() => import("./auth/Login"));
 const Home = lazy(() => import("./pages/employee/Home"));
@@ -24,6 +25,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} />
+      <Toaster
+        position="top-right"   // 👈 this makes it appear at the right side
+        reverseOrder={false}
+        toastOptions={{
+          style: {
+            background: "#545454ff",
+            color: "#fff",
+          },
+        }}
+      />
+
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />

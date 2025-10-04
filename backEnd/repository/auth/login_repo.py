@@ -1,6 +1,5 @@
 
 from models.index import employeeTable
-from schemas.index import Employee
 
 class loginRepo:
     @staticmethod

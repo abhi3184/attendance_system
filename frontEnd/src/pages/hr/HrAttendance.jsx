@@ -17,7 +17,7 @@ export default function HrAttendance() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-full p-4">      {/* Search */}
+    <div className="flex-1 flex flex-col h-full p-4 relative bg-white rounded-xl shadow-md">      {/* Search */}
       <div className="mb-4">
         <input
           type="text"
@@ -29,17 +29,17 @@ export default function HrAttendance() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 flex flex-col bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white rounded-xl  overflow-hidden">
         {/* Table Header */}
         <div className="overflow-x-auto">
           <table className="w-full table-auto divide-y divide-gray-200">
             <thead className="bg-purple-100 sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/4">Name</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Date</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-In</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-Out</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Status</th>
+                <th className="px-6 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/4">Name</th>
+                <th className="px-5 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Date</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-In</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Check-Out</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/6">Status</th>
               </tr>
             </thead>
           </table>

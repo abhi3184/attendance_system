@@ -11,6 +11,9 @@ employeeTable = Table(
     Column("mobile", String(15), unique=True, nullable=False),
     Column("department", String(100), unique=False, nullable=False),
     Column("shift_time", String(100), unique=False, nullable=False),
+    Column("status", String(100), unique=False, nullable=False),
     Column("password", String(100), unique=False, nullable=False),
     Column("roles_id", Integer, unique=False, nullable=False),
+    Column("manager_id", Integer, unique=False, nullable=False),
+    
 )

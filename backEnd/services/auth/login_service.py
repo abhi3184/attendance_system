@@ -10,6 +10,14 @@ from utils.jwt_handler import create_access_token
 from models.index import roles
 
 class loginService:
+
+    @staticmethod
+    def check_user_exist_by_email(db: Session, email):
+        result = loginRepo.get_employee_by_email(db, email)
+        if not result:
+            return {"success":False,"data":result,"message":"Email not found"}
+        return result
+
     @staticmethod
     def login_user(db: Session,req: Login):
         employee = loginRepo.user_login(db,req)
