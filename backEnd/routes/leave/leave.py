@@ -9,9 +9,12 @@ from typing import Dict, List
 leave = APIRouter()
 
 @leave.post("/addleave",)
-def apply_leave(request: AddleaveRequestDTO, db: Session = Depends(get_db)):
-    service = LeaveService(db)
-    return service.apply_leave(request)
+def add_leave(request: AddleaveRequestDTO, db: Session = Depends(get_db)):
+    return LeaveService.apply_leave(db,request)
+
+@leave.get("/getAllLeaveTypes")
+def get_all_leave_types(db : Session = Depends(get_db)):
+    return LeaveService.get_all_leave_type(db)
 
 @leave.put("/update_status")
 def update_leave_status(req: LeaveUpdate,db: Session = Depends(get_db)):

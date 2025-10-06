@@ -19,6 +19,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("ppreview");
   const [loadingEmployee, setLoadingEmployee] = useState(false);
   const [loadingCheck, setLoadingCheck] = useState(false);
+  const [leaveSummary, setLeaveSummary] = useState([]);
 
   const tabs = [
     { path: "ppreview", label: "Profile" },
@@ -182,6 +183,29 @@ export default function Home() {
     }
   };
 
+
+  useEffect(() => {
+    if (!employee?.emp_id) return;
+
+    const fetchLeaveSummary = async () => {
+      try {
+        const res = await axios.get(
+          `http://127.0.0.1:8000/leave/leave_summary/${employee.emp_id}`
+        );
+        console.log(res.data)
+        if (res.data) {
+          setLeaveSummary(res.data);
+        } else {
+          toast.error(res.data.message || "Failed to fetch leave summary");
+        }
+      } catch (err) {
+        toast.error("Error fetching leave summary!");
+      }
+    };
+
+    fetchLeaveSummary();
+  }, [employee]);
+
   return (
     <div className="flex flex-col lg:flex-row p-4 gap-4 h-full font-sans pb-0">
       {/* Left Panel */}
@@ -314,14 +338,12 @@ export default function Home() {
           }}
         >
           <div className="h-full">
-            {employeeDetails && (
-              <ActiveComponent
-                employee={employeeDetails}
-                isCheckedIn={isCheckedIn}
-                hours={hours}
-                minutes={minutes}
-                secs={secs}
-              />
+            {employeeDetails && activeTab === "lpreview" ? (
+              <LeavePreview employee={employeeDetails} leaves={leaveSummary} />
+            ) : activeTab === "ppreview" ? (
+              <ProfilePreview employee={employeeDetails} isCheckedIn={isCheckedIn} hours={hours} minutes={minutes} secs={secs} />
+            ) : (
+              <ActiveComponent employee={employeeDetails} isCheckedIn={isCheckedIn} hours={hours} minutes={minutes} secs={secs} />
             )}
           </div>
         </div>

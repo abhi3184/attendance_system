@@ -21,5 +21,6 @@ all_schemas = [
     UpdateEmployeeStatus,
     EducationResponse,
     AddressResponse,
-    LeaveSummaryResp
+    LeaveSummaryResp,
+    
 ]

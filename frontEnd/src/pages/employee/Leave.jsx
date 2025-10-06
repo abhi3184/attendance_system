@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { FaCalendarAlt, FaWallet, FaStethoscope } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { FaCalendarAlt, FaWallet, FaStethoscope, FaPlus } from "react-icons/fa";
 import { motion } from "framer-motion";
-
+import AddLeaveModal from "../../modals/addLeaveModal";
 // Summary cards data
 const summaryData = [
   {
@@ -60,7 +60,7 @@ const statusStyles = {
 
 const formatHolidayDate = (dateString) => {
   const date = new Date(dateString);
-  const weekdays = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
+  const weekdays = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
   const day = String(date.getDate()).padStart(2, "0");
   const month = date.toLocaleString("en-US", { month: "short" }).toUpperCase();
   const year = date.getFullYear();
@@ -70,33 +70,55 @@ const formatHolidayDate = (dateString) => {
 
 export default function Leave() {
   const [activeTab, setActiveTab] = useState("summary");
-  const [requests, setRequests] = useState(leaveRequests);
+  const [requests, setRequests] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleCancel = (id) => setRequests((prev) => prev.filter((req) => req.id !== id));
 
+  const handleAddLeave = (data) => {
+    const newRequest = { ...data, id: Date.now(), status: "Pending" };
+    setRequests([...requests, newRequest]);
+    setIsModalOpen(false);
+  };
+
+  
+
   return (
-    <div className="p-6 min-h-screen bg-gray-50 font-sans">
-      {/* Tabs */}
-      <div className="flex border-b border-gray-300 mb-6">
-        <button
-          onClick={() => setActiveTab("summary")}
-          className={`px-6 py-2 text-xs font-semibold ${activeTab === "summary"
+    <div className="p-6 max-h-screen bg-white rounded-xl shadow-md font-sans">
+
+      {/* Tabs + Add Leave Button */}
+      <div className="flex justify-between items-center border-b border-gray-300 mb-6 py-2">
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab("summary")}
+            className={`px-6 py-2 text-xs font-semibold ${activeTab === "summary"
               ? "border-b-2 border-purple-600 text-purple-600"
               : "text-gray-500 hover:text-gray-700"
-            }`}
-        >
-          Leave Summary
-        </button>
-        <button
-          onClick={() => setActiveTab("request")}
-          className={`px-6 py-2 text-xs font-semibold ${activeTab === "request"
+              }`}
+          >
+            Leave Summary
+          </button>
+          <button
+            onClick={() => setActiveTab("request")}
+            className={`px-6 py-2 text-xs font-semibold ${activeTab === "request"
               ? "border-b-2 border-purple-600 text-purple-600"
               : "text-gray-500 hover:text-gray-700"
-            }`}
+              }`}
+          >
+            Leave Requests
+          </button>
+        </div>
+
+        <motion.button
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white text-xs font-semibold rounded-lg shadow hover:shadow-lg transition-all duration-300"
+          onClick={() => setIsModalOpen(true)}
         >
-          Leave Requests
-        </button>
+          <FaPlus className="mr-2" /> Apply Leave
+        </motion.button>
       </div>
+
 
       {/* Leave Summary */}
       {activeTab === "summary" && (
@@ -135,13 +157,13 @@ export default function Leave() {
           </div>
 
           {/* Upcoming Holidays Table */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl  border-gray-200 overflow-hidden">
             <h2 className="px-6 py-3 text-sm font-semibold border-b border-gray-200">
               Upcoming Holidays
             </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-purple-100">
+            <div className="overflow-x-auto rounded-xl">
+              <table className="min-w-full divide-y rounded-xl divide-gray-200">
+                <thead className="bg-purple-100 rounded-xl">
                   <tr>
                     <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Date</th>
                     <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Description</th>
@@ -163,10 +185,10 @@ export default function Leave() {
 
       {/* Leave Requests */}
       {activeTab === "request" && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mt-4">
+        <div className="bg-white rounded-xl border-gray-200 overflow-hidden mt-4">
           <div className="max-h-[500px] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-100 sticky top-0 z-10">
+              <thead className="bg-purple-100 sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">Leave Type</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">From</th>
@@ -212,8 +234,15 @@ export default function Leave() {
               </tbody>
             </table>
           </div>
+
         </div>
+
       )}
+      <AddLeaveModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddLeave}
+      />
     </div>
   );
 }

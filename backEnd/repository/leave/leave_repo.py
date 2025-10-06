@@ -11,34 +11,25 @@ class LeaveRepo:
         self.db = db
 
     @staticmethod
-    def apply_leave(self, leave: Leave):
-        self.db.add(leave)
-        self.db.commit()
-        self.db.refresh(leave)
-        return leave
+    def apply_leave(db, leave: Leave):
+        db.add(leave)
+        db.commit()
+        db.refresh(leave)
+        return {"success":True,"message":"leave is applied successfully"}
     
     @staticmethod
-    def check_existing_leave(self, emp_id: int, start_date, end_date):
-        print("DEBUG → start_date:", start_date, type(start_date))
-        print("DEBUG → end_date:", end_date, type(end_date))
-
+    def check_existing_leave(db: Session, emp_id: int, start_date, end_date):
         if isinstance(start_date, str):
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
         if isinstance(end_date, str):
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-        return (
-            self.db.query(Leave)
-            .filter(
-                Leave.emp_id == emp_id,
-                Leave.status != "rejected",
-                or_(
-                    and_(Leave.start_date == start_date),
-                    and_(Leave.start_date == end_date),
-                )
-            )
-            .first()
-    )
+        return db.query(Leave).filter(
+            Leave.emp_id == emp_id,
+            Leave.status != "rejected",
+            Leave.start_date <= end_date,
+            Leave.end_date >= start_date
+        ).first()
 
     @staticmethod
     def update_leave_status(db, req: LeaveUpdate):
@@ -90,3 +81,14 @@ class LeaveRepo:
         )
 
         return [{"leave_type_id": r.leave_type_id, "used_days": r.used_days or 0} for r in result]
+    
+
+    @staticmethod
+    def get_leave_types(db):
+        result = db.execute(leaveTypeTable.select()).mappings().all()
+        return result
+    
+    @staticmethod
+    def get_total_days_by_leave_type(db,leaveTypeID : int):
+        result = db.execute(leaveTypeTable.select().where(leaveTypeTable.c.leave_type_id == leaveTypeID)).mappings().first()
+        return result

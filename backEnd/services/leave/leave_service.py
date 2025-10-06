@@ -11,21 +11,28 @@ class LeaveService:
         self.repo = LeaveRepo(db)
 
     @staticmethod
-    def apply_leave(self, request: AddleaveRequestDTO):
-        
-        existing = self.repo.check_existing_leave(request.emp_id, request.start_date, request.end_date)
+    def apply_leave(db, req : AddleaveRequestDTO):
+        existing = LeaveRepo.check_existing_leave(db, req.emp_id, req.start_date, req.end_date)
         if existing:
-            raise HTTPException(status_code=400, detail="Leave already applied for given dates")
+            return {"message":"Leave already applied for give dates"}
+        total_days = LeaveRepo.get_total_days_by_leave_type(db,req.leave_type_id)
+
+        start_date = datetime.strptime(req.start_date, "%Y-%m-%d").date() if isinstance(req.start_date, str) else req.start_date
+        end_date = datetime.strptime(req.end_date, "%Y-%m-%d").date() if isinstance(req.end_date, str) else req.end_date
+
+        used_days = (end_date - start_date).days + 1
 
         leave = Leave(
-            emp_id = request.emp_id,
-            leave_type_id = request.leave_type_id,
-            start_date = request.start_date,
-            end_date = request.end_date,
-            reason = request.reason,
+            emp_id = req.emp_id,
+            leave_type_id = req.leave_type_id,
+            total_days = total_days.total_days,
+            used_days = used_days,
+            start_date = req.start_date,
+            end_date = req.end_date,
+            reason = req.reason,
             applied_on = datetime.now()
         )
-        return self.repo.apply_leave(leave)
+        return LeaveRepo.apply_leave(db, leave)
     
     @staticmethod
     def update_leave_status(db,req: LeaveUpdate):
@@ -59,3 +66,11 @@ class LeaveService:
                 )
             )
         return summary
+    
+    @staticmethod
+    def get_all_leave_type(db :Session):
+        result = LeaveRepo.get_leave_types(db)
+        if not result:
+            return {"success":False,"data":'',"message":"leave type not found"}
+        return {"success":True,"data":result,"message":"leave type not found"}
+        
