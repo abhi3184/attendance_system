@@ -73,4 +73,9 @@ class LeaveService:
         if not result:
             return {"success":False,"data":'',"message":"leave type not found"}
         return {"success":True,"data":result,"message":"leave type not found"}
+    
+    @staticmethod
+    def get_all_leaves(db:Session):
+        result = LeaveRepo.get_all_leaves(db)
+        return result
         

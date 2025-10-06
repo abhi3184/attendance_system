@@ -6,9 +6,9 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import jwt_decode from "jwt-decode";
 
-export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
+export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedType }) {
   const [formData, setFormData] = useState({
-    leaveType: null, // store selected object {label, value}
+    leaveType: null, // { label, value }
     fromDate: "",
     toDate: "",
     reason: "",
@@ -18,20 +18,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
   const today = new Date().toISOString().split("T")[0];
   const [leaveTypes, setLeaveTypes] = useState([]);
 
-  // Reset form when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setFormData({
-        leaveType: null,
-        fromDate: "",
-        toDate: "",
-        reason: "",
-      });
-      setErrors({});
-    }
-  }, [isOpen]);
-
-  // Fetch leave types
+  // ✅ Fetch leave types
   useEffect(() => {
     const fetchLeaveTypes = async () => {
       try {
@@ -53,7 +40,38 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
     fetchLeaveTypes();
   }, []);
 
-  // Validation
+  useEffect(() => {
+    if (preselectedType && leaveTypes.length > 0) {
+      const matched = leaveTypes.find(
+        (lt) => lt.label.toLowerCase() === preselectedType.toLowerCase()
+      );
+      if (matched) setFormData((prev) => ({ ...prev, leaveType: matched }));
+    }
+  }, [preselectedType, leaveTypes]);
+
+
+  useEffect(() => {
+    console.log("preselectedType:", preselectedType);
+    console.log("leaveTypes:", leaveTypes);
+    console.log("formData.leaveType:", formData.leaveType);
+  }, [preselectedType, leaveTypes, formData.leaveType]);
+
+
+
+  // ✅ Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        leaveType: null,
+        fromDate: "",
+        toDate: "",
+        reason: "",
+      });
+      setErrors({});
+    }
+  }, [isOpen]);
+
+  // ✅ Validation
   const validateField = (name, value) => {
     switch (name) {
       case "leaveType":
@@ -75,7 +93,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
     setErrors((prev) => ({ ...prev, [name]: errorMessage || undefined }));
   };
 
-  // Calculate total days
+  // ✅ Calculate total days
   const calculateTotalDays = () => {
     if (formData.fromDate && formData.toDate) {
       const from = new Date(formData.fromDate);
@@ -87,6 +105,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
     return 0;
   };
 
+  // ✅ Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -104,12 +123,11 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
     try {
       const token = localStorage.getItem("token");
       const decoded = jwt_decode(token);
-      console.log("decoded",decoded )
       const emp_id = decoded.id;
 
       const payload = {
         emp_id: emp_id,
-        leave_type_id: formData.leaveType, // selected leave ID
+        leave_type_id: formData.leaveType?.value,
         start_date: formData.fromDate,
         end_date: formData.toDate,
         reason: formData.reason,
@@ -120,7 +138,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
       if (res.data.success) {
         toast.success("Leave applied successfully!");
         onClose();
-        if (onSubmit) onSubmit(); // optional callback
+        if (onSubmit) onSubmit();
       } else {
         toast.error(res.data.message || "Failed to apply leave!");
       }
@@ -140,8 +158,12 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit }) {
         <div className="relative">
           <FancyDropdown
             options={leaveTypes}
-            value={formData.leaveType}
-            onChange={(val) => handleChange("leaveType", val)}
+            value={formData.leaveType?.value}
+            onChange={(val) => {
+              const selected = leaveTypes.find((lt) => lt.value === val);
+              handleChange("leaveType", selected); 
+            }}
+
             placeholder="Select Leave Type"
             className={`${errors.leaveType ? "border-red-400" : "border-gray-300"} rounded-md`}
           />

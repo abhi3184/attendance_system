@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException,Security,status
 from sqlalchemy.orm import Session
 from config.db import get_db
-from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp
+from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp,LeaveResponseDTO
 from services.index import LeaveService
 from typing import Dict, List
 
@@ -31,3 +31,7 @@ async def delete_leave(leave_Id: int, db: Session = Depends(get_db)):
 @leave.get("/leave_summary/{emp_id}", response_model=List[LeaveSummaryResp])
 def get_leave_summary(emp_id: int, db: Session = Depends(get_db)):
     return LeaveService.get_leave_summary(db, emp_id)
+
+@leave.get("/get_all_leaves", response_model=List[LeaveResponseDTO])
+def get_leave_leaves(db: Session = Depends(get_db)):
+    return LeaveService.get_all_leaves(db)

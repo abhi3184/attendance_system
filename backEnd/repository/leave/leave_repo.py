@@ -1,8 +1,8 @@
 from typing import List, Optional
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
-from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO
-from models.index import Leave,leaveTypeTable
+from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO,LeaveStatus
+from models.index import Leave,leaveTypeTable,employeeTable
 from datetime import datetime
 from sqlalchemy import func
 
@@ -56,7 +56,15 @@ class LeaveRepo:
         if not leaves:
             return {"message":"Leaves not found"}
 
-        return [leave.__dict__ for leave in leaves]
+        leaves_list = [leave.__dict__ for leave in leaves]
+
+        response = {
+            "success": True,
+            "data": leaves_list,
+            "message": "data"
+        }
+
+        return response
 
     @staticmethod
     def delete_leave(db,leave_Id: int):
@@ -92,3 +100,50 @@ class LeaveRepo:
     def get_total_days_by_leave_type(db,leaveTypeID : int):
         result = db.execute(leaveTypeTable.select().where(leaveTypeTable.c.leave_type_id == leaveTypeID)).mappings().first()
         return result
+    
+    @staticmethod
+    def get_all_leaves(db: Session):
+        result = (
+            db.query(
+                Leave.leave_id,
+                Leave.emp_id,
+                Leave.leave_type_id,
+                employeeTable.c.firstName.label("first_name"),
+                leaveTypeTable.c.leave_name.label("leave_type"),
+                Leave.start_date,
+                Leave.end_date,
+                Leave.reason,
+                Leave.status,
+                Leave.applied_on,
+                Leave.approved_by,
+                Leave.approved_on,
+                employeeTable.c.lastName.label("last_name"),
+            )
+            .join(employeeTable, Leave.emp_id == employeeTable.c.emp_id)
+            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+            .filter(Leave.status != "Rejected")
+            .all()
+        )
+
+        
+        leaves_list = [
+           LeaveResponseDTO(
+                leave_id=r[0],
+                emp_id=r[1],
+                leave_type_id=r[2],
+                first_name=r[3],
+                leave_type=r[4],
+                start_date=r[5],
+                end_date=r[6],
+                reason=r[7],
+                status=r[8],
+                applied_on=r[9],
+                approved_by=r[10],
+                approved_on=r[11],
+                last_name=r[12],
+
+            )
+            for r in result
+        ]
+        
+        return leaves_list

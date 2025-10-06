@@ -1,3 +1,4 @@
+from enum import Enum
 from pydantic import BaseModel
 from datetime import date, datetime
 from typing import Optional
@@ -17,15 +18,19 @@ class LeaveUpdate(BaseModel):
 
 class LeaveResponseDTO(BaseModel):
     leave_id: int
-    emp_id: str
+    emp_id: int
     leave_type_id: int
+    first_name: Optional[str] = None
+    leave_type: Optional[str] = None
     start_date: date
     end_date: date
     reason: Optional[str]
-    status: LeaveStatus
+    status: str
     applied_on: datetime
     approved_by: Optional[str]
     approved_on: Optional[datetime]
+    last_name: Optional[str] = None
+
 
     class Config:
         orm_mode = True
@@ -35,3 +40,9 @@ class LeaveSummaryResp(BaseModel):
     total_days: int
     used_days: int
     remaining_days: int
+
+
+class LeaveStatus(str, Enum):
+    pending = "Pending"
+    approved = "Approved"
+    rejected = "Rejected"
