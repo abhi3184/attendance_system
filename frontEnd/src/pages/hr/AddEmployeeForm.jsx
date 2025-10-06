@@ -218,7 +218,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
       const response = await axios.post("http://127.0.0.1:8000/registration/postEmployee", payload);
 
       if (response.status === 200 || response.status === 201) {
-        toast.success("Employee added successfully ✅");
         onSubmit(formData);
         onClose();
       }

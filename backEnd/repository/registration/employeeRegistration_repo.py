@@ -147,6 +147,7 @@ class employeRegistrationRepository:
             return None
         
         employee = {
+            "emp_code": result["emp_code"],
             "firstName": result["firstName"],
             "lastName": result["lastName"],
             "emailId": result["emailId"],

@@ -3,14 +3,13 @@ import { motion } from "framer-motion";
 import { SunIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import axios from "axios";
+import jwt_decode from "jwt-decode";
 
 // Tab Components
 import ProfilePreview from "./Profile-preview";
 import LeavePreview from "./Leave-preview";
 import AttendancePreview from "./Attendance-preview";
 import Holidays from "./Holidays";
-
-import jwt_decode from "jwt-decode";
 
 export default function Home() {
   const [employeeDetails, setEmployeeDetails] = useState(null);
@@ -35,8 +34,7 @@ export default function Home() {
 
     try {
       const decoded = jwt_decode(token);
-      console.log("token",decoded)
-      if (decoded.id && decoded.manager_id) {
+      if (decoded.id && decoded.manager_id !== undefined) {
         setEmployee({
           emp_id: decoded.id,
           manager_id: decoded.manager_id,
@@ -60,10 +58,10 @@ export default function Home() {
         const res = await axios.get(
           `http://127.0.0.1:8000/registration/get_employee_by_id/${employee.emp_id}`
         );
-        if (res.data.success) {
+        if (res.data.success && res.data.data) {
           setEmployeeDetails(res.data.data);
         } else {
-          toast.error("Employee not found!");
+          toast.error(res.data.message || "Employee not found!");
         }
       } catch (err) {
         toast.error("Failed to fetch employee details!");
@@ -77,12 +75,12 @@ export default function Home() {
 
   // Fetch today's attendance status
   useEffect(() => {
-    if (!employeeDetails?.emp_id) return;
+    if (!employee?.emp_id) return;
 
     const fetchStatus = async () => {
       try {
         const res = await axios.get(
-          `http://127.0.0.1:8000/checkIn/status/${employeeDetails.emp_id}`
+          `http://127.0.0.1:8000/checkIn/status/${employee.emp_id}`
         );
 
         if (res.data.checked_in) {
@@ -106,7 +104,7 @@ export default function Home() {
     };
 
     fetchStatus();
-  }, [employeeDetails]);
+  }, [employee]);
 
   // Timer increment for checked-in state
   useEffect(() => {
@@ -136,15 +134,11 @@ export default function Home() {
 
   // Check-in API
   const handleCheckIn = async () => {
-    if (!employeeDetails?.emp_id) return;
+    if (!employee?.emp_id) return;
     setLoadingCheck(true);
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/checkIn/checkin`,
-        {
-          emp_id: employeeDetails.emp_id,
-          manager_id: employeeDetails.manager_id,
-        }
+        `http://127.0.0.1:8000/checkIn/checkin?emp_id=${employee.emp_id}&manager_id=${employee.manager_id}`
       );
       if (res.data.success) {
         setCheckedIn(true);
@@ -153,7 +147,11 @@ export default function Home() {
         toast.error(res.data.message || "Check-in failed!");
       }
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Error connecting server!");
+      toast.error(
+        err?.response?.data?.detail
+          ? JSON.stringify(err.response.data.detail)
+          : "Error connecting server!"
+      );
     } finally {
       setLoadingCheck(false);
     }
@@ -161,12 +159,11 @@ export default function Home() {
 
   // Check-out API
   const handleCheckOut = async () => {
-    if (!employeeDetails?.emp_id) return;
+    if (!employee?.emp_id) return;
     setLoadingCheck(true);
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/checkIn/checkout`,
-        { emp_id: employeeDetails.emp_id }
+        `http://127.0.0.1:8000/checkIn/checkout?emp_id=${employee.emp_id}`
       );
       if (res.data.success) {
         setCheckedIn(false);
@@ -175,7 +172,11 @@ export default function Home() {
         toast.error(res.data.message || "Check-out failed!");
       }
     } catch (err) {
-      toast.error("Error connecting server!");
+      toast.error(
+        err?.response?.data?.detail
+          ? JSON.stringify(err.response.data.detail)
+          : "Error connecting server!"
+      );
     } finally {
       setLoadingCheck(false);
     }
@@ -206,7 +207,7 @@ export default function Home() {
           </span>{" "}
           -{" "}
           {employeeDetails
-            ? `${employeeDetails.firstName} ${employeeDetails.lastName}`
+            ? `${employeeDetails.firstName || ""} ${employeeDetails.lastName || ""}`
             : loadingEmployee
             ? "Loading..."
             : "N/A"}
@@ -324,13 +325,15 @@ export default function Home() {
           }}
         >
           <div className="h-full">
-            <ActiveComponent
-              employee={employeeDetails}
-              isCheckedIn={isCheckedIn}
-              hours={hours}
-              minutes={minutes}
-              secs={secs}
-            />
+            {employeeDetails && (
+              <ActiveComponent
+                employee={employeeDetails}
+                isCheckedIn={isCheckedIn}
+                hours={hours}
+                minutes={minutes}
+                secs={secs}
+              />
+            )}
           </div>
         </div>
       </div>
