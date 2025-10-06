@@ -9,5 +9,6 @@ attendanceTable = Table(
     Column("check_out_time", String(100), nullable=False),
     Column("ip_address", String(15), unique=True, nullable=False),
     Column("isPresent",Integer, nullable=False),
-    Column("manger_id",Integer, nullable=False)
+    Column("manager_id",Integer, nullable=False),
+    Column("total_hr",Integer, nullable=False),
 )

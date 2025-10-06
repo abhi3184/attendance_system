@@ -1,7 +1,7 @@
 from sqlalchemy import update
 from models.index import attendanceTable
 from sqlalchemy.orm import Session
-from datetime import datetime, date
+from datetime import datetime, date, time
 from schemas.index import CheckIn
 import socket
 class AttendanceRepo:
@@ -27,69 +27,95 @@ class AttendanceRepo:
         ).first()
 
     # ----- Check-in -----
-    def checkin(self, emp_id:int, manager_id:int,ip_address:str) -> dict:
+    def checkin(self, emp_id: int, manager_id: int, ip_address: str) -> dict:
+        # Start and end of today
         today = date.today()
-        active_checkin = self.get_active_checkin(emp_id)
-        if active_checkin:
-            return {"success": False, "message": "Already checked in and not checked out"}
+        start_datetime = datetime.combine(today, time.min)
+        end_datetime = datetime.combine(today, time.max)
 
-        # Check if any previous check-in exists today
-        last_checkin = self.db.query(attendanceTable).filter(
+        # Get today's check-in record
+        today_record = self.db.query(attendanceTable).filter(
             attendanceTable.c.emp_id == emp_id,
-            attendanceTable.c.check_in_time >= today
+            attendanceTable.c.check_in_time >= start_datetime,
+            attendanceTable.c.check_in_time <= end_datetime
         ).order_by(attendanceTable.c.check_in_time.desc()).first()
 
-        if last_checkin and last_checkin.check_out_time is not None:
-            # Insert new check-in in same row (overwrite last check-in)
-            update_stmt = (
-                update(attendanceTable)
-                .where(attendanceTable.c.attendance_id == last_checkin.attendance_id)
-                .values(
-                    check_in_time=datetime.now(),
-                    check_out_time=None,
-                    isPresent=1,
-                    manger_id=manager_id,
-                    ip_address=ip_address
-                )
+        # Case 1: No check-in today → insert new record
+        if not today_record:
+            insert_stmt = attendanceTable.insert().values(
+                emp_id=emp_id,
+                check_in_time=datetime.now(),
+                check_out_time=None,
+                isPresent=1,
+                manager_id=manager_id,
+                ip_address=ip_address
             )
-            self.db.execute(update_stmt)
+            self.db.execute(insert_stmt)
             self.db.commit()
-            return {"success": True, "message": "Checked in successfully (after checkout)"}
+            return {"success": True, "message": "Checked in successfully"}
 
-        # Normal insert
-        insert_stmt = attendanceTable.insert().values(
-            emp_id=emp_id,
-            check_in_time=datetime.now(),
-            ip_address=ip_address,
-            manger_id=manager_id,
-            isPresent=1
+        # Case 2: Check-in exists and check-out is None → already checked in
+        if today_record.check_out_time is None:
+            return {"success": True, "message": "Already checked in, not checked out yet"}
+
+        # Case 3: Check-in exists and check-out exists → just mark isPresent = 1
+        update_stmt = (
+            update(attendanceTable)
+            .where(attendanceTable.c.attendance_id == today_record.attendance_id)
+            .values( 
+                isPresent=1,
+                check_out_time=None,   # clear check-out for new session
+                manager_id=manager_id,  # optional: update manager
+                ip_address=ip_address
+            )
         )
-        self.db.execute(insert_stmt)
+        self.db.execute(update_stmt)
         self.db.commit()
-        return {"success": True, "message": "Checked in successfully"}
+        return {"success": True, "message": "Check in successfull"}
+
 
     # ----- Check-out -----
     def checkout(self, emp_id: int) -> dict:
+        # Start and end of today
         today = date.today()
-        update_stmt = (
-            update(attendanceTable)
-            .where(
-                (attendanceTable.c.emp_id == emp_id) &
-                (attendanceTable.c.check_in_time >= today) &
-                (attendanceTable.c.check_out_time.is_(None))
-            )
-            .values(
-                check_out_time=datetime.now(),
-                isPresent=0
-            )
-        )
-        result = self.db.execute(update_stmt)
-        self.db.commit()
+        start_datetime = datetime.combine(today, time.min)
+        end_datetime = datetime.combine(today, time.max)
 
-        if result.rowcount == 0:
+        # Get the latest active check-in for today
+        last_checkin = self.db.query(attendanceTable).filter(
+            attendanceTable.c.emp_id == emp_id,
+            attendanceTable.c.check_in_time >= start_datetime,
+            attendanceTable.c.check_in_time <= end_datetime,
+            attendanceTable.c.check_out_time.is_(None)
+        ).order_by(attendanceTable.c.check_in_time.desc()).first()
+
+        if not last_checkin:
             return {"success": False, "message": "No active check-in found"}
 
-        return {"success": True, "message": "Checked out successfully"}
+        # Calculate total hours
+        check_in_time = last_checkin.check_in_time
+        check_out_time = datetime.now()
+        total_seconds = (check_out_time - check_in_time).total_seconds()
+        total_hours = round(total_seconds / 3600, 2)  # 2 decimal places
+
+        # Update record
+        update_stmt = (
+            update(attendanceTable)
+            .where(attendanceTable.c.attendance_id == last_checkin.attendance_id)
+            .values(
+                check_out_time=check_out_time,
+                isPresent=0,
+                total_hr=total_hours
+            )
+        )
+        self.db.execute(update_stmt)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "message": "Checked out successfully",
+            "total_hours": total_hours
+        }
 
     # ----- Get active check-in stats -----
     def get_stats(self, emp_id: int):

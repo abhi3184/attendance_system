@@ -17,6 +17,7 @@ def get_service(db: Session):
 @attendance.post("/checkin")
 def check_in(emp_id: int,manager_id: int, db: Session = Depends(get_db)):
     ip_address = AttendanceRepo.get_local_ip()
+    print("ip_address", ip_address)
     if not ip_address:
         return {"success": False, "message": "IP not found"}
     service = get_service(db)
