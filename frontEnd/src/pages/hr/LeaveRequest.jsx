@@ -1,25 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaCheck, FaTimes, FaPlus } from "react-icons/fa";
 import FancyDropdown from "../../modals/dropdowns";
-
-const leaveRequests = [...Array(5)].map((_, i) => ({
-  id: i + 1,
-  name: `Employee ${i + 1}`,
-  type: ["Casual", "Sick", "Paid"][i % 3],
-  from: `2025-10-${(i % 30) + 1}`,
-  to: `2025-10-${((i + 2) % 30) + 1}`,
-  status: "Pending",
-}));
+import axios from "axios";
 
 export default function LeaveRequests() {
   const [search, setSearch] = useState("");
   const [isModalOpen, setModalOpen] = useState(false);
   const [newLeave, setNewLeave] = useState({ leave_type: "", total_days: "" });
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const leaveTypes = ["Sick Leave", "Paid Leave", "Casual Leave"];
 
+  // Fetch leave data from API
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      try {
+        const res = await axios.get("http://127.0.0.1:8000/leave/get_all_leaves");
+        setLeaveRequests(res.data);
+      } catch (err) {
+        console.error("Error fetching leaves:", err);
+      }
+    };
+
+    fetchLeaves();
+  }, []);
+
   const filtered = leaveRequests.filter(req =>
-    req.name.toLowerCase().includes(search.toLowerCase())
+    `${req.first_name} ${req.last_name}`.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleApprove = id => alert(`✅ Approved leave for ID ${id}`);
@@ -75,33 +82,32 @@ export default function LeaveRequests() {
             <tbody className="bg-white divide-y divide-gray-200">
               {filtered.map((req, idx) => (
                 <motion.tr
-                  key={req.id}
+                  key={req.leave_id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.005 }}
                   whileHover={{ backgroundColor: "rgba(243,232,255,0.2)" }}
                   className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} cursor-pointer`}
                 >
-                  <td className="px-4 py-2 text-xs w-[25%]">{req.name}</td>
+                  <td className="px-4 py-2 text-xs w-[25%]">{req.first_name} {req.last_name}</td>
                   <td className="px-4 py-2 text-xs w-[15%] text-center">
                     <span
                       className={`inline-flex justify-center items-center text-center
-      px-2.5 py-1 rounded-full text-xs font-semibold border w-20
-      ${req.type === "Casual" ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                          : req.type === "Sick" ? "bg-red-100 text-red-700 border-red-200"
-                            : "bg-green-100 text-green-700 border-green-200"}`
-                      }
+      px-2.5 py-1 rounded-full text-xs font-semibold border w-40
+      ${req.leave_type === "Casual Leave" ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                          : req.leave_type === "Sick Leave" ? "bg-red-100 text-red-700 border-red-200"
+                            : "bg-green-100 text-green-700 border-green-200"}`}
                     >
-                      {req.type}
+                      {req.leave_type}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-xs w-[20%] text-center">{req.from}</td>
-                  <td className="px-4 py-2 text-xs w-[20%] text-center">{req.to}</td>
+                  <td className="px-4 py-2 text-xs w-[20%] text-center">{req.start_date}</td>
+                  <td className="px-4 py-2 text-xs w-[20%] text-center">{req.end_date}</td>
                   <td className="px-4 py-1 text-xs w-[20%] flex gap-2 justify-right">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => handleApprove(req.id)}
+                      onClick={() => handleApprove(req.leave_id)}
                       className="flex items-center gap-1 px-2.5 py-1 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600 transition-all text-[11px] font-medium"
                     >
                       <FaCheck className="h-3 w-3" />
@@ -110,7 +116,7 @@ export default function LeaveRequests() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => handleReject(req.id)}
+                      onClick={() => handleReject(req.leave_id)}
                       className="flex items-center gap-1 px-2.5 py-1 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600 transition-all text-[11px] font-medium"
                     >
                       <FaTimes className="h-3 w-3" />
