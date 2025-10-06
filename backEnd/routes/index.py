@@ -9,5 +9,6 @@ all_routes = [
     registration,
     authentication,
     attendance,
-    leave
+    leave,
+    
 ]

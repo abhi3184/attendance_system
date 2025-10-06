@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 from fastapi import HTTPException
-from models.index import Leave
+from models.index import Leave,leaveTypeTable
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp
 from repository.index import LeaveRepo
 from sqlalchemy.orm import Session
@@ -42,23 +42,20 @@ class LeaveService:
 
     @staticmethod
     def get_leave_summary(db: Session, emp_id: int) -> List[LeaveSummaryResp]:
-        leaves = LeaveRepo.get_leave_summary(db, emp_id)
-        if not leaves:
-            return []
+        leave_types = db.query(leaveTypeTable).all() 
+        used_leaves = LeaveRepo.get_leave_summary(db, emp_id) 
+        used_dict = {ul["leave_type_id"]: ul["used_days"] for ul in used_leaves}
 
-        summary = {}
-        for leave in leaves:
-            lt_name = leave["leave_type_name"]
-            total_days = leave.get("total_days", 0)
-            used_days = leave.get("used_days", 0)
-
-            # Initialize if not already present
-            if lt_name not in summary:
-                summary[lt_name] = {
-                    "leave_type": lt_name,
-                    "total_days": total_days,
-                    "used_days": used_days,
-                    "remaining_days": total_days - used_days
-                }
-
-        return [LeaveSummaryResp(**val) for val in summary.values()]
+        summary = []
+        for lt in leave_types:
+            used = used_dict.get(lt.leave_type_id, 0)
+            total_days = getattr(lt, "total_days", 12)  
+            summary.append(
+                LeaveSummaryResp(
+                    leave_type=lt.leave_name,
+                    total_days=total_days,
+                    used_days=used,
+                    remaining_days=total_days - used
+                )
+            )
+        return summary

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO
 from models.index import Leave,leaveTypeTable
 from datetime import datetime
+from sqlalchemy import func
 
 class LeaveRepo:
     def __init__(self, db: Session):
@@ -78,20 +79,14 @@ class LeaveRepo:
 
     @staticmethod
     def get_leave_summary(db: Session, emp_id: int):
-        query = (
+        result = (
             db.query(
-                Leave.leave_id,
-                Leave.emp_id,
-                Leave.start_date,
-                Leave.end_date,
-                Leave.status,
-                Leave.total_days,
-                Leave.used_days,
-                leaveTypeTable.c.leave_name.label("leave_type_name")
+                Leave.leave_type_id,
+                func.sum(Leave.used_days).label("used_days")
             )
-            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
             .filter(Leave.emp_id == emp_id)
+            .group_by(Leave.leave_type_id)
+            .all()
         )
 
-        results = query.all()
-        return [dict(r._mapping) for r in results] if results else []
+        return [{"leave_type_id": r.leave_type_id, "used_days": r.used_days or 0} for r in result]

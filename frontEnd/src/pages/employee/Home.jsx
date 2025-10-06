@@ -73,7 +73,7 @@ export default function Home() {
     fetchEmployee();
   }, [employee]);
 
-  // Fetch today's attendance status
+  // Fetch today's attendance status (for live timer)
   useEffect(() => {
     if (!employee?.emp_id) return;
 
@@ -83,17 +83,13 @@ export default function Home() {
           `http://127.0.0.1:8000/checkIn/status/${employee.emp_id}`
         );
 
-        if (res.data.checked_in) {
-          const checkInTime = new Date(res.data.check_in_time);
-          const elapsed = Math.floor((new Date() - checkInTime) / 1000);
+        const { checked_in, check_in_time } = res.data;
+
+        if (checked_in && check_in_time) {
+          const checkInDate = new Date(check_in_time);
+          const elapsed = Math.floor((new Date() - checkInDate) / 1000);
           setSecondsElapsed(elapsed);
           setCheckedIn(true);
-        } else if (res.data.check_in_time && res.data.check_out_time) {
-          const checkInTime = new Date(res.data.check_in_time);
-          const checkOutTime = new Date(res.data.check_out_time);
-          const elapsed = Math.floor((checkOutTime - checkInTime) / 1000);
-          setSecondsElapsed(elapsed);
-          setCheckedIn(false);
         } else {
           setSecondsElapsed(0);
           setCheckedIn(false);
@@ -106,15 +102,18 @@ export default function Home() {
     fetchStatus();
   }, [employee]);
 
-  // Timer increment for checked-in state
+  // Live timer increment
   useEffect(() => {
-    let interval = null;
-    if (isCheckedIn) {
-      interval = setInterval(() => setSecondsElapsed((prev) => prev + 1), 1000);
-    }
+    if (!isCheckedIn) return;
+
+    const interval = setInterval(() => {
+      setSecondsElapsed(prev => prev + 1);
+    }, 1000);
+
     return () => clearInterval(interval);
   }, [isCheckedIn]);
 
+  // Format time
   const formatTime = (sec) => {
     const hrs = String(Math.floor(sec / 3600)).padStart(2, "0");
     const mins = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
@@ -168,6 +167,7 @@ export default function Home() {
       if (res.data.success) {
         setCheckedIn(false);
         toast.success("Checked out successfully!");
+        setSecondsElapsed(0); // Reset timer on checkout
       } else {
         toast.error(res.data.message || "Check-out failed!");
       }
@@ -209,16 +209,15 @@ export default function Home() {
           {employeeDetails
             ? `${employeeDetails.firstName || ""} ${employeeDetails.lastName || ""}`
             : loadingEmployee
-            ? "Loading..."
-            : "N/A"}
+              ? "Loading..."
+              : "N/A"}
         </h2>
         <p className="text-gray-600 text-sm mb-3 text-center">
           {employeeDetails?.department || "Loading..."}
         </p>
         <p
-          className={`text-sm mb-4 text-center ${
-            isCheckedIn ? "text-green-600" : "text-red-600"
-          }`}
+          className={`text-sm mb-4 text-center ${isCheckedIn ? "text-green-600" : "text-red-600"
+            }`}
         >
           {isCheckedIn ? "Checked-in" : "Yet to check-in"}
         </p>
@@ -228,18 +227,9 @@ export default function Home() {
           {[hours, minutes, secs].map((t, idx) => (
             <React.Fragment key={idx}>
               <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg font-semibold text-gray-800 shadow-md">
-                <motion.span
-                  key={t}
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  {t}
-                </motion.span>
+                {t}
               </div>
-              {idx < 2 && (
-                <span className="text-gray-800 font-semibold mx-2">:</span>
-              )}
+              {idx < 2 && <span className="mx-2">:</span>}
             </React.Fragment>
           ))}
         </div>
@@ -303,11 +293,10 @@ export default function Home() {
               <motion.div
                 key={tab.label}
                 whileHover={{ scale: 1.03 }}
-                className={`px-4 py-2 -mb-px text-sm font-semibold transition-colors cursor-pointer ${
-                  isActive
-                    ? "border-b-2 border-purple-600 text-purple-600"
-                    : "text-gray-500 hover:text-purple-600"
-                }`}
+                className={`px-4 py-2 -mb-px text-sm font-semibold transition-colors cursor-pointer ${isActive
+                  ? "border-b-2 border-purple-600 text-purple-600"
+                  : "text-gray-500 hover:text-purple-600"
+                  }`}
                 onClick={() => setActiveTab(tab.path)}
               >
                 {tab.label}
