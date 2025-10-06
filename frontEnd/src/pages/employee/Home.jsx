@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { SunIcon, CloudIcon } from "@heroicons/react/24/solid";
-
+import toast from "react-hot-toast";
+import axios from "axios";
 // Import your tab components
 import ProfilePreview from "./Profile-preview";
 import LeavePreview from "./Leave-preview";
@@ -12,6 +13,8 @@ export default function Home() {
   const [isCheckedIn, setCheckedIn] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [activeTab, setActiveTab] = useState("ppreview"); // default tab
+  const [loading, setLoading] = useState(false);
+  const [employee, setEmployee] = useState(null);
 
   const tabs = [
     { path: "ppreview", label: "Profile" },
@@ -20,10 +23,47 @@ export default function Home() {
     { path: "holidays", label: "Holidays" },
   ];
 
+
+  useEffect(() => {
+    const employeeDataString = localStorage.getItem("employee");
+    if (employeeDataString) {
+      try {
+        const employeeDataObject = JSON.parse(employeeDataString);
+        setEmployee(employeeDataObject);
+      } catch (e) {
+        console.error("Error parsing employee data from localStorage:", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await axios.get("http://127.0.0.1:8000/checkIn/status/1");
+        if (res.data && res.data.checked_in) {
+          setCheckedIn(true);
+
+          // Calculate seconds elapsed from check-in timestamp
+          const checkInTime = new Date(res.data.check_in_time); // backend must return ISO string
+          const now = new Date();
+          const elapsed = Math.floor((now - checkInTime) / 1000);
+          setSecondsElapsed(elapsed);
+        } else {
+          setCheckedIn(false);
+          setSecondsElapsed(0);
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch check-in status!");
+      }
+    };
+    fetchStatus();
+  }, []);
+
   useEffect(() => {
     let interval = null;
     if (isCheckedIn) {
-      interval = setInterval(() => setSecondsElapsed((prev) => prev + 1), 1000);
+      interval = setInterval(() => setSecondsElapsed(prev => prev + 1), 1000);
     } else {
       setSecondsElapsed(0);
     }
@@ -48,6 +88,58 @@ export default function Home() {
 
   const ActiveComponent = tabComponents[activeTab];
 
+  const handleCheckIn = async () => {
+    const payload = {
+      emp_id: 1,
+      manager_id: 2,
+      ip_address: "123.645.3.2",
+    };
+
+    try {
+      setLoading(true);
+      const res = await axios.post("http://127.0.0.1:8000/checkIn/checkin", payload);
+      if (res.data.success) {
+        setCheckedIn(true);
+        toast.success("Checked in successfully!");
+      } else {
+        toast.error("Failed to check in. Please try again.");
+      }
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.detail) {
+        toast.error(err.response.data.detail);
+      } else {
+        toast.error("Error connecting to server!");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    const payload = {
+      emp_id: 1,
+      manager_id: 2,
+      ip_address: "123.645.3.2",
+    };
+
+    try {
+      setLoading(true);
+      const res = await axios.post("http://127.0.0.1:8000/checkIn/checkout", payload);
+      if (res.data.success) {
+        setCheckedIn(false);
+        toast.success("Checked out successfully!");
+      } else {
+        toast.error("Failed to check out. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error connecting to server!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return (
     <div className="flex flex-col lg:flex-row p-4 gap-4 h-full font-sans pb-0">
 
@@ -68,46 +160,78 @@ export default function Home() {
           className="w-20 h-20 rounded-full mb-3 shadow-lg"
         />
         <h2 className="text-sm font-semibold text-gray-800 text-center">
-          <span className="text-gray-500 text-sm">AO1</span> - Abhijit Deshmukh
+          <span className="text-gray-500 text-sm">{employee ? employee.emp_code : 'N/A'}</span> - {employee ? `${employee.firstName} ${employee.lastName}` : 'Loading name'}
         </h2>
-        <p className="text-gray-600 text-sm mb-3 text-center">Software Engineer</p>
+        <p className="text-gray-600 text-sm mb-3 text-center">{employee ? employee.department : 'loading department..'}</p>
         <p className={`text-sm mb-4 text-center ${isCheckedIn ? "text-green-600" : "text-red-600"}`}>
           {isCheckedIn ? "Checked-in" : "Yet to check-in"}
         </p>
 
         {/* Timer */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex items-center mb-4 gap-1">
           {[hours, minutes, secs].map((t, idx) => (
-            <div
-              key={idx}
-              className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg font-semibold text-gray-800 shadow-md"
-            >
-              {t}
-            </div>
+            <React.Fragment key={idx}>
+              <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg font-semibold text-gray-800 shadow-md">
+                <motion.span
+                  key={t} // triggers animation whenever the value changes
+                  initial={{ y: -10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  {t}
+                </motion.span>
+              </div>
+              {idx < 2 && <span className="text-gray-800 font-semibold mx-2">:</span>}
+            </React.Fragment>
           ))}
         </div>
+
+
 
         {/* Check In/Out Button */}
         <div className="flex flex-col gap-3 w-full">
           {!isCheckedIn ? (
             <motion.button
-              onClick={() => setCheckedIn(true)}
-              className="w-full py-2 border-2 border-green-400 bg-transparent text-green-500 font-semibold rounded-lg hover:bg-green-100 hover:text-green text-sm shadow-md transition-colors duration-300"
+              onClick={handleCheckIn}
+              disabled={loading}
+              className="w-full py-2 border-2 border-green-400 bg-transparent text-green-500 font-semibold rounded-lg hover:bg-green-100 hover:text-green text-sm shadow-md transition-colors duration-300 flex items-center justify-center gap-2"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
-              Check In
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 010-16z"></path>
+                  </svg>
+                  Checking in...
+                </>
+              ) : (
+                "Check In"
+              )}
             </motion.button>
           ) : (
             <motion.button
-              onClick={() => setCheckedIn(false)}
-              className="w-full py-2 border-2 border-red-400 bg-transparent text-red-500 font-semibold rounded-lg hover:bg-red-100 hover:text-red text-sm shadow-md transition-colors duration-300"
+              onClick={handleCheckOut}
+              disabled={loading}
+              className="w-full py-2 border-2 border-red-400 bg-transparent text-red-500 font-semibold rounded-lg hover:bg-red-100 hover:text-red text-sm shadow-md transition-colors duration-300 flex items-center justify-center gap-2"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
-              Check Out
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 010-16z"></path>
+                  </svg>
+                  Checking out...
+                </>
+              ) : (
+                "Check Out"
+              )}
             </motion.button>
           )}
+
         </div>
       </motion.div>
 
@@ -115,7 +239,7 @@ export default function Home() {
       <div className="lg:w-3/4 flex flex-col gap-4 flex-1">
 
         <div
-         className="relative w-full h-20 p-4 bg-gradient-to-r from-blue-200 to-blue-400 rounded-xl overflow-hidden flex items-center">
+          className="relative w-full h-20 p-4 bg-gradient-to-r from-blue-200 to-blue-400 rounded-xl overflow-hidden flex items-center">
 
           {/* Left Content */}
           <motion.div
@@ -123,9 +247,9 @@ export default function Home() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            
+
           >
-            <h1 className="text-1xl font-bold text-gray-800">Good Morning, Abhijit</h1>
+            <h1 className="text-1xl font-bold text-gray-800">Good Morning, {employee?.firstName}</h1>
             <p className="text-gray-600 mt-1 text-sm">Have a productive day!</p>
           </motion.div>
 
@@ -167,7 +291,7 @@ export default function Home() {
             boxShadow: "0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05)"
           }}
         >
-          <div className="min-h-full">
+          <div className="h-full">
             <ActiveComponent isCheckedIn={isCheckedIn} hours={hours} minutes={minutes} secs={secs} />
           </div>
         </div>

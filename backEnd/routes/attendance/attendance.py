@@ -14,7 +14,7 @@ async def checkin(check_req: CheckIn, db: Session = Depends(get_db)):
     ip_repo = IPRepo(db)
     service = AttendanceService(attendance_repo, ip_repo)
 
-    result = service.check_in(check_req.emp_id, check_req.ip_address)
+    result = service.check_in(check_req)
     if not result["success"]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"])
     return result
@@ -27,4 +27,10 @@ async def checkout(check_req: CheckIn, db: Session = Depends(get_db)):
     if not result["success"]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"])
 
+    return result
+
+
+@attendance.get("/status/{emp_id}")
+def status(emp_id: int, db: Session = Depends(get_db)):
+    result  = AttendanceService.status(db,emp_id)
     return result

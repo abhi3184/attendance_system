@@ -4,6 +4,7 @@ from .leave.leave import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO
 from .employee_DTO.updateEmployeeReq_DTO import UpdateEmployeeRequest,UpdateEmployeeStatus
 from .auth.auth_DTO import Login
 from .employee_DTO.getManagerRes_DTO import GetManagerRes
+from .employee_DTO.getEmployeeRes_DTO import EducationResponse, EmployeeResponse, AddressResponse
 
 all_schemas = [
     Login,
@@ -16,5 +17,8 @@ all_schemas = [
     LeaveResponseDTO,
     UpdateEmployeeRequest,
     GetManagerRes,
-    UpdateEmployeeStatus
+    EmployeeResponse,
+    UpdateEmployeeStatus,
+    EducationResponse,
+    AddressResponse
 ]

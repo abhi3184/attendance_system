@@ -1,6 +1,6 @@
 
 from models.index import employeeTable,roles,employeeEducationTable,employeeAddressTable
-from schemas.index import UpdateEmployeeStatus,UpdateEmployeeRequest,GetManagerRes
+from schemas.index import UpdateEmployeeStatus,UpdateEmployeeRequest,GetManagerRes,EducationResponse,EmployeeResponse,AddressResponse
 from sqlalchemy import delete, insert, or_
 from sqlalchemy import select
 from utils.HashPasswor import hash_password
@@ -135,8 +135,42 @@ class employeRegistrationRepository:
     
     @staticmethod
     def get_employeeby_Id(db, emp_id:int):
-        result = db.execute(employeeTable.select().where(employeeTable.c.emp_id == emp_id)).mappings().first()
-        return result
+        query = (
+        employeeTable
+        .join(employeeAddressTable, employeeTable.c.emp_id == employeeAddressTable.c.emp_id)
+        .join(employeeEducationTable, employeeTable.c.emp_id == employeeEducationTable.c.emp_id)
+        .select()
+        .where(employeeTable.c.emp_id == emp_id)
+        )
+        result = db.execute(query).mappings().first()
+        if not result:
+            return None
+        
+        employee = {
+            "firstName": result["firstName"],
+            "lastName": result["lastName"],
+            "emailId": result["emailId"],
+            "mobile": result["mobile"],
+            "department": result["department"],
+            "shift": result["shift_time"],
+            "status": result["status"],
+            "address": {
+                "address": result["address"],
+                "city": result["city"],
+                "state": result["state"],
+                "zipCode": result["zip_code"],
+                "contact": result["contact"]
+            },
+            "education": {
+                "school_name": result["school_name"],
+                "degree": result["degree"],
+                "passingYear": result["passing_year"],
+                "fieldOfStudy": result["field_of_study"],
+                "university": result["university"],
+                "location": result["location"]
+            }
+        }
+        return employee
     
     @staticmethod
     def update_employee(db, payload : UpdateEmployeeRequest):

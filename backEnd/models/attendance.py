@@ -8,5 +8,6 @@ attendanceTable = Table(
     Column("check_in_time", String(100), unique=False, nullable=False),
     Column("check_out_time", String(100), nullable=False),
     Column("ip_address", String(15), unique=True, nullable=False),
-    Column("isPresent",Integer, nullable=False)
+    Column("isPresent",Integer, nullable=False),
+    Column("manger_id",Integer, nullable=False)
 )

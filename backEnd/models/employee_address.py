@@ -8,6 +8,6 @@ employeeAddressTable = Table(
     Column("city", String(100), unique=False, nullable=False),
     Column("state", String(100), nullable=False),
     Column("zip_code", String(15), unique=False, nullable=False),
-    Column("conatct", String(15), unique=False, nullable=False),
+    Column("contact", String(15), unique=False, nullable=False),
     Column("emp_id", String(100), unique=False, nullable=False),
 )

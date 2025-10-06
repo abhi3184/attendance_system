@@ -4,7 +4,7 @@ from models.index import Leave
 from schemas.index import AddleaveRequestDTO,LeaveUpdate
 from repository.index import LeaveRepo
 from sqlalchemy.orm import Session
-from repository.index import LeaveRepo
+
 class LeaveService:
     def __init__(self, db: Session):
         self.repo = LeaveRepo(db)

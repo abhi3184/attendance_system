@@ -49,6 +49,7 @@ export default function Login() {
     try {
       const data = await login(username, password);
       localStorage.setItem("token", data.access_token);
+      localStorage.setItem("employee", JSON.stringify(data.employee)); 
       const roles = getUserRole(data.access_token);
       if (roles === "Manager") {
         navigate("/dashboard/mhome");

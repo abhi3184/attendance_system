@@ -2,7 +2,7 @@ from sqlalchemy import update
 from models.index import attendanceTable, ipAddress
 from datetime import datetime, date
 from sqlalchemy.orm import Session
-
+from schemas.index import CheckIn
 class AttendanceRepo:
     def __init__(self, db: Session):
         self.db = db
@@ -26,13 +26,13 @@ class AttendanceRepo:
         ).first()
 
     # ----- Check-in -----
-    def checkin(self, emp_id: int, ip_address: str) -> dict:
+    def checkin(self, check_req: CheckIn) -> dict:
         today = date.today()
-        active_checkin = self.get_active_checkin(emp_id)
+        active_checkin = self.get_active_checkin(check_req.emp_id)
         if active_checkin:
             return {"success": False, "message": "Employee already checked in and not checked out"}
         last_checkin = self.db.query(attendanceTable).filter(
-            attendanceTable.c.emp_id == emp_id,
+            attendanceTable.c.emp_id == check_req.emp_id,
             attendanceTable.c.check_in_time >= today
         ).order_by(attendanceTable.c.check_in_time.desc()).first()
 
@@ -44,16 +44,18 @@ class AttendanceRepo:
                     check_in_time = datetime.now(),
                     check_out_time = None,
                     isPresent = 1,
-                    ip_address = ip_address
+                    manger_id = check_req.manager_id,
+                    ip_address = check_req.ip_address
                 )
             )
             self.db.execute(update_stmt)
             self.db.commit()
             return {"success": True, "message": "Checked in successfully (after checkout)"}
         insert_stmt = attendanceTable.insert().values(
-            emp_id = emp_id,
+            emp_id = check_req.emp_id,
             check_in_time = datetime.now(),
-            ip_address = ip_address,
+            ip_address = check_req.ip_address,
+            manger_id = check_req.manager_id,
             isPresent = 1
         )
         self.db.execute(insert_stmt)
@@ -82,3 +84,10 @@ class AttendanceRepo:
             return {"success": False, "message": "No active check-in found"}
 
         return {"success": True, "message": "Checked out successfully"}
+
+
+    def get_stats(db, emp_id: int):
+        return db.query(attendanceTable).filter(
+            attendanceTable.c.emp_id == emp_id,
+            attendanceTable.c.check_out_time.is_(None)
+        ).first()

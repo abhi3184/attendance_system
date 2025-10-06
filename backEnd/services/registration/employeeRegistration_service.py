@@ -64,7 +64,7 @@ class employeeRegistrationService:
             "city": employee.get("city"),
             "state": employee.get("state"),
             "zip_code": employee.get("zip"),
-            "conatct": employee.get("phoneAlt")
+            "contact": employee.get("phoneAlt")
         }
         employeRegistrationRepository.create(db, addr_data_db)
 

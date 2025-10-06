@@ -1,4 +1,5 @@
 
+from schemas.index import EmployeeResponse
 from models.index import employeeTable
 from utils.HashPasswor import verify_password
 from schemas.index import Login
@@ -13,7 +14,7 @@ class loginService:
 
     @staticmethod
     def check_user_exist_by_email(db: Session, email):
-        result = loginRepo.get_employee_by_email(db, email)
+        result = loginRepo.user_exist_by_email(db, email)
         if not result:
             return {"success":False,"data":result,"message":"Email not found"}
         return result
@@ -33,10 +34,25 @@ class loginService:
             raise HTTPException(status_code=400, detail="Role not found")
         role_name = role_obj.role 
 
+        print("Reulst",employee)
+
         token = create_access_token({
             "sub": employee["emailId"],
             "id": employee["emp_id"],
             "name": f"{employee.firstName} {employee.lastName}",
-            "role": role_name
+            "role": role_name,
+            "manager_id": employee["manager_id"]
         })
-        return {"success": True, "employee": {"id": employee.emp_id},"access_token": token, "token_type": "bearer"}
+
+        employee_data = EmployeeResponse(
+            emp_id=employee.emp_id,
+            emp_code=employee.emp_code,
+            firstName=employee.firstName,
+            lastName=employee.lastName,
+            emailId=employee.emailId,
+            mobile=employee.mobile,
+            department=employee.department, 
+            shift_time=employee.shift_time,
+            status=employee.status
+        )
+        return {"success": True, "access_token": token, "token_type": "bearer","employee": employee_data}
