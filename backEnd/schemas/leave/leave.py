@@ -29,3 +29,9 @@ class LeaveResponseDTO(BaseModel):
 
     class Config:
         orm_mode = True
+
+class LeaveSummaryResp(BaseModel):
+    leave_type: str
+    total_days: int
+    used_days: int
+    remaining_days: int

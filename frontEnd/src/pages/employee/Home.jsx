@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { SunIcon, CloudIcon } from "@heroicons/react/24/solid";
+import { SunIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import axios from "axios";
-// Import your tab components
+
+// Tab Components
 import ProfilePreview from "./Profile-preview";
 import LeavePreview from "./Leave-preview";
 import AttendancePreview from "./Attendance-preview";
 import Holidays from "./Holidays";
 
+import jwt_decode from "jwt-decode";
+
+
 export default function Home() {
+  const [employeeDetails, setEmployeeDetails] = useState(null);
+  const [employee, setEmployee] = useState(null);
   const [isCheckedIn, setCheckedIn] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
-  const [activeTab, setActiveTab] = useState("ppreview"); // default tab
+  const [activeTab, setActiveTab] = useState("ppreview");
   const [loading, setLoading] = useState(false);
-  const [employee, setEmployee] = useState(null);
 
   const tabs = [
     { path: "ppreview", label: "Profile" },
@@ -24,131 +29,150 @@ export default function Home() {
   ];
 
 
+
   useEffect(() => {
-    const employeeDataString = localStorage.getItem("employee");
-    if (employeeDataString) {
-      try {
-        const employeeDataObject = JSON.parse(employeeDataString);
-        setEmployee(employeeDataObject);
-      } catch (e) {
-        console.error("Error parsing employee data from localStorage:", e);
-      }
+    const token = localStorage.getItem("token"); // or sessionStorage
+    if (!token) return;
+
+    try {
+      const decoded = jwt_decode(token);
+      console.log("Decoded JWT:", decoded);
+      setEmployee({
+        emp_id: decoded.id,         // <-- use decoded.id
+        manager_id: decoded.manager_id
+      });// store emp_id and other data if needed
+    } catch (err) {
+      console.error("Invalid token", err);
     }
   }, []);
 
+  // Fetch employeeDetails details from backend
+  useEffect(() => {
+    if (!employee?.emp_id) return; 
+    const fetchEmployee = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(
+          `http://127.0.0.1:8000/registration/get_employee_by_id/${employee.emp_id}`
+        );
+        if (res.data.success) setEmployeeDetails(res.data.data);
+        else toast.error("Employee not found!");
+      } catch (err) {
+        toast.error("Failed to fetch employeeDetails details!");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEmployee();
+  }, [employee]);
+
+  // Fetch today's attendance status
   useEffect(() => {
     const fetchStatus = async () => {
+      if (!employeeDetails?.emp_id) return;
       try {
-        const res = await axios.get("http://127.0.0.1:8000/checkIn/status/1");
-        if (res.data && res.data.checked_in) {
-          setCheckedIn(true);
+        const res = await axios.get(
+          `http://127.0.0.1:8000/checkIn/status/${employeeDetails.emp_id}`
+        );
 
-          // Calculate seconds elapsed from check-in timestamp
-          const checkInTime = new Date(res.data.check_in_time); // backend must return ISO string
-          const now = new Date();
-          const elapsed = Math.floor((now - checkInTime) / 1000);
+        if (res.data.checked_in) {
+          // Employee is currently checked in
+          const checkInTime = new Date(res.data.check_in_time);
+          const elapsed = Math.floor((new Date() - checkInTime) / 1000);
           setSecondsElapsed(elapsed);
-        } else {
+          setCheckedIn(true);
+        } else if (res.data.check_in_time && res.data.check_out_time) {
+          // Already checked in and checked out today
+          const checkInTime = new Date(res.data.check_in_time);
+          const checkOutTime = new Date(res.data.check_out_time);
+          const elapsed = Math.floor((checkOutTime - checkInTime) / 1000);
+          setSecondsElapsed(elapsed);
           setCheckedIn(false);
+        } else {
           setSecondsElapsed(0);
+          setCheckedIn(false);
         }
       } catch (err) {
-        console.error(err);
-        toast.error("Failed to fetch check-in status!");
+        toast.error("Failed to fetch attendance status!");
       }
     };
     fetchStatus();
-  }, []);
+  }, [employeeDetails]);
 
+  // Timer increment for checked-in state
   useEffect(() => {
     let interval = null;
     if (isCheckedIn) {
       interval = setInterval(() => setSecondsElapsed(prev => prev + 1), 1000);
-    } else {
-      setSecondsElapsed(0);
     }
     return () => clearInterval(interval);
   }, [isCheckedIn]);
 
-  const formatTime = (sec) => {
+  const formatTime = sec => {
     const hrs = String(Math.floor(sec / 3600)).padStart(2, "0");
     const mins = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
     const secs = String(sec % 60).padStart(2, "0");
     return [hrs, mins, secs];
   };
+
   const [hours, minutes, secs] = formatTime(secondsElapsed);
 
-  // Map tab paths to components
   const tabComponents = {
     ppreview: ProfilePreview,
     lpreview: LeavePreview,
     apreview: AttendancePreview,
     holidays: Holidays,
   };
-
   const ActiveComponent = tabComponents[activeTab];
 
+  // Check-in API
   const handleCheckIn = async () => {
-    const payload = {
-      emp_id: 1,
-      manager_id: 2,
-      ip_address: "123.645.3.2",
-    };
-
+    if (!employeeDetails?.emp_id) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await axios.post("http://127.0.0.1:8000/checkIn/checkin", payload);
+      const res = await axios.post(
+        `http://127.0.0.1:8000/checkIn/checkin??emp_id=${employeeDetails?.emp_id}&manager_id=${employeeDetails.manager_id}`
+      );
       if (res.data.success) {
         setCheckedIn(true);
         toast.success("Checked in successfully!");
-      } else {
-        toast.error("Failed to check in. Please try again.");
-      }
+      } else toast.error(res.data.message);
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.detail) {
-        toast.error(err.response.data.detail);
-      } else {
-        toast.error("Error connecting to server!");
-      }
+      toast.error(err?.response?.data?.detail || "Error connecting server!");
     } finally {
       setLoading(false);
     }
   };
 
+  // Check-out API
   const handleCheckOut = async () => {
-    const payload = {
-      emp_id: 1,
-      manager_id: 2,
-      ip_address: "123.645.3.2",
-    };
-
+    if (!employeeDetails?.emp_id) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await axios.post("http://127.0.0.1:8000/checkIn/checkout", payload);
+      const res = await axios.post(
+        `http://127.0.0.1:8000/checkIn/checkout?emp_id=${employeeDetails.emp_id}`
+
+      );
       if (res.data.success) {
         setCheckedIn(false);
         toast.success("Checked out successfully!");
-      } else {
-        toast.error("Failed to check out. Please try again.");
-      }
+      } else toast.error(res.data.message);
     } catch (err) {
-      console.error(err);
-      toast.error("Error connecting to server!");
+      toast.error("Error connecting server!");
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
     <div className="flex flex-col lg:flex-row p-4 gap-4 h-full font-sans pb-0">
-
       {/* Left Panel */}
       <motion.div
         className="lg:w-1/4 bg-white p-6 rounded-xl flex flex-col items-center shadow-md"
         style={{
           maxHeight: "fit-content",
-          boxShadow: "rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset"
+          boxShadow:
+            "rgba(50,50,93,0.25) 0px 50px 100px -20px, rgba(0,0,0,0.3) 0px 30px 60px -30px, rgba(10,37,64,0.35) 0px -2px 6px 0px inset",
         }}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -160,10 +184,21 @@ export default function Home() {
           className="w-20 h-20 rounded-full mb-3 shadow-lg"
         />
         <h2 className="text-sm font-semibold text-gray-800 text-center">
-          <span className="text-gray-500 text-sm">{employee ? employee.emp_code : 'N/A'}</span> - {employee ? `${employee.firstName} ${employee.lastName}` : 'Loading name'}
+          <span className="text-gray-500 text-sm">
+            {employeeDetails?.emp_code || "N/A"}
+          </span>{" "}
+          -{" "}
+          {employeeDetails
+            ? `${employeeDetails.firstName} ${employeeDetails.lastName}`
+            : "Loading..."}
         </h2>
-        <p className="text-gray-600 text-sm mb-3 text-center">{employee ? employee.department : 'loading department..'}</p>
-        <p className={`text-sm mb-4 text-center ${isCheckedIn ? "text-green-600" : "text-red-600"}`}>
+        <p className="text-gray-600 text-sm mb-3 text-center">
+          {employeeDetails?.department || "Loading..."}
+        </p>
+        <p
+          className={`text-sm mb-4 text-center ${isCheckedIn ? "text-green-600" : "text-red-600"
+            }`}
+        >
           {isCheckedIn ? "Checked-in" : "Yet to check-in"}
         </p>
 
@@ -173,7 +208,7 @@ export default function Home() {
             <React.Fragment key={idx}>
               <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg font-semibold text-gray-800 shadow-md">
                 <motion.span
-                  key={t} // triggers animation whenever the value changes
+                  key={t}
                   initial={{ y: -10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -181,14 +216,14 @@ export default function Home() {
                   {t}
                 </motion.span>
               </div>
-              {idx < 2 && <span className="text-gray-800 font-semibold mx-2">:</span>}
+              {idx < 2 && (
+                <span className="text-gray-800 font-semibold mx-2">:</span>
+              )}
             </React.Fragment>
           ))}
         </div>
 
-
-
-        {/* Check In/Out Button */}
+        {/* Check In/Out Buttons */}
         <div className="flex flex-col gap-3 w-full">
           {!isCheckedIn ? (
             <motion.button
@@ -198,17 +233,7 @@ export default function Home() {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 010-16z"></path>
-                  </svg>
-                  Checking in...
-                </>
-              ) : (
-                "Check In"
-              )}
+              {loading ? "Checking in..." : "Check In"}
             </motion.button>
           ) : (
             <motion.button
@@ -218,42 +243,28 @@ export default function Home() {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 010-16z"></path>
-                  </svg>
-                  Checking out...
-                </>
-              ) : (
-                "Check Out"
-              )}
+              {loading ? "Checking out..." : "Check Out"}
             </motion.button>
           )}
-
         </div>
       </motion.div>
 
       {/* Right Panel */}
       <div className="lg:w-3/4 flex flex-col gap-4 flex-1">
-
-        <div
-          className="relative w-full h-20 p-4 bg-gradient-to-r from-blue-200 to-blue-400 rounded-xl overflow-hidden flex items-center">
-
-          {/* Left Content */}
+        <div className="relative w-full h-20 p-4 bg-gradient-to-r from-blue-200 to-blue-400 rounded-xl overflow-hidden flex items-center">
           <motion.div
-            className="relative z-10 "
+            className="relative z-10"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-
           >
-            <h1 className="text-1xl font-bold text-gray-800">Good Morning, {employee?.firstName}</h1>
-            <p className="text-gray-600 mt-1 text-sm">Have a productive day!</p>
+            <h1 className="text-1xl font-bold text-gray-800">
+              Good Morning, {employeeDetails?.firstName}
+            </h1>
+            <p className="text-gray-600 mt-1 text-sm">
+              Have a productive day!
+            </p>
           </motion.div>
-
-          {/* Animated Sun on Right */}
           <motion.div
             className="absolute right-6"
             animate={{ rotate: [0, 360] }}
@@ -288,11 +299,17 @@ export default function Home() {
           className="flex-1 overflow-auto bg-white rounded-xl p-4"
           style={{
             maxHeight: "calc(100vh - 100px - 40px)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05)"
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05)",
           }}
         >
           <div className="h-full">
-            <ActiveComponent isCheckedIn={isCheckedIn} hours={hours} minutes={minutes} secs={secs} />
+            <ActiveComponent
+              employee={employeeDetails}
+              isCheckedIn={isCheckedIn}
+              hours={hours}
+              minutes={minutes}
+              secs={secs}
+            />
           </div>
         </div>
       </div>

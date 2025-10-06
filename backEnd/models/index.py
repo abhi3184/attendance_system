@@ -6,6 +6,7 @@ from models.attendance import attendanceTable
 from models.leave import LeaveStatus,Leave
 from models.employee_address import employeeAddressTable
 from models.employee_education import employeeEducationTable
+from models.leaveType import leaveTypeTable
 
 __all__ = [
     "employeeTable",
@@ -15,5 +16,6 @@ __all__ = [
     "Leave",
     "LeaveStatus",
     "employeeAddressTable",
-    "employeeEducationTable"
+    "employeeEducationTable",
+    "leaveTypeTable"
 ]

@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO
-from models.index import Leave
+from models.index import Leave,leaveTypeTable
 from datetime import datetime
 
 class LeaveRepo:
@@ -74,3 +74,24 @@ class LeaveRepo:
         db.delete(leave)
         db.commit()
         return {"message": f"Leave with id {leave_Id} deleted successfully"}
+    
+
+    @staticmethod
+    def get_leave_summary(db: Session, emp_id: int):
+        query = (
+            db.query(
+                Leave.leave_id,
+                Leave.emp_id,
+                Leave.start_date,
+                Leave.end_date,
+                Leave.status,
+                Leave.total_days,
+                Leave.used_days,
+                leaveTypeTable.c.leave_name.label("leave_type_name")
+            )
+            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+            .filter(Leave.emp_id == emp_id)
+        )
+
+        results = query.all()
+        return [dict(r._mapping) for r in results] if results else []

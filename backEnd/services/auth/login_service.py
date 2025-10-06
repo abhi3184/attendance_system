@@ -52,7 +52,7 @@ class loginService:
             emailId=employee.emailId,
             mobile=employee.mobile,
             department=employee.department, 
-            shift_time=employee.shift_time,
+            shift=employee.shift_time,
             status=employee.status
         )
         return {"success": True, "access_token": token, "token_type": "bearer","employee": employee_data}

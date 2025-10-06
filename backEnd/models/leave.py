@@ -17,6 +17,8 @@ class Leave(Base):
     leave_id = Column(Integer, primary_key=True, index=True,nullable=False, autoincrement=True)
     emp_id = Column(Integer, nullable=False)
     leave_type_id = Column(Integer, nullable=False)
+    total_days = Column(Integer, nullable=False)
+    used_days = Column(Integer, nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     status = Column(Enum(LeaveStatus), default=LeaveStatus.Pending)
