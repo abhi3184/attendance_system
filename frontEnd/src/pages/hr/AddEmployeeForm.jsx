@@ -36,14 +36,20 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
   const inputBaseClass =
     "w-full border rounded-md px-3 pt-4 pb-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500";
 
-    
   // Fetch managers and roles once
-  useEffect(() => {
-    axios
-      .get("http://127.0.0.1:8000/registration/getAllManagers")
-      .then((res) => Array.isArray(res.data?.data) && setManagers(res.data.data))
-      .catch((err) => console.error("Error fetching managers:", err));
 
+  useEffect(() => {
+    if (isOpen) {
+      axios
+        .get("http://127.0.0.1:8000/registration/getAllManagers")
+        .then((res) => Array.isArray(res.data?.data) && setManagers(res.data.data))
+        .catch((err) => console.error("Error fetching managers:", err));
+
+        setFormData((prev) => ({ ...prev, managerId: "" }));
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     axios
       .get("http://127.0.0.1:8000/registration/getAllRoles")
       .then((res) => Array.isArray(res.data?.data) && setRoles(res.data.data))
@@ -127,14 +133,20 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
   // Validate all fields in current step
   const validateStep = () => {
     const stepErrors = {};
-    const fieldsStep1 = ["firstName", "lastName", "email", "mobile", "department", "role", "shift", "managerId"];
+    const fieldsStep1 = ["firstName", "lastName", "email", "mobile", "department", "role", "shift"];
     const fieldsStep2 = ["schoolName", "university", "degree", "fieldOfStudy", "year", "location"];
     const fieldsStep3 = ["address", "city", "state", "zip", "phoneAlt"];
 
     let fields = [];
-    if (step === 1) fields = fieldsStep1;
-    if (step === 2) fields = fieldsStep2;
-    if (step === 3) fields = fieldsStep3;
+
+    if (step === 1) {
+      fields = [...fieldsStep1];
+      if (formData.role === 3) fields.push("managerId"); // Only Employee
+    } else if (step === 2) {
+      fields = fieldsStep2;
+    } else if (step === 3) {
+      fields = fieldsStep3;
+    }
 
     fields.forEach((field) => {
       const error = validateField(field, formData[field]);
@@ -157,7 +169,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
     setErrors((prev) => ({ ...prev, [field]: errorMessage || undefined }));
   };
 
-  // Check employee existence
   const checkEmployeeExist = async () => {
     try {
       const response = await axios.get("http://127.0.0.1:8000/registration/checkEmployeeExist", {
@@ -175,62 +186,107 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
     }
   };
 
+  const handleSubmit = async () => {
+    const stepErrors = validateStep();
+    if (Object.keys(stepErrors).length > 0) return setErrors(stepErrors);
+
+    setLoading(true);
+    try {
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        emailId: formData.email,
+        mobile: formData.mobile,
+        department: formData.department,
+        shift: formData.shift,
+        password: "Default@123",
+        roles: formData.role,
+        manager_id: formData.role === 3 ? formData.managerId : 1, // Employee → selected manager, HR/Manager → 1
+        schoolName: formData.schoolName,
+        university: formData.university,
+        degree: formData.degree,
+        fieldOfStudy: formData.fieldOfStudy || formData.degree,
+        passingyear: formData.year,
+        location: formData.location,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip: formData.zip,
+        phoneAlt: formData.phoneAlt,
+      };
+
+      const response = await axios.post("http://127.0.0.1:8000/registration/postEmployee", payload);
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Employee added successfully ✅");
+        onSubmit(formData);
+        onClose();
+      }
+    } catch (err) {
+      console.error("Error adding employee:", err);
+      toast.error("Failed to add employee ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Modal className="max-w-xl font-sans" isOpen={isOpen} onClose={onClose} title={title}>
       <form className="flex flex-col gap-3 text-gray-700 text-sm">
         {/* Step 1: Personal Info */}
         {step === 1 && (
           <>
-            <div className="flex flex-wrap gap-3">
-              {["firstName", "lastName"].map((field) => (
-                <div key={field} className="flex-1 relative">
-                  <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">
-                    {field === "firstName" ? "First Name" : "Last Name"}
-                  </label>
-                  <input
-                    name={field}
-                    value={formData[field]}
-                    onChange={handleChange}
-                    className={`${inputBaseClass} ${errors[field] ? "border-red-400" : "border-gray-300"}`}
-                  />
-                  {errors[field] && <p className="text-red-500 text-xs mt-1">{errors[field]}</p>}
-                </div>
-              ))}
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">First Name</label>
+                <input
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.firstName ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+              </div>
+
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Last Name</label>
+                <input
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.lastName ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-3 mt-2">
-              {["email", "mobile"].map((field) => (
-                <div key={field} className="flex-1 relative">
-                  <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">
-                    {field === "email" ? "Email" : "Mobile"}
-                  </label>
-                  <input
-                    name={field}
-                    type={field === "email" ? "email" : "tel"}
-                    value={formData[field]}
-                    onChange={handleChange}
-                    className={`${inputBaseClass} ${errors[field] ? "border-red-400" : "border-gray-300"}`}
-                  />
-                  {errors[field] && <p className="text-red-500 text-xs mt-1">{errors[field]}</p>}
-                </div>
-              ))}
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Email</label>
+                <input
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.email ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              </div>
+
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Mobile</label>
+                <input
+                  name="mobile"
+                  type="tel"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.mobile ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
+              </div>
             </div>
 
-            {/* Manager */}
-            <div className="flex-1 mt-2">
-              <label className="text-gray-400 text-xs font-medium mb-1 block">Manager</label>
-              <FancyDropdown
-                options={managers.map((m) => ({ label: `${m.firstName} ${m.lastName}`, value: m.emp_id }))}
-                value={formData.managerId}
-                placeholder="Select Manager"
-                onChange={(val) => handleDropdownChange("managerId", val)}
-                className={`${errors.managerId ? "border-red-400" : "border-gray-300"} rounded-md`}
-              />
-              {errors.managerId && <p className="text-red-500 text-xs mt-1">{errors.managerId}</p>}
-            </div>
-
-            <div className="flex flex-wrap gap-3 mt-2">
-              {/* Department */}
+            <div className="flex gap-3 mt-2">
               <div className="flex-1">
                 <label className="text-gray-400 text-xs font-medium mb-1 block">Department</label>
                 <FancyDropdown
@@ -243,7 +299,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
                 {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
               </div>
 
-              {/* Role */}
               <div className="flex-1">
                 <label className="text-gray-400 text-xs font-medium mb-1 block">Role</label>
                 {roles.length > 0 ? (
@@ -260,7 +315,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
                 {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
               </div>
 
-              {/* Shift */}
               <div className="flex-1">
                 <label className="text-gray-400 text-xs font-medium mb-1 block">Shift</label>
                 <FancyDropdown
@@ -273,125 +327,196 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
                 {errors.shift && <p className="text-red-500 text-xs mt-1">{errors.shift}</p>}
               </div>
             </div>
+
+            {/* Manager only for Employee */}
+            {formData.role === 3 && (
+              <div className="flex-1 mt-2">
+                <label className="text-gray-400 text-xs font-medium mb-1 block">Manager</label>
+                <FancyDropdown
+                  options={managers.map((m) => ({
+                    label: `${m.firstName} ${m.lastName}`,
+                    value: m.emp_id,
+                  }))}
+                  value={formData.managerId}
+                  placeholder="Select Manager"
+                  onChange={(val) => handleDropdownChange("managerId", val)}
+                  className={`${errors.managerId ? "border-red-400" : "border-gray-300"} rounded-md`}
+                />
+                {errors.managerId && <p className="text-red-500 text-xs mt-1">{errors.managerId}</p>}
+              </div>
+            )}
           </>
         )}
 
         {/* Step 2: Education & Experience */}
         {step === 2 && (
           <>
-            {["schoolName", "university", "degree", "fieldOfStudy", "year", "location"].map((field) => (
-              <div key={field} className="relative mb-2">
-                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">
-                  {field.charAt(0).toUpperCase() + field.slice(1)}
-                </label>
-                <input
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleChange}
-                  className={`${inputBaseClass} ${errors[field] ? "border-red-400" : "border-gray-300"}`}
-                />
-                {errors[field] && <p className="text-red-500 text-xs mt-1">{errors[field]}</p>}
-              </div>
-            ))}
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">School Name</label>
+              <input
+                name="schoolName"
+                value={formData.schoolName}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.schoolName ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.schoolName && <p className="text-red-500 text-xs mt-1">{errors.schoolName}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">University</label>
+              <input
+                name="university"
+                value={formData.university}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.university ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.university && <p className="text-red-500 text-xs mt-1">{errors.university}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Degree</label>
+              <input
+                name="degree"
+                value={formData.degree}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.degree ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.degree && <p className="text-red-500 text-xs mt-1">{errors.degree}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Field Of Study</label>
+              <input
+                name="fieldOfStudy"
+                value={formData.fieldOfStudy}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.fieldOfStudy ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.fieldOfStudy && <p className="text-red-500 text-xs mt-1">{errors.fieldOfStudy}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Year</label>
+              <input
+                name="year"
+                value={formData.year}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.year ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.year && <p className="text-red-500 text-xs mt-1">{errors.year}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Location</label>
+              <input
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.location ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
+            </div>
           </>
         )}
 
         {/* Step 3: Address & Contact */}
         {step === 3 && (
           <>
-            {["address", "city", "state", "zip", "phoneAlt"].map((field) => (
-              <div key={field} className="relative mb-2">
-                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">
-                  {field.charAt(0).toUpperCase() + field.slice(1)}
-                </label>
-                <input
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleChange}
-                  className={`${inputBaseClass} ${errors[field] ? "border-red-400" : "border-gray-300"}`}
-                />
-                {errors[field] && <p className="text-red-500 text-xs mt-1">{errors[field]}</p>}
-              </div>
-            ))}
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Address</label>
+              <input
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.address ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">City</label>
+              <input
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.city ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">State</label>
+              <input
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.state ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">ZIP</label>
+              <input
+                name="zip"
+                value={formData.zip}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.zip ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.zip && <p className="text-red-500 text-xs mt-1">{errors.zip}</p>}
+            </div>
+
+            <div className="relative mb-2">
+              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Alternate Phone</label>
+              <input
+                name="phoneAlt"
+                value={formData.phoneAlt}
+                onChange={handleChange}
+                className={`${inputBaseClass} ${errors.phoneAlt ? "border-red-400" : "border-gray-300"}`}
+              />
+              {errors.phoneAlt && <p className="text-red-500 text-xs mt-1">{errors.phoneAlt}</p>}
+            </div>
           </>
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between mt-3">
-          {step > 1 ? (
+        <div className="flex justify-between mt-4">
+          {step > 1 && (
             <button
               type="button"
               onClick={() => setStep((prev) => prev - 1)}
-              className="px-4 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              disabled={loading}
+              className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded text-white"
             >
               Back
             </button>
-          ) : (
-            <div />
           )}
-
-          <button
-            type="button"
-            onClick={async () => {
-              const stepErrors = validateStep();
-              if (Object.keys(stepErrors).length > 0) return setErrors(stepErrors);
-
-              if (step === 1) {
-                const canProceed = await checkEmployeeExist();
-                if (!canProceed) return;
-                setStep((prev) => prev + 1);
-              } else if (step === 2) {
-                setStep((prev) => prev + 1);
-              } else if (step === 3) {
-                setLoading(true);
-                try {
-                  const payload = {
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    emailId: formData.email,
-                    mobile: formData.mobile,
-                    department: formData.department,
-                    shift: formData.shift,
-                    password: "Default@123",
-                    roles: formData.role,
-                    manager_id: formData.managerId,
-                    schoolName: formData.schoolName,
-                    university: formData.university,
-                    degree: formData.degree,
-                    fieldOfStudy: formData.fieldOfStudy || formData.degree,
-                    passingyear: formData.year,
-                    location: formData.location,
-                    address: formData.address,
-                    city: formData.city,
-                    state: formData.state,
-                    zip: formData.zip,
-                    phoneAlt: formData.phoneAlt,
-                  };
-                  const response = await axios.post(
-                    "http://127.0.0.1:8000/registration/postEmployee",
-                    payload
-                  );
-                  if (response.status === 200 || response.status === 201) {
-                    toast.success("Employee added successfully ✅");
-                    onSubmit(formData);
-                    onClose();
-                  }
-                } catch (err) {
-                  console.error("Error adding employee:", err);
-                  toast.error("Failed to add employee ❌");
-                } finally {
-                  setLoading(false);
+          <div className="flex gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={async () => {
+                const stepErrors = validateStep();
+                if (Object.keys(stepErrors).length > 0) {
+                  setErrors(stepErrors);
+                  return;
                 }
-              }
-            }}
-            className={`px-4 py-1 rounded text-white ${
-              loading ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
-            }`}
-            disabled={loading}
-          >
-            {step < 3 ? "Next" : loading ? "Saving..." : "Submit"}
-          </button>
+
+                if (step === 1) {
+                  const canProceed = await checkEmployeeExist();
+                  if (!canProceed) return;
+                  setStep((prev) => prev + 1);
+                } else if (step === 2) {
+                  setStep((prev) => prev + 1);
+                } else if (step === 3) {
+                  await handleSubmit();
+                }
+              }}
+              className={`px-4 py-2 rounded text-white ${loading ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
+                }`}
+              disabled={loading}
+            >
+              {step < 3 ? "Next" : loading ? "Saving..." : "Submit"}
+            </button>
+          </div>
         </div>
       </form>
     </Modal>

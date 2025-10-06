@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaEdit, FaPlus, FaTrash } from "react-icons/fa";
-import { EmployeeModal } from "./AddEmployeeForm"; // Add modal (full multi-step)
+import { EmployeeModal } from "./AddEmployeeForm";
 import { EditEmployeeModal } from "./EditEmployeeFrom";
 import { DeleteConfirmModal } from "./EmployeeDelete" // Edit modal (Step 1 only)
 import axios from "axios";

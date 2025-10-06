@@ -12,14 +12,14 @@ import Holidays from "./Holidays";
 
 import jwt_decode from "jwt-decode";
 
-
 export default function Home() {
   const [employeeDetails, setEmployeeDetails] = useState(null);
   const [employee, setEmployee] = useState(null);
   const [isCheckedIn, setCheckedIn] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [activeTab, setActiveTab] = useState("ppreview");
-  const [loading, setLoading] = useState(false);
+  const [loadingEmployee, setLoadingEmployee] = useState(false);
+  const [loadingCheck, setLoadingCheck] = useState(false);
 
   const tabs = [
     { path: "ppreview", label: "Profile" },
@@ -28,61 +28,69 @@ export default function Home() {
     { path: "holidays", label: "Holidays" },
   ];
 
-
-
+  // Decode JWT and get employee data
   useEffect(() => {
-    const token = localStorage.getItem("token"); // or sessionStorage
+    const token = localStorage.getItem("token");
     if (!token) return;
 
     try {
       const decoded = jwt_decode(token);
-      console.log("Decoded JWT:", decoded);
-      setEmployee({
-        emp_id: decoded.id,         // <-- use decoded.id
-        manager_id: decoded.manager_id
-      });// store emp_id and other data if needed
+      console.log("token",decoded)
+      if (decoded.id && decoded.manager_id) {
+        setEmployee({
+          emp_id: decoded.id,
+          manager_id: decoded.manager_id,
+        });
+      } else {
+        toast.error("Invalid token structure!");
+      }
     } catch (err) {
       console.error("Invalid token", err);
+      toast.error("Invalid token!");
     }
   }, []);
 
-  // Fetch employeeDetails details from backend
+  // Fetch employee details
   useEffect(() => {
-    if (!employee?.emp_id) return; 
+    if (!employee?.emp_id) return;
+
     const fetchEmployee = async () => {
-      setLoading(true);
+      setLoadingEmployee(true);
       try {
         const res = await axios.get(
           `http://127.0.0.1:8000/registration/get_employee_by_id/${employee.emp_id}`
         );
-        if (res.data.success) setEmployeeDetails(res.data.data);
-        else toast.error("Employee not found!");
+        if (res.data.success) {
+          setEmployeeDetails(res.data.data);
+        } else {
+          toast.error("Employee not found!");
+        }
       } catch (err) {
-        toast.error("Failed to fetch employeeDetails details!");
+        toast.error("Failed to fetch employee details!");
       } finally {
-        setLoading(false);
+        setLoadingEmployee(false);
       }
     };
+
     fetchEmployee();
   }, [employee]);
 
   // Fetch today's attendance status
   useEffect(() => {
+    if (!employeeDetails?.emp_id) return;
+
     const fetchStatus = async () => {
-      if (!employeeDetails?.emp_id) return;
       try {
         const res = await axios.get(
           `http://127.0.0.1:8000/checkIn/status/${employeeDetails.emp_id}`
         );
 
         if (res.data.checked_in) {
-          // Employee is currently checked in
           const checkInTime = new Date(res.data.check_in_time);
           const elapsed = Math.floor((new Date() - checkInTime) / 1000);
           setSecondsElapsed(elapsed);
           setCheckedIn(true);
         } else if (res.data.check_in_time && res.data.check_out_time) {
-          // Already checked in and checked out today
           const checkInTime = new Date(res.data.check_in_time);
           const checkOutTime = new Date(res.data.check_out_time);
           const elapsed = Math.floor((checkOutTime - checkInTime) / 1000);
@@ -96,6 +104,7 @@ export default function Home() {
         toast.error("Failed to fetch attendance status!");
       }
     };
+
     fetchStatus();
   }, [employeeDetails]);
 
@@ -103,12 +112,12 @@ export default function Home() {
   useEffect(() => {
     let interval = null;
     if (isCheckedIn) {
-      interval = setInterval(() => setSecondsElapsed(prev => prev + 1), 1000);
+      interval = setInterval(() => setSecondsElapsed((prev) => prev + 1), 1000);
     }
     return () => clearInterval(interval);
   }, [isCheckedIn]);
 
-  const formatTime = sec => {
+  const formatTime = (sec) => {
     const hrs = String(Math.floor(sec / 3600)).padStart(2, "0");
     const mins = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
     const secs = String(sec % 60).padStart(2, "0");
@@ -128,39 +137,47 @@ export default function Home() {
   // Check-in API
   const handleCheckIn = async () => {
     if (!employeeDetails?.emp_id) return;
-    setLoading(true);
+    setLoadingCheck(true);
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/checkIn/checkin??emp_id=${employeeDetails?.emp_id}&manager_id=${employeeDetails.manager_id}`
+        `http://127.0.0.1:8000/checkIn/checkin`,
+        {
+          emp_id: employeeDetails.emp_id,
+          manager_id: employeeDetails.manager_id,
+        }
       );
       if (res.data.success) {
         setCheckedIn(true);
         toast.success("Checked in successfully!");
-      } else toast.error(res.data.message);
+      } else {
+        toast.error(res.data.message || "Check-in failed!");
+      }
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Error connecting server!");
     } finally {
-      setLoading(false);
+      setLoadingCheck(false);
     }
   };
 
   // Check-out API
   const handleCheckOut = async () => {
     if (!employeeDetails?.emp_id) return;
-    setLoading(true);
+    setLoadingCheck(true);
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/checkIn/checkout?emp_id=${employeeDetails.emp_id}`
-
+        `http://127.0.0.1:8000/checkIn/checkout`,
+        { emp_id: employeeDetails.emp_id }
       );
       if (res.data.success) {
         setCheckedIn(false);
         toast.success("Checked out successfully!");
-      } else toast.error(res.data.message);
+      } else {
+        toast.error(res.data.message || "Check-out failed!");
+      }
     } catch (err) {
       toast.error("Error connecting server!");
     } finally {
-      setLoading(false);
+      setLoadingCheck(false);
     }
   };
 
@@ -190,14 +207,17 @@ export default function Home() {
           -{" "}
           {employeeDetails
             ? `${employeeDetails.firstName} ${employeeDetails.lastName}`
-            : "Loading..."}
+            : loadingEmployee
+            ? "Loading..."
+            : "N/A"}
         </h2>
         <p className="text-gray-600 text-sm mb-3 text-center">
           {employeeDetails?.department || "Loading..."}
         </p>
         <p
-          className={`text-sm mb-4 text-center ${isCheckedIn ? "text-green-600" : "text-red-600"
-            }`}
+          className={`text-sm mb-4 text-center ${
+            isCheckedIn ? "text-green-600" : "text-red-600"
+          }`}
         >
           {isCheckedIn ? "Checked-in" : "Yet to check-in"}
         </p>
@@ -228,22 +248,22 @@ export default function Home() {
           {!isCheckedIn ? (
             <motion.button
               onClick={handleCheckIn}
-              disabled={loading}
+              disabled={loadingCheck}
               className="w-full py-2 border-2 border-green-400 bg-transparent text-green-500 font-semibold rounded-lg hover:bg-green-100 hover:text-green text-sm shadow-md transition-colors duration-300 flex items-center justify-center gap-2"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
-              {loading ? "Checking in..." : "Check In"}
+              {loadingCheck ? "Checking in..." : "Check In"}
             </motion.button>
           ) : (
             <motion.button
               onClick={handleCheckOut}
-              disabled={loading}
+              disabled={loadingCheck}
               className="w-full py-2 border-2 border-red-400 bg-transparent text-red-500 font-semibold rounded-lg hover:bg-red-100 hover:text-red text-sm shadow-md transition-colors duration-300 flex items-center justify-center gap-2"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
-              {loading ? "Checking out..." : "Check Out"}
+              {loadingCheck ? "Checking out..." : "Check Out"}
             </motion.button>
           )}
         </div>
@@ -259,7 +279,7 @@ export default function Home() {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-1xl font-bold text-gray-800">
-              Good Morning, {employeeDetails?.firstName}
+              Good Morning, {employeeDetails?.firstName || "Employee"}
             </h1>
             <p className="text-gray-600 mt-1 text-sm">
               Have a productive day!
@@ -282,10 +302,11 @@ export default function Home() {
               <motion.div
                 key={tab.label}
                 whileHover={{ scale: 1.03 }}
-                className={`px-4 py-2 -mb-px text-sm font-semibold transition-colors cursor-pointer ${isActive
-                  ? "border-b-2 border-purple-600 text-purple-600"
-                  : "text-gray-500 hover:text-purple-600"
-                  }`}
+                className={`px-4 py-2 -mb-px text-sm font-semibold transition-colors cursor-pointer ${
+                  isActive
+                    ? "border-b-2 border-purple-600 text-purple-600"
+                    : "text-gray-500 hover:text-purple-600"
+                }`}
                 onClick={() => setActiveTab(tab.path)}
               >
                 {tab.label}

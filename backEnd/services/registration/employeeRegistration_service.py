@@ -78,18 +78,19 @@ class employeeRegistrationService:
     def check_employee_exist(db, email: str, mobile: str):
         isExist = employeRegistrationRepository.check_user_exist_for_registration(db, email, mobile)
 
-        if isExist.get("exists"):
-            conflicts = isExist.get("conflicts", [])
-            if conflicts == ["emailId", "mobile"] or set(conflicts) == {"emailId", "mobile"}:
-                message = "Email and Mobile already exist"
-            elif "emailId" in conflicts:
-                message = "Email already exists"
-            elif "mobile" in conflicts:
-                message = "Mobile already exists"
-            else:
-                message = "Unknown conflict"
+        if isExist:
+            if isExist.get("exists"):
+                conflicts = isExist.get("conflicts", [])
+                if conflicts == ["emailId", "mobile"] or set(conflicts) == {"emailId", "mobile"}:
+                 message = "Email and Mobile already exist"
+                elif "emailId" in conflicts:
+                    message = "Email already exists"
+                elif "mobile" in conflicts:
+                    message = "Mobile already exists"
+                else:
+                    message = "Unknown conflict"
 
-            return {"success": False, "message": message}
+                return {"success": False, "message": message}
 
         return {"success": True, "message": "User can be added"}
 
