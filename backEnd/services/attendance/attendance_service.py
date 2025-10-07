@@ -27,3 +27,12 @@ class AttendanceService:
             "checked_in": bool(active),
             "check_in_time": active.check_in_time if active else None
         }
+
+
+    @staticmethod
+    def get_all_attendance(db: Session):
+        return AttendanceRepo.get_all_attendance(db)
+
+    @staticmethod
+    def get_attendance_by_emp(db: Session, emp_id: str):
+        return AttendanceRepo.get_attendance_by_emp(db,emp_id)

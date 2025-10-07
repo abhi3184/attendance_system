@@ -37,3 +37,12 @@ def check_out(emp_id: int, db: Session = Depends(get_db)):
 def status(emp_id: int, db: Session = Depends(get_db)):
     service = get_service(db)
     return service.status(emp_id)
+
+
+@attendance.get("/getAllAttendance")
+def all_attendance(db: Session = Depends(get_db)):
+    return {"success": True, "data": AttendanceService.get_all_attendance(db)}
+
+@attendance.get("/getAttendanceByEmp/{emp_id}")
+def attendance_by_emp(emp_id: str, db: Session = Depends(get_db)):
+    return {"success": True, "data": AttendanceService.get_attendance_by_emp(db, emp_id)}
