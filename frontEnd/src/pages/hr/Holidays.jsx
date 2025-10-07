@@ -36,29 +36,16 @@ export default function Holidays() {
     fetchHolidays();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (holidays_id) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/holidays/${id}`);
-      setHolidays((prev) => prev.filter((h) => h.id !== id));
-      setFiltered((prev) => prev.filter((h) => h.id !== id));
+      await axios.delete(`http://127.0.0.1:8000/holidays/delete_holiday/${holidays_id}`);
+      setHolidays((prev) => prev.filter((h) => h.holidays_id !== holidays_id));
+      setFiltered((prev) => prev.filter((h) => h.holidays_id !== holidays_id));
       toast.success("Holiday deleted successfully!");
     } catch {
       toast.error("Delete failed");
     }
   };
-
-  const handleSearch = (e) => {
-    const val = e.target.value.toLowerCase();
-    setSearch(val);
-    setFiltered(
-      holidays.filter(
-        (h) =>
-          h.description.toLowerCase().includes(val) ||
-          h.type.toLowerCase().includes(val)
-      )
-    );
-  };
-
   const openEditModal = (holiday) => {
     setCurrentHoliday(holiday);
     setModalOpen(true);
@@ -135,7 +122,7 @@ export default function Holidays() {
               </div>
 
               {/* Description */}
-              <h2 className="text-md font-semibold text-gray-800 mb-1 truncate">
+              <h2 className="text-md font-semibold text-gray-800 mb-6 truncate">
                 {holiday.description}
               </h2>
 
@@ -158,7 +145,7 @@ export default function Holidays() {
                   title="Delete"
                 >
                   <FaTrash className="w-3 h-3" />
-                </motion.button>
+                </motion.button> 
               </div>
             </motion.div>
           ))}
@@ -185,28 +172,24 @@ export default function Holidays() {
               Are you sure you want to delete "{deleteHoliday.description}"?
             </p>
             <div className="flex justify-center gap-3">
-              <motion.button>
-                <button
+              <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="px-4 py-1 text-sm bg-gray-300 rounded-lg hover:bg-gray-400"
                   onClick={() => setDeleteHoliday(null)}
                 >
                   Cancel
-                </button>
               </motion.button>
-              <motion.button>
-                <button
+              <motion.button
                   className="px-4 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
                   onClick={() => {
-                    handleDelete(deleteHoliday.id);
+                    handleDelete(deleteHoliday.holidays_id);
                     setDeleteHoliday(null);
                   }}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Delete
-                </button>
               </motion.button>
             </div>
           </div>

@@ -79,7 +79,7 @@ export default function AddHolidayModal({ isOpen, onClose, onSave, holiday }) {
       let res;
       if (holiday) {
         // Edit → PUT API
-        res = await axios.put(`http://127.0.0.1:8000/holidays/${holiday.id}`, payload);
+        res = await axios.put(`http://127.0.0.1:8000/holidays/update/${holiday.holidays_id}`, payload);
       } else {
         // Add → POST API
         res = await axios.post("http://127.0.0.1:8000/holidays/add_holiday", payload);
