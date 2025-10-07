@@ -6,3 +6,9 @@ class AddHolidayReq(BaseModel):
     date : date
     description : str
     type : str
+
+
+class UpdateHolidayReq(BaseModel):
+    date : date
+    description : str
+    type : str

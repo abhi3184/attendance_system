@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import insert, select
+from sqlalchemy import delete, insert, select, update
 from datetime import date, datetime, timedelta
 from models.index import holidaysTable 
 from schemas.index import AddHolidayReq
@@ -52,4 +52,29 @@ class HolidaysRepo:
     @staticmethod
     def get_all_holidays(db):
         result = db.execute(holidaysTable.select()).mappings().all()
+        return result
+    
+    @staticmethod
+    def delete_holiday(db,holiday_id):
+        stmt = delete(holidaysTable).where(holidaysTable.c.holidays_id == holiday_id)
+        result = db.execute(stmt)
+        db.commit()
+        if result.rowcount == 0:
+            return {"success": False, "message": "Holiday not found"}
+        return {"success": True, "message": f"Holiday deleted successfully"}
+    
+    @staticmethod
+    def update_holiday(db, holiday_id: int, data: dict):
+        stmt = (
+            update(holidaysTable)
+            .where(holidaysTable.c.holidays_id == holiday_id)
+            .values(
+                date=data.get("date"),
+                description=data.get("description"),
+                type=data.get("type"),
+            )
+        )
+
+        result = db.execute(stmt)
+        db.commit()
         return result

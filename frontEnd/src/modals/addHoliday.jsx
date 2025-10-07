@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";
 
-export default function AddHolidayModal({ isOpen, onClose, onSave }) {
+export default function AddHolidayModal({ isOpen, onClose, onSave, holiday }) {
   const [formData, setFormData] = useState({
     date: "",
     name: "",
@@ -19,12 +19,19 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
     { label: "Festival", value: "Festival" },
   ];
 
+  // Prefill form if holiday exists (edit mode)
   useEffect(() => {
-    if (!isOpen) {
+    if (holiday) {
+      setFormData({
+        date: holiday.date,
+        name: holiday.description,
+        type: holidayTypes.find((t) => t.value === holiday.type),
+      });
+    } else if (!isOpen) {
       setFormData({ date: "", name: "", type: null });
       setErrors({});
     }
-  }, [isOpen]);
+  }, [isOpen, holiday]);
 
   const validateField = (name, value) => {
     switch (name) {
@@ -64,18 +71,26 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
 
     try {
       const payload = {
-       "date": formData.date,
-        "description": formData.name,
-        "type": formData.type.value,
+        date: formData.date,
+        description: formData.name,
+        type: formData.type.value,
       };
-      const res = await axios.post("http://127.0.0.1:8000/holidays/add_holiday", payload);
+
+      let res;
+      if (holiday) {
+        // Edit → PUT API
+        res = await axios.put(`http://127.0.0.1:8000/holidays/${holiday.id}`, payload);
+      } else {
+        // Add → POST API
+        res = await axios.post("http://127.0.0.1:8000/holidays/add_holiday", payload);
+      }
 
       if (res.data.success) {
-        toast.success("Holiday added successfully!");
-        if (onSave) onSave(payload);
+        toast.success(holiday ? "Holiday updated successfully!" : "Holiday added successfully!");
+        if (onSave) onSave();
         onClose();
       } else {
-        toast.error(res.data.message || "Failed to add holiday!");
+        toast.error(res.data.message || "Operation failed!");
       }
     } catch (err) {
       console.error(err);
@@ -87,9 +102,9 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
     "w-full border rounded-md px-3 pt-4 pb-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Holiday">
+    <Modal isOpen={isOpen} onClose={onClose} title={holiday ? "Edit Holiday" : "Add Holiday"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-gray-700 text-sm">
-        {/* Holiday Date */}
+        {/* Date */}
         <div className="relative">
           <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Date</label>
           <input
@@ -102,7 +117,7 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
           {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
         </div>
 
-        {/* Holiday Name */}
+        {/* Name */}
         <div className="relative">
           <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Holiday Name</label>
           <input
@@ -114,7 +129,7 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
           {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
         </div>
 
-        {/* Holiday Type */}
+        {/* Type */}
         <div className="relative">
           <FancyDropdown
             options={holidayTypes}
@@ -129,7 +144,7 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
           {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
         </div>
 
-        {/* Buttons: Cancel + Add */}
+        {/* Buttons */}
         <div className="flex justify-end gap-3 mt-4">
           <motion.button
             type="button"
@@ -146,7 +161,7 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
             whileTap={{ scale: 0.95 }}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition"
           >
-            Add
+            {holiday ? "Update" : "Add"}
           </motion.button>
         </div>
       </form>

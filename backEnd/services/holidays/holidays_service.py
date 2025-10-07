@@ -28,3 +28,21 @@ class HolidayService:
             return {"success":False,"data":result,"message":"There is not any Holiday"}
         return {"success":False,"data":result,"message":"Holidays response"}
     
+
+    @staticmethod
+    def delete_holiday(db, holiday_id):
+        return HolidaysRepo.delete_holiday(db,holiday_id)
+    
+
+    @staticmethod
+    def update_holiday(db, holiday_id: int, data: dict):
+        existing = HolidaysRepo.get_by_date(db, data["date"])
+        if existing and existing.holidays_id != holiday_id:
+            return {"success": False, "message": "Holiday Not found"}
+        result = HolidaysRepo.update_holiday(db, holiday_id, data)
+
+        if result.rowcount == 0:
+            return {"success": False, "message": "Holiday not found"}
+        return {"success": True, "message": f"Holiday updated successfully"}
+        
+    
