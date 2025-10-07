@@ -3,6 +3,7 @@ from .auth.login_repo import loginRepo
 from .attendance.Ip_repo import IPRepo
 from .attendance.attendance_repo import AttendanceRepo
 from .leave.leave_repo import LeaveRepo
+from .holidays.holidays_repo import HolidaysRepo
 
 __all__ = [
     "ForgotPassRepository",  
@@ -13,4 +14,5 @@ __all__ = [
     "IPRepo",
     "AttendanceRepo",
     "LeaveRepo",
+    "HolidaysRepo"
 ]

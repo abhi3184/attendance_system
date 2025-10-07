@@ -131,6 +131,7 @@ class AttendanceService:
         print("attendance", attendance_rows)
 
         # Build dictionary of attendance keyed by date
+        end_date = today - timedelta(days=1)
         attendance_dict = {}
         for row in attendance_rows:
             check_in = row.get("check_in_time")  # use dict key
@@ -143,7 +144,7 @@ class AttendanceService:
         current_day = start_date
 
         while current_day <= end_date:
-            is_weekend = current_day.weekday() >= 5
+            is_weekend = current_day.weekday() >= 6
             is_holiday = current_day in holiday_dates
             holiday_description = holiday_dict.get(current_day) if is_holiday else None
             att = attendance_dict.get(current_day)

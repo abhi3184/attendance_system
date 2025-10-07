@@ -1,6 +1,5 @@
 from fastapi import APIRouter,Depends
 from schemas.index import AddEmployeeReq,UpdateEmployeeRequest,EmployeeExistReq,UpdateEmployeeStatus
-from fastapi import APIRouter
 from services.index import employeeRegistrationService
 from sqlalchemy.orm import Session
 from config.db import get_db

@@ -6,6 +6,8 @@ from .auth.auth_DTO import Login
 from .employee_DTO.getManagerRes_DTO import GetManagerRes
 from .employee_DTO.getEmployeeRes_DTO import EducationResponse, EmployeeResponse, AddressResponse
 from .leave.leave import LeaveSummaryResp,LeaveStatus
+from .holidays.holidays import AddHolidayReq
+
 all_schemas = [
     Login,
     EmployeeExistReq,
@@ -22,5 +24,6 @@ all_schemas = [
     EducationResponse,
     AddressResponse,
     LeaveSummaryResp,
-    LeaveStatus
+    LeaveStatus,
+    AddHolidayReq
 ]

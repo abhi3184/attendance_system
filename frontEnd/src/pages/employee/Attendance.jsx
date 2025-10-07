@@ -1,65 +1,154 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-
-const allAttendanceData = [
-  { date: 3, month: "Oct", start: "10:00", end: "19:00", hoursWorked: "08:00", status: "present" },
-  { date: 4, month: "Oct", start: "10:15", end: "19:00", hoursWorked: "07:45", status: "weekend" },
-  { date: 5, month: "Oct", start: "10:00", end: "19:00", hoursWorked: "08:00", status: "leave" },
-  { date: 6, month: "Oct", start: "-", end: "-", hoursWorked: "00:00", status: "holiday" },
-  { date: 7, month: "Oct", start: "10:00", end: "19:00", hoursWorked: "08:00", status: "present" },
-  { date: 8, month: "Oct", start: "10:00", end: "19:00", hoursWorked: "08:00", status: "present" },
-  { date: 9, month: "Oct", start: "10:00", end: "19:00", hoursWorked: "08:00", status: "present" },
-];
+import jwt_decode from "jwt-decode";
+import toast from "react-hot-toast";
+import axios from "axios";
 
 const statusColors = {
   present: "green-500",
-  weekend: "yellow-400",
+  weekend: "yellow-500",
   leave: "red-500",
-  holiday: "blue-500",
+  holiday: "purple-500",
+  absent: "red-500",
 };
 
 const statusText = {
   present: "Present",
   weekend: "Weekend",
-  leave: "Absent",
+  leave: "Leave",
   holiday: "Holiday",
+  absent: "Absent",
 };
 
 const statusBorderColors = {
   present: "border-green-500",
-  weekend: "border-yellow-400",
+  weekend: "border-yellow-500",
   leave: "border-red-500",
-  holiday: "border-blue-400",
+  holiday: "border-purple-400",
+  absent: "border-red-400",
 };
 
 const Attendance = () => {
+  const [employee, setEmployee] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [timer, setTimer] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
-  const [filter, setFilter] = useState("weekly"); // "weekly" or "monthly"
-  const [attendanceData, setAttendanceData] = useState(allAttendanceData);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [viewType, setViewType] = useState("monthly"); // ✅ define here
+  const [loading, setLoading] = useState(false);
 
+  // Decode JWT & set employee
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const decoded = jwt_decode(token);
+      if (decoded.id) {
+        setEmployee({
+          emp_id: decoded.id,
+          manager_id: decoded.manager_id,
+        });
+      }
+    } catch (err) {
+      toast.error("Invalid token!");
+    }
+  }, []);
+
+  // Fetch attendance data
+  const fetchAttendance = async () => {
+    if (!employee?.emp_id) return;
+    setLoading(true);
+    try {
+      const res = await axios.get(
+        `http://127.0.0.1:8000/checkIn/getAttendanceByEmp/${employee.emp_id}?view_type=${viewType}`
+      );
+
+      if (res.data.success && Array.isArray(res.data.data)) {
+        const mappedData = res.data.data.map((item) => {
+          const dateObj = new Date(item.date);
+          const day = dateObj.getDate();
+          const month = dateObj.toLocaleString("default", { month: "short" });
+
+          const start = item.check_in_time
+            ? new Date(item.check_in_time).toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })
+            : "00:00";
+
+          const end = item.check_out_time
+            ? new Date(item.check_out_time).toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })
+            : "00:00";
+
+          return {
+            date: day,
+            month,
+            start,
+            end,
+            hoursWorked: item.toatl_hr
+              ? item.toatl_hr.toFixed(2)
+              : "00:00",
+            status: item.status.toLowerCase(),
+            description: item.description || "-",
+          };
+        });
+        setAttendanceData(mappedData);
+      }
+    } catch (err) {
+      toast.error("Failed to fetch attendance!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch on load + when filter changes
+  useEffect(() => {
+    if (employee?.emp_id) fetchAttendance();
+  }, [employee, viewType]);
+
+  // Fetch CheckIn Status
+  useEffect(() => {
+    if (!employee?.emp_id) return;
+    const fetchStatus = async () => {
+      try {
+        const res = await axios.get(
+          `http://127.0.0.1:8000/checkIn/status/${employee.emp_id}`
+        );
+
+        if (res.data.success) {
+          const { checked_in, check_in_time } = res.data;
+          if (checked_in && check_in_time) {
+            const checkInDate = new Date(check_in_time);
+            const elapsed = Math.floor((new Date() - checkInDate) / 1000);
+            setTimer(elapsed);
+            setIsCheckedIn(true);
+          } else {
+            setTimer(0);
+            setIsCheckedIn(false);
+          }
+        }
+      } catch {
+        toast.error("Failed to fetch check-in status!");
+      }
+    };
+    fetchStatus();
+  }, [employee]);
+
+  // Timer logic
   useEffect(() => {
     if (isCheckedIn) {
       const id = setInterval(() => setTimer((prev) => prev + 1), 1000);
       setIntervalId(id);
-    } else clearInterval(intervalId);
+    } else {
+      clearInterval(intervalId);
+    }
     return () => clearInterval(intervalId);
   }, [isCheckedIn]);
-
-  // Filter data based on filter option
-  useEffect(() => {
-    if (filter === "weekly") {
-      setAttendanceData(allAttendanceData.slice(-7)); // last 7 entries
-    } else {
-      setAttendanceData(allAttendanceData); // all data for monthly
-    }
-  }, [filter]);
-
-  const handleCheckInOut = () => {
-    setIsCheckedIn(!isCheckedIn);
-    if (!isCheckedIn) setTimer(0);
-  };
 
   const formatTime = (sec) => {
     const hours = String(Math.floor(sec / 3600)).padStart(2, "0");
@@ -70,95 +159,106 @@ const Attendance = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
-      {/* Top Check-In Card */}
+      {/* Header with filter and checkin */}
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white w-full max-w-5xl relative flex items-center p-3 rounded-xl shadow-lg sticky top-4 z-10"
+        className="bg-white w-full max-w-5xl flex items-center p-3 rounded-xl shadow-lg sticky mt-4  z-10"
       >
-        {/* Left: IT General */}
         <div className="text-sm font-semibold pl-5">
-          IT General <span className="text-gray-500">[ 10:00 AM - 7:00 PM ]</span>
+          IT General <span className="text-gray-500">[10:00 AM - 7:00 PM]</span>
         </div>
 
-        {/* Center: Filter Buttons */}
+        {/* Filter */}
         <div className="absolute left-1/2 -translate-x-1/2 flex space-x-2">
           <button
-            className={`px-2 py-1 rounded text-xs ${filter === "weekly" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border"
-              } font-semibold`}
-            onClick={() => setFilter("weekly")}
+            className={`px-3 py-1 rounded text-xs font-semibold ${
+              viewType === "weekly"
+                ? "bg-purple-500 text-white"
+                : "bg-purple border text-gray-700"
+            }`}
+            onClick={() => setViewType("weekly")}
           >
             Weekly
           </button>
           <button
-            className={`px-2 py-1 rounded text-xs ${filter === "monthly" ? "bg-blue-500 text-white" : "bg-white text-gray-700 border"
-              } font-semibold`}
-            onClick={() => setFilter("monthly")}
+            className={`px-3 py-1 rounded text-xs font-semibold ${
+              viewType === "monthly"
+                ? "bg-purple-500 text-white"
+                : "bg-purple border text-gray-700"
+            }`}
+            onClick={() => setViewType("monthly")}
           >
             Monthly
           </button>
         </div>
 
-        {/* Right: Check In / Check Out */}
+        {/* Check In / Out Button */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={handleCheckInOut}
-          className={`ml-auto flex flex-col items-center px-6 py-2 rounded-lg text-white font-semibold text-sm ${isCheckedIn ? "bg-red-500" : "bg-green-500"
-            }`}
-          style={{ fontFamily: "sans-serif" }}
+          onClick={() => setIsCheckedIn(!isCheckedIn)}
+          className={`ml-auto flex flex-col items-center px-6 py-2 rounded-lg text-white font-semibold text-sm ${
+            isCheckedIn ? "bg-red-500" : "bg-green-500"
+          }`}
         >
           <span>{isCheckedIn ? "Check Out" : "Check In"}</span>
           <span className="text-sm font-mono mt-1">{formatTime(timer)}</span>
         </motion.button>
       </motion.div>
 
-
-
-      {/* Scrollable Attendance List */}
+      {/* Attendance List */}
       <div
-        className="max-w-5xl w-full mt-2 flex-1 overflow-y-auto space-y-3 pb-8 mt-8"
+        className="max-w-5xl w-full mt-4 flex-1 overflow-y-auto space-y-3 pb-8 pr-3"
         style={{ maxHeight: "70vh" }}
       >
-        {attendanceData.map((item, idx) => {
-          const color = statusColors[item.status];
-
-          return (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white flex items-center p-3 rounded-xl shadow"
-            >
-              {/* Left: Date */}
-              <div className="w-16 text-center">
-                <div className="text-sm font-semibold">{item.date}</div>
-                <div className="text-gray-500 text-sm">{item.month}</div>
-              </div>
-
-              {/* Center: Timeline */}
-              <div className="flex-1 relative px-4">
-                <div className={`absolute top-1/2 left-0 right-0 h-0.5 bg-${color}`}></div>
-                <div className={`absolute top-1/2 left-0 w-3 h-3 -mt-1.5 rounded-full bg-${color}`}></div>
-                <div className={`absolute top-1/2 right-0 w-3 h-3 -mt-1.5 rounded-full bg-${color}`}></div>
-
-                {/* Center Text Box: Time + Status */}
-                <div
-                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 border rounded text-sm bg-white ${statusBorderColors[item.status]} font-semibold text-center`}
-                >
-
-                  <div>{statusText[item.status]}</div>
+        {loading ? (
+          <div className="text-center text-gray-500 py-4">
+            Loading attendance...
+          </div>
+        ) : (
+          attendanceData.map((item, idx) => {
+            const color = statusColors[item.status] || "gray-400";
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white flex items-center p-3 rounded-xl shadow"
+              >
+                <div className="w-16 text-center">
+                  <div className="text-sm font-semibold">{item.date}</div>
+                  <div className="text-gray-500 text-sm">{item.month}</div>
                 </div>
-              </div>
 
-              {/* Right: Hours Worked & Status */}
-              <div className="w-24 text-center flex flex-col items-center">
-                <div className="font-mono text-sm">{item.hoursWorked}</div>
-                <div className="text-gray-500 text-xs">Hrs worked</div>
-              </div>
-            </motion.div>
-          );
-        })}
+                <div className="flex-1 relative px-4">
+                  <div
+                    className={`absolute top-1/2 left-0 right-0 h-0.5 bg-${color}`}
+                  ></div>
+                  <div
+                    className={`absolute top-1/2 left-0 w-3 h-3 -mt-1.5 rounded-full bg-gray-300`}
+                  ></div>
+                  <div
+                    className={`absolute top-1/2 right-0 w-3 h-3 -mt-1.5 rounded-full bg-gray-300`}
+                  ></div>
+
+                  <div
+                    className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 border rounded text-sm bg-white ${statusBorderColors[item.status]} font-semibold text-center`}
+                  >
+                    {statusText[item.status] || item.status}
+                  </div>
+                </div>
+
+                <div className="w-24 text-center flex flex-col items-center">
+                  <div className="font-mono text-sm">
+                    {item.hoursWorked || "00:00"}
+                  </div>
+                  <div className="text-gray-500 text-xs">Hrs</div>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
       </div>
     </div>
   );

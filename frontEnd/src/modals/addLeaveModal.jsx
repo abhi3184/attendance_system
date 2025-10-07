@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Modal from "./modal";
 import FancyDropdown from "./dropdowns";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";
 import jwt_decode from "jwt-decode";
+import Modal from "./Modal";
 
 export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedType }) {
   const [formData, setFormData] = useState({
@@ -51,9 +51,6 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
 
 
   useEffect(() => {
-    console.log("preselectedType:", preselectedType);
-    console.log("leaveTypes:", leaveTypes);
-    console.log("formData.leaveType:", formData.leaveType);
   }, [preselectedType, leaveTypes, formData.leaveType]);
 
 
@@ -93,7 +90,6 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
     setErrors((prev) => ({ ...prev, [name]: errorMessage || undefined }));
   };
 
-  // ✅ Calculate total days
   const calculateTotalDays = () => {
     if (formData.fromDate && formData.toDate) {
       const from = new Date(formData.fromDate);
@@ -105,7 +101,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
     return 0;
   };
 
-  // ✅ Submit form
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
 

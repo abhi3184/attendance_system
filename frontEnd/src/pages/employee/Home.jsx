@@ -20,6 +20,8 @@ export default function Home() {
   const [loadingEmployee, setLoadingEmployee] = useState(false);
   const [loadingCheck, setLoadingCheck] = useState(false);
   const [leaveSummary, setLeaveSummary] = useState([]);
+  const [holidays, setHolidays] = useState([]);
+  const [attendanePreview , setAttendanceData] = useState([])
 
   const tabs = [
     { path: "ppreview", label: "Profile" },
@@ -206,6 +208,47 @@ export default function Home() {
     fetchLeaveSummary();
   }, [employee]);
 
+
+  useEffect(() => {
+    const fetchUpcomingHolidays = async () => {
+      try {
+        const res = await axios.get("http://127.0.0.1:8000/holidays/get_upcoming_holidays");
+        if (res.data.success && res.data.data) {
+          setHolidays(res.data.data);
+        } else {
+          toast.error(res.data.message || "Failed to fetch upcoming holidays!");
+        }
+      } catch (err) {
+        toast.error("Error fetching upcoming holidays!");
+      }
+    };
+
+    fetchUpcomingHolidays();
+  }, []);
+
+
+  useEffect(() => {
+    if (!employee?.emp_id) return;
+
+    const fetchAttendance = async () => {
+      try {
+        const res = await axios.get(
+          `http://127.0.0.1:8000/checkIn/getAttendanceByEmp/${employee.emp_id}?view_type=weekly`
+        );
+
+        if (res.data.success && Array.isArray(res.data.data)) {
+          setAttendanceData(res.data.data);
+        }
+      } catch (err) {
+        console.error("Attendance fetch error:", err);
+      }
+    };
+
+    fetchAttendance();
+  }, [employee]);
+
+
+
   return (
     <div className="flex flex-col lg:flex-row p-4 gap-4 h-full font-sans pb-0">
       {/* Left Panel */}
@@ -341,9 +384,25 @@ export default function Home() {
             {employeeDetails && activeTab === "lpreview" ? (
               <LeavePreview employee={employeeDetails} leaves={leaveSummary} />
             ) : activeTab === "ppreview" ? (
-              <ProfilePreview employee={employeeDetails} isCheckedIn={isCheckedIn} hours={hours} minutes={minutes} secs={secs} />
+              <ProfilePreview
+                employee={employeeDetails}
+                isCheckedIn={isCheckedIn}
+                hours={hours}
+                minutes={minutes}
+                secs={secs}
+              />
+            ) : activeTab === "holidays" ? (
+              <Holidays holidays={holidays} />
+            ) : activeTab === "apreview" ? (
+              <AttendancePreview attendance={attendanePreview} />
             ) : (
-              <ActiveComponent employee={employeeDetails} isCheckedIn={isCheckedIn} hours={hours} minutes={minutes} secs={secs} />
+              <ActiveComponent
+                employee={employeeDetails}
+                isCheckedIn={isCheckedIn}
+                hours={hours}
+                minutes={minutes}
+                secs={secs}
+              />
             )}
           </div>
         </div>
