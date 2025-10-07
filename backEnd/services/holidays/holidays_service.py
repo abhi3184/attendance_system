@@ -8,7 +8,7 @@ class HolidayService:
         if isExist:
             return {"success":False,"message":"Holiday already added for this date"}
         emp_res = HolidaysRepo.add_holiday(db, req)
-        return emp_res
+        return {"success":True,"message":"Holiday added for this date"}
 
     @staticmethod
     def get_upcoming_holidays(db):
@@ -20,3 +20,11 @@ class HolidayService:
             "data": upcoming,
             "message": "Upcoming holidays fetched successfully"
         }
+    
+    @staticmethod
+    def get_all_holidays(db):
+        result = HolidaysRepo.get_all_holidays(db)
+        if not result:
+            return {"success":False,"data":result,"message":"There is not any Holiday"}
+        return {"success":False,"data":result,"message":"Holidays response"}
+    

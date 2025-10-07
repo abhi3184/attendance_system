@@ -13,3 +13,7 @@ async def add_holiday(req:AddHolidayReq , db:Session = Depends(get_db)):
 @holidays.get("/get_upcoming_holidays")
 async def get_upcoming_holidays(db: Session = Depends(get_db)):
     return HolidayService.get_upcoming_holidays(db)
+
+@holidays.get("/get_holidays")
+async def get_holidays(db: Session = Depends(get_db)):
+    return HolidayService.get_all_holidays(db)

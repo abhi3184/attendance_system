@@ -46,4 +46,10 @@ class HolidaysRepo:
         )
         db.commit()
         inserted_id = result.lastrowid
-        return inserted_id
+        return db.query(holidaysTable).filter(holidaysTable.c.holidays_id == inserted_id).first()
+    
+
+    @staticmethod
+    def get_all_holidays(db):
+        result = db.execute(holidaysTable.select()).mappings().all()
+        return result

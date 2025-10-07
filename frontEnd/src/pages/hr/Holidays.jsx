@@ -16,8 +16,9 @@ export default function Holidays() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleAdd = (newHoliday) => {
+  const handleAdd = async () => {
     setModalOpen(true);
+    await fetchHolidays();
   };
 
   const handleDelete = (id) => {

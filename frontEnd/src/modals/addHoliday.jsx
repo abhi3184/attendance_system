@@ -64,15 +64,15 @@ export default function AddHolidayModal({ isOpen, onClose, onSave }) {
 
     try {
       const payload = {
-        date: formData.date,
-        name: formData.name,
-        type: formData.type.value,
+       "date": formData.date,
+        "description": formData.name,
+        "type": formData.type.value,
       };
-      const res = await axios.post("http://127.0.0.1:8000/holidays/addHoliday", payload);
+      const res = await axios.post("http://127.0.0.1:8000/holidays/add_holiday", payload);
 
       if (res.data.success) {
         toast.success("Holiday added successfully!");
-        if (onSave) onSave(payload); 
+        if (onSave) onSave(payload);
         onClose();
       } else {
         toast.error(res.data.message || "Failed to add holiday!");
