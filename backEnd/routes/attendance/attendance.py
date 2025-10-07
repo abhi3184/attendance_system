@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from config.db import get_db
 from schemas.index import CheckIn
@@ -40,9 +41,37 @@ def status(emp_id: int, db: Session = Depends(get_db)):
 
 
 @attendance.get("/getAllAttendance")
-def all_attendance(db: Session = Depends(get_db)):
-    return {"success": True, "data": AttendanceService.get_all_attendance(db)}
+def get_all_attendance(
+    db: Session = Depends(get_db),
+    filter: str = Query("today")
+):
+    today = datetime.now().date()
+
+    if filter == "today":
+        start_date = today
+        end_date = today
+    elif filter == "yesterday":
+        start_date = today - timedelta(days=1)
+        end_date = start_date
+    elif filter == "15days":
+        start_date = today - timedelta(days=15)
+        end_date = today
+    elif filter == "1month":
+        start_date = today - timedelta(days=30)
+        end_date = today
+    else:
+        start_date = today
+        end_date = today
+
+    records = AttendanceRepo.get_attendance(db, str(start_date), str(end_date))
+    attendance_list = AttendanceService.process_attendance(records)
+
+    return {"success": True, "data": attendance_list, "message": "Attendance fetched successfully"}
 
 @attendance.get("/getAttendanceByEmp/{emp_id}")
-def attendance_by_emp(emp_id: str, db: Session = Depends(get_db)):
-    return {"success": True, "data": AttendanceService.get_attendance_by_emp(db, emp_id)}
+def get_emp_attendance(emp_id: int, view_type: str = "weekly", db: Session = Depends(get_db)):
+    try:
+        data = AttendanceService.get_emp_attendance(db, emp_id, view_type)
+        return {"success": True, "data": data, "message": "Employee attendance fetched successfully"}
+    except ValueError as e:
+        return {"success": False, "message": str(e)}

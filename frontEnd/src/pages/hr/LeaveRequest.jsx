@@ -97,7 +97,7 @@ export default function LeaveRequests() {
       {/* Leave Requests Table */}
       <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full table-auto divide-y divide-gray-200">
+          <table className="w-full table-auto border-collapse border">
             <thead className="bg-purple-100 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[25%]">
@@ -150,7 +150,7 @@ export default function LeaveRequests() {
                   </td>
                   <td className="px-4 py-2 text-xs w-[20%] text-center">{req.start_date}</td>
                   <td className="px-4 py-2 text-xs w-[20%] text-center">{req.end_date}</td>
-                  <td className="px-4 py-1 text-xs w-[20%] flex gap-2 text-right">
+                  <td className="px-12 py-2 text-xs w-[20%] flex gap-2 text-center">
                     {req.status === "Pending" ? (
                       <>
                         <motion.button

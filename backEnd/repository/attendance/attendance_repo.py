@@ -1,7 +1,7 @@
-from sqlalchemy import case, select, update
-from models.index import attendanceTable,employeeTable
+from sqlalchemy import case, outerjoin, select, update
+from models.index import attendanceTable,employeeTable,holidaysTable
 from sqlalchemy.orm import Session
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from schemas.index import CheckIn
 import socket
 class AttendanceRepo:
@@ -135,134 +135,81 @@ class AttendanceRepo:
 
     @staticmethod
     def get_all_attendance(db: Session):
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        order_case = case(
-            (attendanceTable.c.check_in_time.startswith(today_str), 0),
-            else_=1
-        )
+        today = datetime.now().date()
 
+        # Left join all employees with attendance of today
         stmt = (
             select(
-                attendanceTable.c.attendance_id,
-                attendanceTable.c.emp_id,
+                employeeTable.c.emp_id,
                 employeeTable.c.firstName,
                 employeeTable.c.lastName,
                 employeeTable.c.shift_time,
-                attendanceTable.c.check_in_time,
-                attendanceTable.c.check_out_time,
-                attendanceTable.c.total_hr,
-                attendanceTable.c.isPresent
-            )
-            .select_from(attendanceTable.join(employeeTable, attendanceTable.c.emp_id == employeeTable.c.emp_id))
-            .order_by(order_case, attendanceTable.c.check_in_time)
-        )
-
-        result = db.execute(stmt).fetchall()
-        attendance_list = []
-
-        for row in result:
-            check_in_time = row.check_in_time  
-            check_out_time = row.check_out_time  
-
-         
-            if row.shift_time == "morning":
-                office_start_time = check_in_time.replace(hour=10, minute=0, second=0)
-            elif row.shift_time == "afternoon":
-                office_start_time = check_in_time.replace(hour=12, minute=0, second=0)
-            else:
-                office_start_time = check_in_time.replace(hour=10, minute=0, second=0)
-
-     
-            if check_in_time > office_start_time:
-                late_timedelta = check_in_time - office_start_time
-                late_hours = late_timedelta.seconds // 3600
-                late_minutes = (late_timedelta.seconds % 3600) // 60
-                is_late = True
-            else:
-                late_hours = 0
-                late_minutes = 0
-                is_late = False
-
-            if check_out_time:
-                worked_hours = round((check_out_time - check_in_time).total_seconds() / 3600, 2)
-                overtime = round(max(worked_hours - 9, 0), 2)
-            else:
-                worked_hours = 0
-                overtime = 0
-
-            attendance_list.append({
-                "attendance_id": row.attendance_id,
-                "emp_id": row.emp_id,
-                "name": f"{row.firstName} {row.lastName}",
-                "shift": row.shift_time,
-                "check_in_time": check_in_time,
-                "check_out_time": check_out_time,
-                "worked_hours": worked_hours,
-                "overtime": overtime,
-                "late": is_late,
-                "late_hours": late_hours,
-                "late_minutes": late_minutes
-            })
-        return attendance_list
-    
-    @staticmethod
-    def get_attendance_by_emp(db: Session, emp_id: str):
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        order_case = case(
-            (attendanceTable.c.check_in_time.like(f"{today_str}%"), 0),
-            else_=1
-        )
-
-        query = (
-            select(
                 attendanceTable.c.attendance_id,
-                attendanceTable.c.emp_id,
-                employeeTable.c.firstName,
-                employeeTable.c.lastName,
-                employeeTable.c.shift_time,
                 attendanceTable.c.check_in_time,
                 attendanceTable.c.check_out_time,
                 attendanceTable.c.total_hr,
                 attendanceTable.c.isPresent
             )
             .select_from(
-                attendanceTable.join(
+                outerjoin(
                     employeeTable,
-                    attendanceTable.c.emp_id == employeeTable.c.emp_id
+                    attendanceTable,
+                    (employeeTable.c.emp_id == attendanceTable.c.emp_id) &
+                    (attendanceTable.c.check_in_time.like(f"{today}%"))
                 )
             )
-            .where(attendanceTable.c.emp_id == emp_id)
-            .order_by(order_case, attendanceTable.c.check_in_time)
+            .order_by(employeeTable.c.emp_id)
         )
 
-        result = db.execute(query).fetchall()
+        result = db.execute(stmt).fetchall()
         attendance_list = []
 
         for row in result:
             check_in_time = row.check_in_time
             check_out_time = row.check_out_time
-            if row.shift_time == "morning":
-                office_start_time = check_in_time.replace(hour=10, minute=0, second=0)
-            elif row.shift_time == "afternoon":
-                office_start_time = check_in_time.replace(hour=12, minute=0, second=0)
+
+            # Shift office start
+            if row.shift_time and row.shift_time.lower() == "morning":
+                office_start = time(10, 0, 0)
+            elif row.shift_time and row.shift_time.lower() == "afternoon":
+                office_start = time(12, 0, 0)
             else:
-                office_start_time = check_in_time.replace(hour=10, minute=0, second=0)
-            if check_in_time and check_in_time > office_start_time:
-                late_timedelta = check_in_time - office_start_time
-                late_hours = late_timedelta.seconds // 3600
-                late_minutes = (late_timedelta.seconds % 3600) // 60
-                is_late = True
-            else:
+                office_start = time(10, 0, 0)
+
+            # Determine status
+            if not check_in_time and not check_out_time:
+                status = "Absent"
+                worked_hours = 0
+                overtime = 0
                 late_hours = 0
                 late_minutes = 0
                 is_late = False
-
-            if check_in_time and check_out_time:
-                worked_hours = round((check_out_time - check_in_time).total_seconds() / 3600, 2)
-                overtime = round(max(worked_hours - 9, 0), 2)
-            else:
+            elif check_in_time and not check_out_time:
+                status = "Present"
                 worked_hours = 0
                 overtime = 0
+                if check_in_time.time() > office_start:
+                    is_late = True
+                    late_delta = datetime.combine(today, check_in_time.time()) - datetime.combine(today, office_start)
+                    late_hours = late_delta.seconds // 3600
+                    late_minutes = (late_delta.seconds % 3600) // 60
+                else:
+                    is_late = False
+                    late_hours = 0
+                    late_minutes = 0
+            else:  # check_in and check_out present
+                status = "Checked-Out"
+                worked_hours = round((check_out_time - check_in_time).total_seconds() / 3600, 2)
+                overtime = round(max(worked_hours - 9, 0), 2)
+                if check_in_time.time() > office_start:
+                    is_late = True
+                    late_delta = datetime.combine(today, check_in_time.time()) - datetime.combine(today, office_start)
+                    late_hours = late_delta.seconds // 3600
+                    late_minutes = (late_delta.seconds % 3600) // 60
+                else:
+                    is_late = False
+                    late_hours = 0
+                    late_minutes = 0
 
             attendance_list.append({
                 "attendance_id": row.attendance_id,
@@ -273,10 +220,76 @@ class AttendanceRepo:
                 "check_out_time": check_out_time,
                 "worked_hours": worked_hours,
                 "overtime": overtime,
+                "status": status,
                 "late": is_late,
                 "late_hours": late_hours,
-                "late_minutes": late_minutes,
-                "isPresent": row.isPresent
+                "late_minutes": late_minutes
             })
 
+        return attendance_list
+    
+    
+    @staticmethod
+    def get_attendance(db: Session, start_date: str, end_date: str):
+        stmt = (
+            select(
+                employeeTable.c.emp_id,
+                employeeTable.c.firstName,
+                employeeTable.c.lastName,
+                employeeTable.c.shift_time,
+                attendanceTable.c.attendance_id,
+                attendanceTable.c.check_in_time,
+                attendanceTable.c.check_out_time,
+                attendanceTable.c.total_hr,
+                attendanceTable.c.isPresent
+            )
+            .select_from(
+                outerjoin(
+                    employeeTable,
+                    attendanceTable,
+                    (employeeTable.c.emp_id == attendanceTable.c.emp_id) &
+                    (attendanceTable.c.check_in_time >= start_date) &
+                    (attendanceTable.c.check_in_time <= end_date + " 23:59:59")
+                )
+            )
+            .order_by(employeeTable.c.emp_id)
+        )
+        return db.execute(stmt).fetchall()
+    
+    @staticmethod
+    def get_holidays_in_range(db: Session, start_date: date, end_date: date):
+    # Return dict {date: description}
+        rows = db.execute(
+            select(holidaysTable.c.date, holidaysTable.c.description)
+            .where(holidaysTable.c.date.between(start_date, end_date))
+        ).fetchall()
+
+        holiday_dict = {}
+        for row in rows:
+            # Make sure row.date is a date object
+            holiday_date = row.date if isinstance(row.date, date) else datetime.fromisoformat(row.date).date()
+            holiday_dict[holiday_date] = row.description
+
+        return holiday_dict
+
+    @staticmethod
+    def get_attendance_by_employee(db: Session, emp_id: int, start_date: date, end_date: date):
+        # Include the full end_date day by adding 1 day in the filter
+        rows = db.execute(
+            select(attendanceTable)
+            .where(attendanceTable.c.emp_id == emp_id)
+            .where(attendanceTable.c.check_in_time >= datetime.combine(start_date, datetime.min.time()))
+            .where(attendanceTable.c.check_in_time < datetime.combine(end_date + timedelta(days=1), datetime.min.time()))
+        ).fetchall()
+        
+        # Convert rows to dict for easier access
+        attendance_list = []
+        for row in rows:
+            attendance_list.append({
+                "attendance_id": row.attendance_id,
+                "emp_id": row.emp_id,
+                "check_in_time": row.check_in_time,
+                "check_out_time": row.check_out_time,
+                "worked_hours": row.total_hr,
+            })
         return attendance_list
