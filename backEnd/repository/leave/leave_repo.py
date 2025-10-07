@@ -47,21 +47,50 @@ class LeaveRepo:
         db.commit()
         db.refresh(leave)
         return {"message": "Leave updated successfully"}
-    
-    @staticmethod
-    def get_leave_by_empId(db: Session, empId: str) -> List[LeaveResponseDTO]:
-   
-        leaves = db.query(Leave).filter(Leave.emp_id == empId).all()
-       
-        if not leaves:
-            return {"message":"Leaves not found"}
 
-        leaves_list = [leave.__dict__ for leave in leaves]
+    @staticmethod    
+    def get_leave_by_empId(db: Session, empId: str) -> dict:
+        leaves = (
+            db.query(
+                Leave.leave_id,
+                Leave.emp_id,
+                Leave.start_date,
+                Leave.end_date,
+                Leave.status,
+                Leave.reason,
+                Leave.used_days,
+                leaveTypeTable.c.leave_name.label("leave_type_name"),
+                leaveTypeTable.c.total_days.label("total_days")
+            )
+            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+            .filter(Leave.emp_id == empId)
+            .all()
+        )
+
+        if not leaves:
+            return {"success": False, "data": [], "message": "Leaves not found"}
+
+        # Convert result to list of dicts
+        leaves_list = [
+            {
+                "leave_id": leave.leave_id,
+                "emp_id": leave.emp_id,
+                "start_date": leave.start_date,
+                "end_date": leave.end_date,
+                "status": leave.status,
+                "reason": leave.reason,
+                "leave_type": leave.leave_type_name,
+                "total_days":leave.total_days,
+                "used_days": leave.used_days,
+                "remaining_days": leave.total_days -leave.used_days
+            }
+            for leave in leaves
+        ]
 
         response = {
             "success": True,
             "data": leaves_list,
-            "message": "data"
+            "message": "data fetched successfully"
         }
 
         return response

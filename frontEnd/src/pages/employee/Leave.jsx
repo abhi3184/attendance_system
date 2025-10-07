@@ -227,6 +227,9 @@ export default function Leave() {
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Leave Type</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">From</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">To</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leaves</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Used Leaves</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining Leaves</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   {/* <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th> */}
                 </tr>
@@ -234,38 +237,67 @@ export default function Leave() {
               <tbody className="divide-y divide-gray-100">
                 {requests.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-gray-500 text-sm">
+                    <td colSpan={8} className="px-4 py-6 text-center text-gray-500 text-sm">
                       No leaves present
                     </td>
                   </tr>
                 ) : (
                   requests.map((req, idx) => (
                     <motion.tr
-                      key={idx}
+                      key={req.leave_id || idx} // always use unique leave_id if available
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
                       className="hover:bg-gray-50"
                     >
-                      <td className="px-4 py-2 text-xs text-gray-700">{req.leave_type_id}</td>
+                      {/* Leave Type with optional icon */}
+                      <td className="px-4 py-2 text-xs text-gray-700 flex items-center gap-1">
+                        {req.leave_type === "Sick Leave" && "💊"}
+                        {req.leave_type === "Paid Leave" && "💰"}
+                        {req.leave_type === "Casual Leave" && "🏖️"}
+                        {req.leave_type}
+                      </td>
+
+                      {/* Start & End Dates */}
                       <td className="px-4 py-2 text-xs text-gray-600">{req.start_date}</td>
                       <td className="px-4 py-2 text-xs text-gray-600">{req.end_date}</td>
+
+                      {/* Days Info */}
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.total_days > 10 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>
+                        {req.total_days} days
+                      </span></td>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span
+                        className={`px-2 py-1 rounded-full ${req.used_days > 5 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                          }`}
+                      >
+                        {req.used_days} days
+                      </span></td>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span
+                        className={`px-2 py-1 rounded-full ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                          }`}
+                      >
+                        {req.remaining_days} days
+                      </span></td>
+
+                      {/* Status */}
                       <td className="px-4 py-2 text-xs">
                         <span
-                          className={`inline-block w-20 text-center py-1 rounded-full text-xs font-semibold ${req.status === "Pending"
-                              ? "bg-yellow-200 text-yellow-800"
-                              : req.status === "Approved"
-                                ? "bg-green-200 text-green-800"
-                                : "bg-red-200 text-red-800"
+                          className={`inline-block w-20 text-center py-1 rounded-full font-semibold text-xs ${req.status === "Pending"
+                            ? "bg-yellow-200 text-yellow-800"
+                            : req.status === "Approved"
+                              ? "bg-green-200 text-green-800"
+                              : "bg-red-200 text-red-800"
                             }`}
                         >
                           {req.status}
                         </span>
                       </td>
+
                     </motion.tr>
                   ))
                 )}
               </tbody>
+
 
 
             </table>
