@@ -288,6 +288,7 @@ class AttendanceRepo:
             attendance_list.append({
                 "attendance_id": row.attendance_id,
                 "emp_id": row.emp_id,
+                "total_hr": row.total_hr,
                 "check_in_time": row.check_in_time,
                 "check_out_time": row.check_out_time,
                 "worked_hours": row.total_hr,

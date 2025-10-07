@@ -162,7 +162,7 @@ class AttendanceService:
                 if check_in_time and not check_out_time:
                     status = "Present"
                 elif check_in_time and check_out_time:
-                    status = "Checked-Out"
+                    status = "Present"
                 else:
                     status = "Absent"
             else:
@@ -174,6 +174,7 @@ class AttendanceService:
                 "description": holiday_description,
                 "is_weekend": is_weekend,
                 "is_holiday": is_holiday,
+                "toatl_hr": att.get("total_hr") if att else None,
                 "check_in_time": att.get("check_in_time") if att else None,
                 "check_out_time": att.get("check_out_time") if att else None
             })
