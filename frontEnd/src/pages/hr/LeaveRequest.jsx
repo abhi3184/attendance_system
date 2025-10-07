@@ -2,41 +2,74 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaCheck, FaTimes, FaPlus } from "react-icons/fa";
 import FancyDropdown from "../../modals/dropdowns";
+import ConfirmStatusModal from "../../modals/leaveStatusChange";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 export default function LeaveRequests() {
   const [search, setSearch] = useState("");
-  const [isModalOpen, setModalOpen] = useState(false);
+  const [addLeaveModal, setAddLeaveModal] = useState(false);
   const [newLeave, setNewLeave] = useState({ leave_type: "", total_days: "" });
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    id: null,
+    action: "",
+  });
+
   const leaveTypes = ["Sick Leave", "Paid Leave", "Casual Leave"];
 
-  // Fetch leave data from API
-  useEffect(() => {
-    const fetchLeaves = async () => {
-      try {
-        const res = await axios.get("http://127.0.0.1:8000/leave/get_all_leaves");
-        setLeaveRequests(res.data);
-      } catch (err) {
-        console.error("Error fetching leaves:", err);
-      }
-    };
+  // ✅ Fetch leave data from API
+  const fetchLeaves = async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/leave/get_all_leaves");
+      setLeaveRequests(res.data);
+    } catch (err) {
+      console.error("Error fetching leaves:", err);
+    }
+  };
 
+  useEffect(() => {
     fetchLeaves();
   }, []);
+
 
   const filtered = leaveRequests.filter(req =>
     `${req.first_name} ${req.last_name}`.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleApprove = id => alert(`✅ Approved leave for ID ${id}`);
-  const handleReject = id => alert(`❌ Rejected leave for ID ${id}`);
+  const handleApprove = id => setConfirmModal({ open: true, id, action: "Approved" });
+  const handleReject = id => setConfirmModal({ open: true, id, action: "Rejected" });
+
+
+  const handleConfirm = async () => {
+    try {
+      const payload = {
+        leave_id: confirmModal.id,
+        status: confirmModal.action,
+        approved_by: "HR",
+      };
+
+      const res = await axios.put("http://127.0.0.1:8000/leave/update_status", payload);
+
+      if (res.data.success || res.status === 200) {
+        toast.success(`Leave ${confirmModal.action.toLowerCase()} successfully!`);
+        fetchLeaves();
+      } else {
+        toast.error("Failed to update leave status.");
+      }
+    } catch (err) {
+      toast.error("Server error. Please try again.");
+      console.error(err);
+    } finally {
+      setConfirmModal({ open: false, id: null, action: "" });
+    }
+  };
 
   const handleAddLeave = () => {
-    console.log("New Leave Type:", newLeave);
-    setModalOpen(false);
-    setNewLeave({ leave_type: "", total_days: "" });
+    setAddLeaveModal(false);
     alert(`Added leave type: ${newLeave.leave_type} (${newLeave.total_days} days)`);
+    setNewLeave({ leave_type: "", total_days: "" });
   };
 
   return (
@@ -54,7 +87,7 @@ export default function LeaveRequests() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setModalOpen(true)}
+          onClick={() => setAddLeaveModal(true)}
           className="flex items-center px-6 py-2 bg-gradient-to-r text-xs from-purple-600 to-purple-800 text-white font-semibold rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300"
         >
           <FaPlus size={12} /> Add Leave
@@ -67,11 +100,21 @@ export default function LeaveRequests() {
           <table className="w-full table-auto divide-y divide-gray-200">
             <thead className="bg-purple-100 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[25%]">Name</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[15%]">Type</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">From</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">To</th>
-                <th className="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">Actions</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[25%]">
+                  Name
+                </th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[15%]">
+                  Type
+                </th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+                  From
+                </th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+                  To
+                </th>
+                <th className="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+                  Actions
+                </th>
               </tr>
             </thead>
           </table>
@@ -89,13 +132,17 @@ export default function LeaveRequests() {
                   whileHover={{ backgroundColor: "rgba(243,232,255,0.2)" }}
                   className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} cursor-pointer`}
                 >
-                  <td className="px-4 py-2 text-xs w-[25%]">{req.first_name} {req.last_name}</td>
+                  <td className="px-4 py-2 text-xs w-[25%]">
+                    {req.first_name} {req.last_name}
+                  </td>
                   <td className="px-4 py-2 text-xs w-[15%] text-center">
                     <span
                       className={`inline-flex justify-center items-center text-center
-      px-2.5 py-1 rounded-full text-xs font-semibold border w-40
-      ${req.leave_type === "Casual Leave" ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                          : req.leave_type === "Sick Leave" ? "bg-red-100 text-red-700 border-red-200"
+                        px-2.5 py-1 rounded-full text-xs font-semibold border w-40
+                        ${req.leave_type === "Casual Leave"
+                          ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                          : req.leave_type === "Sick Leave"
+                            ? "bg-red-100 text-red-700 border-red-200"
                             : "bg-green-100 text-green-700 border-green-200"}`}
                     >
                       {req.leave_type}
@@ -103,26 +150,42 @@ export default function LeaveRequests() {
                   </td>
                   <td className="px-4 py-2 text-xs w-[20%] text-center">{req.start_date}</td>
                   <td className="px-4 py-2 text-xs w-[20%] text-center">{req.end_date}</td>
-                  <td className="px-4 py-1 text-xs w-[20%] flex gap-2 justify-right">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleApprove(req.leave_id)}
-                      className="flex items-center gap-1 px-2.5 py-1 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600 transition-all text-[11px] font-medium"
-                    >
-                      <FaCheck className="h-3 w-3" />
-                      Approve
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleReject(req.leave_id)}
-                      className="flex items-center gap-1 px-2.5 py-1 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600 transition-all text-[11px] font-medium"
-                    >
-                      <FaTimes className="h-3 w-3" />
-                      Reject
-                    </motion.button>
+                  <td className="px-4 py-1 text-xs w-[20%] flex gap-2 text-right">
+                    {req.status === "Pending" ? (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleApprove(req.leave_id)}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600 transition-all text-[11px] font-medium"
+                        >
+                          <FaCheck className="h-3 w-3" />
+                          Approve
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleReject(req.leave_id)}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600 transition-all text-[11px] font-medium"
+                        >
+                          <FaTimes className="h-3 w-3" />
+                          Reject
+                        </motion.button>
+                      </>
+                    ) : (
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border w-28 text-center
+        ${req.status === "Approved"
+                            ? "bg-green-100 text-green-700 border-green-200"
+                            : "bg-red-100 text-red-700 border-red-200"
+                          }`}
+                      >
+                        {req.status}
+                      </span>
+                    )}
                   </td>
+
                 </motion.tr>
               ))}
             </tbody>
@@ -130,13 +193,12 @@ export default function LeaveRequests() {
         </div>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
+      {/* Add Leave Modal */}
+      {addLeaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
             className="bg-white rounded-xl p-6 w-96 shadow-lg"
           >
             <h2 className="text-lg font-semibold mb-4">Add Leave Type</h2>
@@ -160,7 +222,7 @@ export default function LeaveRequests() {
 
               <div className="flex justify-end gap-2 mt-4">
                 <button
-                  onClick={() => setModalOpen(false)}
+                  onClick={() => setAddLeaveModal(false)}
                   className="px-3 py-1 text-sm rounded-lg border border-gray-300 hover:bg-gray-100"
                 >
                   Cancel
@@ -176,6 +238,14 @@ export default function LeaveRequests() {
           </motion.div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmStatusModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal({ open: false, id: null, action: "" })}
+        onConfirm={handleConfirm}
+        status={confirmModal.action}
+      />
     </div>
   );
 }
