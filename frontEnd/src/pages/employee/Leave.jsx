@@ -38,6 +38,7 @@ export default function Leave() {
   const icons = [FaCalendarAlt, FaWallet, FaStethoscope];
   const [selectedLeaveType, setSelectedLeaveType] = useState(null);
   const [employee, setEmployeeData] = useState(null);
+  const [upcomingHolidays, setUpcomingHolidays] = useState([])
 
   const handleCancel = (id) => setRequests((prev) => prev.filter((req) => req.id !== id));
 
@@ -91,11 +92,25 @@ export default function Leave() {
         setEmployeeData(decoded);
         fetchLeaveSummary(decoded.id);
         fetchLeaveRequests(decoded.id)
+        fetUpcomigHolidays()
       } catch (err) {
         console.error("Invalid token", err);
       }
     }
   }, []);
+
+  const fetUpcomigHolidays = async () => {
+    try {
+      const res = await axios.get(`http://127.0.0.1:8000/holidays/get_upcoming_holidays`);
+      if (res.data.success && res.data.data) {
+        setUpcomingHolidays(res.data.data);
+      } else {
+        console.error("Invalid API response:", res.data);
+      }
+    } catch (err) {
+      console.error("Error fetching leave requests:", err);
+    }
+  }
 
   const handleAddLeave = async (data) => {
     const newRequest = { ...data, id: Date.now(), status: "Pending" };
@@ -109,7 +124,7 @@ export default function Leave() {
   };
 
   return (
-    <div className="p-6 max-h-screen bg-white rounded-xl shadow-md font-sans">
+    <div className="p-6 pb-0 max-h-screen bg-white rounded-xl shadow-md font-sans">
       {/* Tabs + Add Leave Button */}
       <div className="flex justify-between items-center border-b border-gray-300 mb-6 py-2">
         <div className="flex">
@@ -189,16 +204,18 @@ export default function Leave() {
           </div>
 
           {/* Upcoming Holidays Table */}
-          <div className="bg-white rounded-xl border-gray-200 overflow-hidden">
-            <h2 className="px-6 py-3 text-sm font-semibold border-b border-gray-200">
-              Upcoming Holidays
-            </h2>
-            <div className="overflow-x-auto rounded-xl">
-              <table className="min-w-full divide-y rounded-xl divide-gray-200">
-                <thead className="bg-purple-100 rounded-xl">
+          <div className="bg-white rounded-xl overflow-hidden">
+            <h2 className="px-6 py-3 text-sm font-semibold">Upcoming Holidays</h2>
+            <div className="overflow-x-auto rounded-xl max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
+              <table className="min-w-full divide-y rounded-xl">
+                <thead className="bg-purple-100 sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -207,13 +224,16 @@ export default function Leave() {
                       <td className="px-4 py-2 text-xs text-gray-700">
                         {formatHolidayDate(holiday.date)}
                       </td>
-                      <td className="px-4 py-2 text-xs text-gray-700">{holiday.description}</td>
+                      <td className="px-4 py-2 text-xs text-gray-700">
+                        {holiday.description}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+
         </>
       )}
 
