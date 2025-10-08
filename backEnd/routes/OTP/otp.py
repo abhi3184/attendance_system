@@ -6,7 +6,7 @@ from schemas.index import EmailOTPVerifyRequest
 
 otp = APIRouter()
 
-@otp.post("/send-otp/{emailId}")
+@otp.post("/send-otp")
 async def send_otp(emailId,db: Session = Depends(get_db)):
     return OTPService.send_email_otp(db,emailId)
 

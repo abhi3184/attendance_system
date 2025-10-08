@@ -115,7 +115,7 @@ export default function EmployeeManagement() {
       </div>
 
       <div className="flex-1 overflow-auto bg-white rounded-xl">
-        <table className="w-full table-auto border-collapse border">
+        <table className="w-full table-auto border-collapse">
           <thead className="bg-purple-100 sticky top-0 z-10">
             <tr>
               {["Emp Code", "Name", "Email", "Mobile", "Department", "Shift Time", "Status", "Actions"].map((heading) => (
