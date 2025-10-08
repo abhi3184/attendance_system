@@ -6,7 +6,7 @@ import { EmployeeModal } from "./AddEmployeeForm";
 import { EditEmployeeModal } from "./EditEmployeeFrom";
 import { DeleteConfirmModal } from "./EmployeeDelete" // Edit modal (Step 1 only)
 import axios from "axios";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 
 export default function EmployeeManagement() {
   const [search, setSearch] = useState("");

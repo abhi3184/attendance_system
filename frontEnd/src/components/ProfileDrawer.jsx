@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import ProfileImage from "../assets/logo/new_color_logo.png";
 import { FaUser, FaSignOutAlt } from "react-icons/fa";
 
-export default function ProfileDrawer({ isOpen, setIsOpen }) {
+export default function ProfileDrawer({ isOpen, setIsOpen, details }) {
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("employee");
     window.location.href = "/login";
   };
+
 
   return (
     <AnimatePresence>
@@ -46,9 +48,9 @@ export default function ProfileDrawer({ isOpen, setIsOpen }) {
                 className="h-12 w-14 border border-gray-200 shadow-sm"
               />
               <div>
-                <p className="font-semibold text-gray-800 text-sm">Abhijit Dinkar Deshmukh</p>
-                <p className="text-xs text-gray-500">Manager</p>
-                <p className="text-xs text-gray-500">abhijit@example.com</p>
+                <p className="font-semibold text-gray-800 text-sm">{details.firstName} {details.lastName}</p>
+                <p className="text-xs text-gray-500">{details.role}</p>
+                <p className="text-xs text-gray-500">{details.emailId}</p>
               </div>
             </div>
 

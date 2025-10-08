@@ -90,7 +90,7 @@ export default function LeaveRequests() {
           onClick={() => setAddLeaveModal(true)}
           className="flex items-center px-6 py-2 bg-gradient-to-r text-xs from-purple-600 to-purple-800 text-white font-semibold rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300"
         >
-          <FaPlus size={12} /> Add Leave
+          <FaPlus size={12} /> Add Leave Balance
         </motion.button>
       </div>
 

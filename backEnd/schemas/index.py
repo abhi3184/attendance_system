@@ -2,12 +2,12 @@ from .employee_DTO.addEmployeeReq_DTO import AddEmployeeReq,EmployeeExistReq,Add
 from .attendance.checkInReq_DTO import CheckIn
 from .leave.leave import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO
 from .employee_DTO.updateEmployeeReq_DTO import UpdateEmployeeRequest,UpdateEmployeeStatus
-from .auth.auth_DTO import Login
+from .auth.auth_DTO import Login,UpdatePasswordReq
 from .employee_DTO.getManagerRes_DTO import GetManagerRes
 from .employee_DTO.getEmployeeRes_DTO import EducationResponse, EmployeeResponse, AddressResponse
 from .leave.leave import LeaveSummaryResp,LeaveStatus
 from .holidays.holidays import AddHolidayReq,UpdateHolidayReq
-
+from .OTP.otp import EmailOTPVerifyRequest
 
 all_schemas = [
     Login,
@@ -27,5 +27,7 @@ all_schemas = [
     LeaveSummaryResp,
     LeaveStatus,
     AddHolidayReq,
-    UpdateHolidayReq
+    UpdateHolidayReq,
+    EmailOTPVerifyRequest,
+    UpdatePasswordReq
 ]

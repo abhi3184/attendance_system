@@ -77,12 +77,10 @@ class employeRegistrationRepository:
         )
         result = db.execute(query).mappings().all()
         return [GetManagerRes(**row) for row in result]
+    
 
     @staticmethod
     def post_user(db, emp_data: dict):
-        hashed_pw = hash_password(emp_data["password"])
-        emp_data["password"] = hashed_pw
-
         result = db.execute(
             insert(employeeTable).values(
                 emp_code = emp_data["emp_code"],

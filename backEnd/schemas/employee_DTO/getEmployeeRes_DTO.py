@@ -24,3 +24,4 @@ class EmployeeResponse(BaseModel):
     department: str
     shift: str
     status: str
+    role : str

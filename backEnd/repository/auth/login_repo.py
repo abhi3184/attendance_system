@@ -16,3 +16,12 @@ class loginRepo:
             )
         ).mappings().first()
         return result
+    
+
+    @staticmethod
+    def update_password(db,email, password):
+        from utils.HashPasswor import hash_password
+        hashed_pw = hash_password(password)
+        db.execute(employeeTable.update().where(employeeTable.c.emailId == email).values(password=hashed_pw))
+        db.commit()
+        return {"success": True, "message": "Password updated successfully"}

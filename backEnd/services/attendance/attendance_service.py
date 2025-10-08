@@ -11,13 +11,13 @@ class AttendanceService:
     # ----- Check-in with IP verification -----
     def check_in(self, emp_id:int, manager_id:int, ip_address:str) -> dict:
         if not self.ip_repo.is_ip_allowed(ip_address):
-            return {"success": False, "message": "You are not allowed from this location"}
+            return {"success": False,  "message": "You are not allowed from this location"}
         return self.attendance_repo.checkin(emp_id,manager_id,ip_address)
     
     # ----- Check-out with IP verification -----
     def check_out(self, emp_id: int, ip_address: str) -> dict:
         if not self.ip_repo.is_ip_allowed(ip_address):
-            return {"success": False, "data": ip_address, "message": "You are not allowed from this location"}
+            return {"success": False,  "message": "You are not allowed from this location"}
         return self.attendance_repo.checkout(emp_id)
 
     # ----- Get status for UI (first check-in of the day) -----

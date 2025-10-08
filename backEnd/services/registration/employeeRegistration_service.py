@@ -5,19 +5,44 @@ from utils.HashPasswor import hash_password, verify_password
 from schemas.index import AddEmployeeReq,UpdateEmployeeRequest,EmployeeExistReq,UpdateEmployeeStatus
 from repository.index import employeRegistrationRepository
 from sqlalchemy.orm import Session
+from utils.registrationEmail import send_registration_email
+from utils.HashPasswor import hash_password
+import random
+import string
 
 class employeeRegistrationService:
+
+    @staticmethod
+    def generate_password(length=8):
+        import random, string
+        if length < 4:
+            raise ValueError("Password length must be at least 4 to satisfy all constraints.")
+
+        upper = string.ascii_uppercase
+        lower = string.ascii_lowercase
+        digits = string.digits
+        special = "!@#$%^&*"
+
+        password = [
+            random.choice(upper),
+            random.choice(lower),
+            random.choice(digits),
+            random.choice(special)
+        ]
+
+        all_chars = upper + lower + digits + special
+        password += random.choices(all_chars, k=length - 4)
+        random.shuffle(password)
+
+        return "".join(password)
+    
     def register_full_employee(db, employee):
         if not isinstance(employee, dict):
             employee = employee.dict()
 
-        # Employee main fields
-        emp_fields = ["firstName", "lastName", "emailId", "mobile", "department", "shift", "password", "roles", "manager_id"]
+        # Employee main fields (password removed from request)
+        emp_fields = ["firstName", "lastName", "emailId", "mobile", "department", "shift", "roles", "manager_id"]
         emp_data = {k: employee[k] for k in emp_fields if k in employee}
-
-        # Validate password
-        if not emp_data.get("password"):
-            raise HTTPException(status_code=400, detail="Password is required")
 
         # Check if employee exists
         exist_res = employeRegistrationRepository.check_user_exist(db, emp_data)
@@ -40,6 +65,10 @@ class employeeRegistrationService:
                 emp_data["emp_code"] = "A01"
         else:
             emp_data["emp_code"] = "A01"
+
+        # **Auto-generate password**
+        raw_password = employeeRegistrationService.generate_password(8)
+        emp_data["password"] = hash_password(raw_password)
 
         # Insert Employee
         emp_res = employeRegistrationRepository.post_user(db, emp_data)
@@ -68,11 +97,18 @@ class employeeRegistrationService:
         }
         employeRegistrationRepository.create(db, addr_data_db)
 
+        # **Return the raw password so you can email it to the employee**
+        try:
+            send_registration_email(emp_data["emailId"], raw_password, emp_data["firstName"])
+        except Exception as e:
+            print(f"Failed to send email: {str(e)}")
+
         return {
             "success": True,
             "emp_id": emp_id,
-            "message": "Employee, Education and Address added successfully"
+            "message": f"Employee added successfully. Credentials sent to {emp_data['emailId']}"
         }
+
     
     @staticmethod
     def check_employee_exist(db, email: str, mobile: str):
@@ -166,5 +202,4 @@ class employeeRegistrationService:
         
         return {"success":True,"message":"Employee deleted successfully"}
 
-    
     

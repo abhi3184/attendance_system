@@ -15,3 +15,8 @@ class EmployeeResponse(BaseModel):
     department: str
     shift_time: str
     status: str
+
+
+class UpdatePasswordReq(BaseModel):
+    email: str
+    password: str

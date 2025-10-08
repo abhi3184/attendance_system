@@ -199,7 +199,7 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
         mobile: formData.mobile,
         department: formData.department,
         shift: formData.shift,
-        password: "Default@123",
+        password: "",
         roles: formData.role,
         manager_id: formData.role === 3 ? formData.managerId : 1, // Employee → selected manager, HR/Manager → 1
         schoolName: formData.schoolName,

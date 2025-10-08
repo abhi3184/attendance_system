@@ -8,7 +8,6 @@ class AddEmployeeReq(BaseModel):
     mobile: str
     department: str
     shift: str
-    password: str
     roles: int
     manager_id: int
 

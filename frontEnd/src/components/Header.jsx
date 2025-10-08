@@ -5,6 +5,7 @@ import ProfileImage from "../assets/logo/new_color_logo.png";
 import ProfileDrawer from "./ProfileDrawer";
 
 export default function Header({ activeTab, onToggleSidebar, isProfileOpen, setProfileOpen }) {
+  const employee = JSON.parse(localStorage.getItem("employee"));
   return (
     <>
       <header className="h-14 w-full bg-white flex items-center justify-between px-6 shadow-md z-10 ">
@@ -33,7 +34,7 @@ export default function Header({ activeTab, onToggleSidebar, isProfileOpen, setP
         </div>
       </header>
 
-      <ProfileDrawer isOpen={isProfileOpen} setIsOpen={setProfileOpen} />
+      <ProfileDrawer isOpen={isProfileOpen} setIsOpen={setProfileOpen} details={employee}/>
     </>
   );
 }
