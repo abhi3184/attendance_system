@@ -127,10 +127,10 @@ export default function ManagerDashboard() {
   const onLeaveToday = leaves.filter(l => l.status === "Approved" && new Date(l.start_date).toDateString() === new Date().toDateString()).length;
 
   return (
-    <motion.div className="p-6 max-h-screen pb-20 overflow-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="p-6 max-h-screen pb-20 overflow-auto z-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6 font-sans">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6 font-sans z-0">
         <SummaryCard
           title="Total Team"
           value={totalTeam}

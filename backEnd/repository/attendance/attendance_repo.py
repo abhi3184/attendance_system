@@ -346,3 +346,7 @@ class AttendanceRepo:
             })
 
         return {"success": True, "data": result, "message": "Weekly attendance fetched"}
+
+
+
+        

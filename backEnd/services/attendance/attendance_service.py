@@ -188,3 +188,7 @@ class AttendanceService:
     def get_weekly_attendance(db, manager_id: int):
         data = AttendanceRepo.get_weekly_attendance(db, manager_id)
         return {"data": data}
+    
+
+
+    
