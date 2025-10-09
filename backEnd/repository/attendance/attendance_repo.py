@@ -298,11 +298,11 @@ class AttendanceRepo:
 
 
     @staticmethod
-    def get_weekly_attendance(db, manager_id: int):
+    def get_weekly_attendance(db: Session, manager_id: int):
         today = date.today()
-        start_of_week = today - timedelta(days=today.weekday())
+        start_of_week = today - timedelta(days=today.weekday())  # Monday
 
-        # Attendance grouped by date
+        # 1️⃣ Get attendance counts grouped by date
         attendance_query = db.query(
             func.date(attendanceTable.c.check_in_time).label("day"),
             func.sum(case((attendanceTable.c.isPresent == 1, 1), else_=0)).label("present"),
@@ -317,36 +317,32 @@ class AttendanceRepo:
             func.date(attendanceTable.c.check_in_time)
         ).all()
 
-        # Holidays in week
+        # Map attendance by date string
+        attendance_map = {a.day.strftime("%Y-%m-%d"): {"present": a.present, "absent": a.absent} for a in attendance_query}
+
+
+        # 2️⃣ Get holidays within week
         holidays = db.query(
-            holidaysTable.c.date.label("day"),
+            holidaysTable.c.date,
             holidaysTable.c.description
         ).filter(
             holidaysTable.c.date.between(start_of_week, today)
         ).all()
+        holidays_map = {
+            datetime.strptime(h.date, "%Y-%m-%d").strftime("%Y-%m-%d"): h.description
+            for h in holidays
+        }
 
-        # Map attendance by date
-        attendance_map = {str(a.day): {"present": a.present, "absent": a.absent, "holiday": None} for a in attendance_query}
-        # Map holidays
-        for h in holidays:
-            day_str = str(h.day)
-            if day_str in attendance_map:
-                attendance_map[day_str]["holiday"] = h.description
-            else:
-                attendance_map[day_str] = {"present": 0, "absent": 0, "holiday": h.description}
-
-        # Full week dates
+        # 3️⃣ Build final response for all weekdays
         week_dates = [start_of_week + timedelta(days=i) for i in range((today - start_of_week).days + 1)]
-
         result = []
         for d in week_dates:
-            day_key = d.strftime("%Y-%m-%d")
-            day_data = attendance_map.get(day_key, {"present": 0, "absent": 0, "holiday": None})
+            day_str = d.strftime("%Y-%m-%d")
             result.append({
-                "name": d.strftime("%a"),  # Mon, Tue, ...
-                "present": day_data["present"],
-                "absent": day_data["absent"],
-                "holiday": day_data["holiday"]
+                "name": d.strftime("%a"),  # Mon, Tue...
+                "present": attendance_map.get(day_str, {}).get("present", 0),
+                "absent": attendance_map.get(day_str, {}).get("absent", 0),
+                "holiday": holidays_map.get(day_str, None)
             })
 
-        return result
+        return {"success": True, "data": result, "message": "Weekly attendance fetched"}

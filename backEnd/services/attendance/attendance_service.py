@@ -187,4 +187,4 @@ class AttendanceService:
     @staticmethod
     def get_weekly_attendance(db, manager_id: int):
         data = AttendanceRepo.get_weekly_attendance(db, manager_id)
-        return {"success": True, "data": data, "message": "Weekly attendance fetched"}
+        return {"data": data}
