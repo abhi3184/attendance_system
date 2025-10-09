@@ -5,6 +5,7 @@ from .attendance.attendance_repo import AttendanceRepo
 from .leave.leave_repo import LeaveRepo
 from .holidays.holidays_repo import HolidaysRepo
 from .OTP.otpRepo import OTPRepository
+from .dashboard.dashboard import dashboardRepo
 
 __all__ = [
     "ForgotPassRepository",  
@@ -16,5 +17,6 @@ __all__ = [
     "AttendanceRepo",
     "LeaveRepo",
     "HolidaysRepo",
-    "OTPRepository"
+    "OTPRepository",
+    "dashboardRepo"
 ]

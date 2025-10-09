@@ -87,7 +87,7 @@ export default function Login() {
 
         const roles = getUserRole(data.access_token);
         if (roles === "Manager") navigate("/dashboard/mhome");
-        else if (roles === "Hr") navigate("/dashboard/hrhome");
+        else if (roles === "Hr") navigate("/dashboard/hrdashboard");
         else navigate("/dashboard/home");
       } else {
         toast.error(data.message || "Invalid credentials");
@@ -112,7 +112,7 @@ export default function Login() {
           <h2 className="text-2xl font-bold mb-6">Sign In</h2>
 
           {step === 1 && (
-            <div>
+            <form onSubmit={(e) => { e.preventDefault(); handleUsernameSubmit(); }}>
               <label className="block mb-1 font-medium">Email</label>
               <input
                 type="text"
@@ -127,26 +127,26 @@ export default function Login() {
                   else if (!emailRegex.test(value)) setUsernameError("Invalid email");
                   else setUsernameError("");
                 }}
-                className={`border rounded px-3 py-2 w-full ${
-                  usernameError ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`border rounded px-3 py-2 w-full ${usernameError ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="Enter your email"
               />
               {usernameError && (
                 <span className="text-red-500 text-sm font-semibold">{usernameError}</span>
               )}
               <button
+                type="submit"
                 onClick={handleUsernameSubmit}
                 className="w-full mt-4 bg-blue-600 text-white py-2 rounded"
                 disabled={loading}
               >
                 {loading ? "Checking..." : "Next"}
               </button>
-            </div>
+            </form>
           )}
 
           {step === 2 && (
-            <div>
+            <form onSubmit={(e) => { e.preventDefault(); handleLoginSubmit(); }}>
               <p className="mb-4">Hello, <strong>{username}</strong></p>
               <label className="block mb-1 font-medium">Password</label>
               <input
@@ -157,15 +157,15 @@ export default function Login() {
                   setPassword(e.target.value);
                   if (passwordError) setPasswordError("");
                 }}
-                className={`border rounded px-3 py-2 w-full ${
-                  passwordError ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`border rounded px-3 py-2 w-full ${passwordError ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="Enter password"
               />
               {passwordError && (
                 <span className="text-red-500 text-sm font-semibold">{passwordError}</span>
               )}
               <button
+                type="submit"
                 onClick={handleLoginSubmit}
                 className="w-full mt-4 bg-blue-600 text-white py-2 rounded"
                 disabled={loading}
@@ -178,7 +178,7 @@ export default function Login() {
               >
                 Forgot Password?
               </p>
-            </div>
+            </form>
           )}
         </motion.div>
       </div>

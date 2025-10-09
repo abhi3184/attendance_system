@@ -46,7 +46,7 @@ class LeaveRepo:
     
         db.commit()
         db.refresh(leave)
-        return {"message": "Leave updated successfully"}
+        return {"success":True,"message": "Leave updated successfully"}
 
     @staticmethod    
     def get_leave_by_empId(db: Session, empId: str) -> dict:

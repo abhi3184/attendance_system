@@ -5,6 +5,7 @@ from .attendance.attendance import attendance
 from .leave.leave import leave
 from .holidays.holidays import holidays
 from .OTP.otp import otp
+from .dashboard.dashboard import dashboard
 
 all_routes = [
     registration,
@@ -12,5 +13,6 @@ all_routes = [
     attendance,
     leave,
     holidays,
-    otp
+    otp,
+    dashboard
 ]

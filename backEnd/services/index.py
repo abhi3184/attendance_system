@@ -5,6 +5,7 @@ from services.attendance.attendance_service import AttendanceService
 from services.leave.leave_service import LeaveService
 from services.holidays.holidays_service import HolidayService
 from services.OTP.otp_service import OTPService
+from services.dashboard.dashboard_service import DashboardService
 
 __all__ = [
     loginService,
@@ -12,5 +13,6 @@ __all__ = [
     AttendanceService,
     LeaveService,
     HolidayService,
-    OTPService
+    OTPService,
+    DashboardService
 ]

@@ -19,7 +19,7 @@ export const sidebarTabs = [
 
 
   //Hr
-  { key: "home", path:'hrhome', label: "Home", roles: ["hr"], icon: "HomeIcon" },
+  { key: "home", path:'hrdashboard', label: "Home", roles: ["hr"], icon: "HomeIcon" },
   { key: "employeemanagement", path:'emanagement', label: "Employee", roles: ["hr"], icon: "UserGroupIcon" },
   { key: "leaverequest", path:'eleave', label: "Leave Tracker", roles: ["hr"], icon: "CalendarDaysIcon" },
   { key: "hrattendance", path:'hattendance', label: "Attendance", roles: ["hr"], icon: "ClockIcon" },

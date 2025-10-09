@@ -5,6 +5,8 @@ from routes.index import attendance
 from routes.index import leave
 from routes.index import holidays
 from routes.index import otp
+from routes.index import dashboard
+
 app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -28,6 +30,7 @@ app.include_router(registration, prefix="/registration", tags=["Registration"])
 app.include_router(leave, prefix="/leave", tags=["Leave"])
 app.include_router(holidays, prefix="/holidays", tags=["Holiday"])
 app.include_router(otp, prefix="/otp", tags=["OTP"])
+app.include_router(dashboard, prefix="/dashboard", tags=["dashboard"])
 # app.include_router(employee, prefix="/employee", tags=["Employee"])
 # app.include_router(forgotPass, prefix="/forgot-password", tags=["Forgot Password"])
 # app.include_router(checkIn, prefix="/checkin", tags=["CheckIn"])

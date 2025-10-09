@@ -10,6 +10,7 @@ import ForgotPassword from "./auth/ForgetPassword";
 
 const Login = lazy(() => import("./auth/Login"));
 const Home = lazy(() => import("./pages/employee/Home"));
+const HRDashboard = lazy(() => import("./pages//hr/HrDashboard"));
 const Leave = lazy(() => import("./pages/employee/Leave"));
 const Attendance = lazy(() => import("./pages/employee/Attendance"));
 const ManagerDashboard = lazy(() => import("./pages/manager/ManagerDashbord"));
@@ -62,11 +63,11 @@ export default function App() {
             <Route path="mattendance" element={<PrivateRoute allowedRoles={['Manager']}><ManagerAttendance /></PrivateRoute>} />
 
             {/* HR routes */}
+            <Route path="hrdashboard" element={<PrivateRoute allowedRoles={['Hr']}><HRDashboard /></PrivateRoute>} />
             <Route path="emanagement" element={<PrivateRoute allowedRoles={['Hr']}><EmployeeManagement /></PrivateRoute>} />
             <Route path="eleave" element={<PrivateRoute allowedRoles={['Hr']}><LeaveRequests /></PrivateRoute>} />
             <Route path="hattendance" element={<PrivateRoute allowedRoles={['Hr']}><HrAttendance /></PrivateRoute>} />
             <Route path="payroll" element={<PrivateRoute allowedRoles={['Hr']}><Payroll /></PrivateRoute>} />
-            <Route path="hrhome" element={<PrivateRoute allowedRoles={['Hr']}><Home /></PrivateRoute>} />
             <Route path="holiday" element={<PrivateRoute allowedRoles={['Hr']}><Holiday /></PrivateRoute>} />
 
           </Route>
