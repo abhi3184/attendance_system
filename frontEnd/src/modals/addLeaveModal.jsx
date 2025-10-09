@@ -127,6 +127,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
         start_date: formData.fromDate,
         end_date: formData.toDate,
         reason: formData.reason,
+        manager_id: decoded.manager_id, 
       };
 
       const res = await axios.post("http://127.0.0.1:8000/leave/addleave", payload);

@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from repository.index import AttendanceRepo, IPRepo
 from schemas.index import CheckIn
 from sqlalchemy.orm import Session
@@ -116,9 +116,9 @@ class AttendanceService:
         
         # Determine start date
         if view_type.lower() == "weekly":
-            start_date = today - timedelta(days=today.weekday())  # Monday of this week
+            start_date = today - timedelta(days=today.weekday())
         elif view_type.lower() == "monthly":
-            start_date = today.replace(day=1)  # 1st of this month
+            start_date = today.replace(day=1)
         else:
             raise ValueError("view_type must be 'weekly' or 'monthly'")
 
@@ -183,3 +183,8 @@ class AttendanceService:
             current_day += timedelta(days=1)
 
         return daily_list
+    
+    @staticmethod
+    def get_weekly_attendance(db, manager_id: int):
+        data = AttendanceRepo.get_weekly_attendance(db, manager_id)
+        return {"success": True, "data": data, "message": "Weekly attendance fetched"}

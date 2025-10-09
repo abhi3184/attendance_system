@@ -4,5 +4,5 @@
 
 /* optional global styles */
 body {
-  @apply font-sans text-base text-gray-800;
+  font-family: 'Inter', sans-serif;
 }

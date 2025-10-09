@@ -26,3 +26,4 @@ class Leave(Base):
     applied_on = Column(DateTime, default=datetime.now)
     approved_by = Column(String, nullable=False)
     approved_on = Column(DateTime, nullable=False)
+    manager_id = Column(Integer, nullable=False)

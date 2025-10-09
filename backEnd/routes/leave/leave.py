@@ -24,6 +24,11 @@ def update_leave_status(req: LeaveUpdate,db: Session = Depends(get_db)):
 async def get_users_by_id(empId: int, db: Session = Depends(get_db)):
     return LeaveService.get_leave_by_empId(db, empId)
 
+@leave.get("/getLeavesByManagerID/{manager_id}")
+async def get_users_by_id(manager_id: int, db: Session = Depends(get_db)):
+    return LeaveService.get_leave_by_managerID(db, manager_id)
+
+
 @leave.delete("/deleteLeave")
 async def delete_leave(leave_Id: int, db: Session = Depends(get_db)):
     return LeaveService.delete_leave(db, leave_Id)

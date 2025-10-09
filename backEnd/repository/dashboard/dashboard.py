@@ -31,8 +31,20 @@ class dashboardRepo:
             (cast(attendanceTable.c.check_in_time, Date) == today)  
         )
         result = db.execute(stmt)
-        total_managers = result.scalar()
-        return total_managers
+        count = result.scalar()
+        return count
+    
+    @staticmethod
+    def attendance_count_by_manager_id(db,manager_id):
+        today = date.today()
+        stmt = select(func.count()).select_from(attendanceTable).where(
+            (attendanceTable.c.isPresent == 1) &
+            (attendanceTable.c.manager_id == manager_id) &
+            (cast(attendanceTable.c.check_in_time, Date) == today)  
+        )
+        result = db.execute(stmt)
+        count = result.scalar()
+        return count
     
 
     @staticmethod
@@ -41,4 +53,17 @@ class dashboardRepo:
         result = db.execute(stmt)
         pending_leaves = result.scalar()
         return pending_leaves
+    
+
+    @staticmethod
+    def leaves_count_by_manager_id(db,status,manager_id):
+        today = date.today()
+        stmt = select(func.count()).select_from(Leave).where(
+            (Leave.status == status) &
+            (Leave.manager_id == manager_id) &
+            (cast(Leave.start_date, Date) == today)  
+        )
+        result = db.execute(stmt)
+        count = result.scalar()
+        return count
     

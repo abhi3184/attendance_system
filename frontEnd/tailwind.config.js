@@ -8,7 +8,7 @@ module.exports = {
         lavender: "#E6E6FA"
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui"]
+        inter: ['Inter', 'sans-serif'],
       },
       fontSize: {
         xs: "0.75rem",

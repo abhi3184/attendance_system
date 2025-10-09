@@ -1,66 +1,150 @@
-// src/pages/TeamOverview.jsx
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { FaTimes } from "react-icons/fa";
 
-const teamMembers = [
-  { id: 1, name: "Abhijit Deshmukh", role: "Developer", email: "abhijit@example.com", status: "Active" },
-  { id: 2, name: "Priya Sharma", role: "Designer", email: "priya@example.com", status: "Active" },
-  { id: 3, name: "Rohit Patil", role: "Tester", email: "rohit@example.com", status: "Inactive" },
-  { id: 4, name: "Sneha Kulkarni", role: "HR", email: "sneha@example.com", status: "Active" },
+// Sample Employees Data
+const initialEmployees = [
+  { emp_id: 1, first_name: "John", last_name: "Doe", department: "IT", salary: 55000, status: "Present", email: "john@example.com", phone: "1234567890" },
+  { emp_id: 2, first_name: "Jane", last_name: "Smith", department: "HR", salary: 48000, status: "Absent", email: "jane@example.com", phone: "9876543210" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
+  { emp_id: 4, first_name: "Lucy", last_name: "Brown", department: "Marketing", salary: 50000, status: "Present", email: "lucy@example.com", phone: "6677889900" },
 ];
 
-export default function TeamOverview() {
-  return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">Team Overview</h1>
+export default function TeamDetailsTable() {
+  const [employees] = useState(initialEmployees);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow-md">
+  const filteredEmployees = employees.filter(emp =>
+    `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <motion.div className="flex-1 flex flex-col max-h-full p-4 relative bg-white rounded-xl shadow-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+
+      {/* 🔍 Search */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search employee..."
+          className="border border-gray-300 rounded-lg px-4 py-2 text-xs w-full sm:w-1/3 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* 🗂 Employee Table */}
+      <div className="overflow-auto rounded-2xl ">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-purple-100 sticky top-0 z-10">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Salary</th>
             </tr>
           </thead>
-
-          <tbody className="bg-white divide-y divide-gray-200">
-            {teamMembers.map((member, index) => (
-              <motion.tr
-                key={member.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="hover:bg-gray-50"
+          <tbody className="divide-y divide-gray-100">
+            {filteredEmployees.map(emp => (
+              <tr
+                key={emp.emp_id}
+                className="hover:bg-purple-50 cursor-pointer transition"
+                onClick={() => setSelectedEmployee(emp)}
               >
-                <td className="px-6 py-4 whitespace-nowrap">{member.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{member.role}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{member.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      member.status === "Active"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {member.status}
+                <td className="px-4 py-2 text-xs">{emp.first_name} {emp.last_name}</td>
+                <td className="px-4 py-2 text-xs">{emp.department}</td>
+                <td>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${emp.status === "Present" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {emp.status}
                   </span>
                 </td>
-              </motion.tr>
+                <td className="px-4 py-2text-xs"><span className="text-gray-700">₹</span> {emp.salary}</td>
+              </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+
+      {/* 🔹 Employee Details Modal */}
+      {selectedEmployee && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <motion.div
+            className="bg-white p-6 rounded-2xl shadow-xl w-80 relative"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+          >
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+              onClick={() => setSelectedEmployee(null)}
+            >
+              <FaTimes />
+            </button>
+            <h2 className="text-xl font-bold text-gray-700 mb-3">{selectedEmployee.first_name} {selectedEmployee.last_name}</h2>
+            <p><span className="font-semibold">Department:</span> {selectedEmployee.department}</p>
+            <p><span className="font-semibold">Salary:</span> ₹{selectedEmployee.salary}</p>
+            <p><span className="font-semibold">Status:</span> {selectedEmployee.status}</p>
+            <p><span className="font-semibold">Email:</span> {selectedEmployee.email}</p>
+            <p><span className="font-semibold">Phone:</span> {selectedEmployee.phone}</p>
+          </motion.div>
+        </div>
+      )}
+
+    </motion.div>
   );
 }

@@ -30,7 +30,8 @@ class LeaveService:
             start_date = req.start_date,
             end_date = req.end_date,
             reason = req.reason,
-            applied_on = datetime.now()
+            applied_on = datetime.now(),
+            manager_id = req.manager_id,
         )
         return LeaveRepo.apply_leave(db, leave)
     
@@ -41,6 +42,10 @@ class LeaveService:
     @staticmethod
     def get_leave_by_empId(db: Session, emp_Id):
         return LeaveRepo.get_leave_by_empId(db, emp_Id)
+    
+    @staticmethod
+    def get_leave_by_managerID(db: Session, manager_id):
+        return LeaveRepo.get_leave_by_manger_id(db, manager_id)
     
     @staticmethod
     def delete_leave(db: Session, leave_Id):

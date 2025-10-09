@@ -9,6 +9,7 @@ class AddleaveRequestDTO(BaseModel):
     leave_type_id : int
     start_date: date
     end_date: date
+    manager_id: int
     reason: Optional[str] = None
 
 class LeaveUpdate(BaseModel):

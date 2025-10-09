@@ -18,6 +18,16 @@ class DashboardService:
         return {"success":True,"count": count}
     
     @staticmethod
+    def attendance_count_by_manager(db,manager_id):
+        count = dashboardRepo.attendance_count_by_manager_id(db,manager_id)
+        return {"success":True,"count": count}
+    
+    @staticmethod
     def pending_leaves_count(db,status):
         count = dashboardRepo.pending_leaves_count(db,status)
+        return {"success":True,"count": count}
+    
+    @staticmethod
+    def leaves_count_by_manager(db,status,manager_id):
+        count = dashboardRepo.leaves_count_by_manager_id(db,status,manager_id)
         return {"success":True,"count": count}

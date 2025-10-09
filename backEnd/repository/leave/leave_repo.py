@@ -94,6 +94,59 @@ class LeaveRepo:
         }
 
         return response
+    
+
+    @staticmethod    
+    def get_leave_by_manger_id(db: Session, managerID: int) -> dict:
+        leaves = (
+            db.query(
+                Leave.leave_id,
+                Leave.emp_id,
+                Leave.start_date,
+                Leave.end_date,
+                Leave.status,
+                Leave.reason,
+                Leave.used_days,
+                leaveTypeTable.c.leave_name.label("leave_type_name"),
+                leaveTypeTable.c.total_days.label("total_days"),
+                employeeTable.c.firstName.label("first_name"), 
+                employeeTable.c.lastName.label("last_name") 
+            )
+            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+            .join(employeeTable, Leave.emp_id == employeeTable.c.emp_id)
+            .filter(Leave.manager_id == managerID)
+            .all()
+        )
+
+        if not leaves:
+            return {"success": False, "data": [], "message": "Leaves not found"}
+
+        # Convert result to list of dicts
+        leaves_list = [
+            {
+                "leave_id": leave.leave_id,
+                "emp_id": leave.emp_id,
+                "start_date": leave.start_date,
+                "first_name": leave.first_name,   
+                "last_name": leave.last_name, 
+                "end_date": leave.end_date,
+                "status": leave.status,
+                "reason": leave.reason,
+                "leave_type": leave.leave_type_name,
+                "total_days":leave.total_days,
+                "used_days": leave.used_days,
+                "remaining_days": leave.total_days -leave.used_days
+            }
+            for leave in leaves
+        ]
+
+        response = {
+            "success": True,
+            "data": leaves_list,
+            "message": "data fetched successfully"
+        }
+
+        return response
 
     @staticmethod
     def delete_leave(db,leave_Id: int):

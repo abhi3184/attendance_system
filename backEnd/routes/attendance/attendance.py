@@ -75,3 +75,8 @@ def get_emp_attendance(emp_id: int, view_type: str = "weekly", db: Session = Dep
         return {"success": True, "data": data, "message": "Employee attendance fetched successfully"}
     except ValueError as e:
         return {"success": False, "message": str(e)}
+    
+
+@attendance.get("/weekly_attendance_by_manager/{manager_id}")
+def weekly_attendance(manager_id: int, db: Session = Depends(get_db)):
+    return AttendanceService.get_weekly_attendance(db, manager_id)

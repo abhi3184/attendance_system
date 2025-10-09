@@ -17,6 +17,10 @@ async def get_all_managers_count(db:Session = Depends(get_db)):
 async def attendance_count(db:Session = Depends(get_db)):
     return DashboardService.attendance_count(db)
 
+@dashboard.get("/attendance_count_by_manager/{manager_id}")
+async def attendance_count(manager_id: int, db:Session = Depends(get_db)):
+    return DashboardService.attendance_count_by_manager(db,manager_id)
+
 @dashboard.get("/leaves_count")
 async def leave_count(status,db:Session = Depends(get_db)):
     return DashboardService.pending_leaves_count(db,status)
