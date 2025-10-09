@@ -172,12 +172,12 @@ export default function ForgotPassword() {
         className="absolute inset-0 w-full h-full object-cover z-0"
       />
       <motion.div
-        className="w-full max-w-md bg-white p-8 md:p-12 rounded-2xl shadow-xl z-10"
+        className="w-full max-w-md bg-white p-4 md:p-6 rounded-2xl shadow-xl z-10"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <h2 className="text-3xl font-bold text-purple-700 text-center mb-10">
+        <h2 className="text-2xl font-bold text-purple-700 text-center mb-10">
           Forgot Password
         </h2>
 
@@ -195,9 +195,8 @@ export default function ForgotPassword() {
                 setEmail(e.target.value);
                 setEmailError("");
               }}
-              className={`w-full px-4 py-3 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                emailError ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-3 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${emailError ? "border-red-500" : "border-gray-300"
+                }`}
               whileFocus={{ scale: 1.02 }}
             />
             {emailError && <span className="text-red-500 text-sm">{emailError}</span>}
@@ -236,9 +235,8 @@ export default function ForgotPassword() {
               <button
                 onClick={handleResendOtp}
                 disabled={loading || timeLeft > 0}
-                className={`text-purple-700 font-semibold ${
-                  timeLeft > 0 ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`text-purple-700 font-semibold ${timeLeft > 0 ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
               >
                 Resend OTP
               </button>
@@ -305,7 +303,10 @@ export default function ForgotPassword() {
 
         <span
           className="text-purple-700 text-sm mt-6 block text-center cursor-pointer hover:underline"
-          onClick={() => navigate("/login")}
+          onClick={() => {
+            localStorage.clear();
+            navigate("/login");
+          }}
         >
           Back to Login
         </span>

@@ -109,7 +109,7 @@ export default function Login() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-2xl font-bold mb-6">Sign In</h2>
+          <h2 className="text-2xl font-bold mb-6">Login</h2>
 
           {step === 1 && (
             <form onSubmit={(e) => { e.preventDefault(); handleUsernameSubmit(); }}>
