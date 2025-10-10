@@ -1,11 +1,13 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import axios from "axios";
 import "./Login.css";
 import { getUserRole } from "../utils/JWTHelper";
+
+import { login, getEmployeeByEmail } from "../api/services/auth/authService";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,39 +22,14 @@ export default function Login() {
 
   // Step 1: Email submit
   const handleUsernameSubmit = async () => {
-    if (!username.trim()) {
-      setUsernameError("Email is required");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(username)) {
-      setUsernameError("Invalid email");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `http://127.0.0.1:8000/auth/getEmployeeByEmail`,
-        { params: { email: username } }
-      );
-      setLoading(false);
-
-      if (response.data.success && response.data.data) {
-        setStep(2);
-        setUser(response.data.data);
-        setUsernameError("");
-      } else {
-        toast.error("Email does not exist");
-      }
-    } catch (err) {
-      setLoading(false);
-      console.error(err);
-      toast.error("Error checking email");
-    }
-  };
-
+  try {
+    const employee = await getEmployeeByEmail(username);
+    setUser(employee);
+    setStep(2);
+  } catch (err) {
+    toast.error(err.message); // toast already shown by global error handler
+  }
+};
   // Step 2: Password validation
   const validatePassword = () => {
     if (!password.trim()) {
@@ -68,34 +45,19 @@ export default function Login() {
   };
 
   // Step 2: Login submit
-  const handleLoginSubmit = async () => {
+  const handleLoginSubmit = async (e) => {
     if (!validatePassword()) return;
-
+    e.preventDefault();
     try {
-      setLoading(true);
-      const response = await axios.post("http://127.0.0.1:8000/auth/login", {
-        login: username,
-        password: password,
-      });
-      setLoading(false);
-
-      const data = response.data;
-      if (data.success && data.employee) {
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("employee", JSON.stringify(data.employee));
-        setUser(data.employee);
-
-        const roles = getUserRole(data.access_token);
-        if (roles === "Manager") navigate("/dashboard/mhome");
-        else if (roles === "Hr") navigate("/dashboard/hrdashboard");
-        else navigate("/dashboard/home");
-      } else {
-        toast.error(data.message || "Invalid credentials");
-      }
+      const { employee, access_token } = await login({ login: username, password });
+      setUser(employee);
+      toast.success(`Welcome ${employee.firstName}`);
+      const roles = getUserRole(access_token);
+      if (roles === "Manager") navigate("/dashboard/mhome");
+      else if (roles === "Hr") navigate("/dashboard/hrdashboard");
+      else navigate("/dashboard/home");
     } catch (err) {
-      setLoading(false);
-      console.error(err);
-      toast.error(err.response?.data?.detail || "Login failed");
+      // handled by interceptor
     }
   };
 
@@ -136,7 +98,6 @@ export default function Login() {
               )}
               <button
                 type="submit"
-                onClick={handleUsernameSubmit}
                 className="w-full mt-4 bg-blue-600 text-white py-2 rounded"
                 disabled={loading}
               >
@@ -146,7 +107,7 @@ export default function Login() {
           )}
 
           {step === 2 && (
-            <form onSubmit={(e) => { e.preventDefault(); handleLoginSubmit(); }}>
+            <form onSubmit={ handleLoginSubmit}>
               <p className="mb-4">Hello, <strong>{username}</strong></p>
               <label className="block mb-1 font-medium">Password</label>
               <input
@@ -166,7 +127,6 @@ export default function Login() {
               )}
               <button
                 type="submit"
-                onClick={handleLoginSubmit}
                 className="w-full mt-4 bg-blue-600 text-white py-2 rounded"
                 disabled={loading}
               >
