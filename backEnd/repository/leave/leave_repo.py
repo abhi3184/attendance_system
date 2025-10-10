@@ -49,8 +49,8 @@ class LeaveRepo:
         return {"success":True,"message": "Leave updated successfully"}
 
     @staticmethod    
-    def get_leave_by_empId(db: Session, empId: str) -> dict:
-        leaves = (
+    def get_leaves_by_empId(db: Session, empId: str):
+        return (
             db.query(
                 Leave.leave_id,
                 Leave.emp_id,
@@ -59,41 +59,14 @@ class LeaveRepo:
                 Leave.status,
                 Leave.reason,
                 Leave.used_days,
+                Leave.leave_type_id,
                 leaveTypeTable.c.leave_name.label("leave_type_name"),
                 leaveTypeTable.c.total_days.label("total_days")
             )
             .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
-            .filter(Leave.emp_id == empId)
+            .filter(Leave.emp_id == empId)  # Latest leave first
             .all()
         )
-
-        if not leaves:
-            return {"success": False, "data": [], "message": "Leaves not found"}
-
-        # Convert result to list of dicts
-        leaves_list = [
-            {
-                "leave_id": leave.leave_id,
-                "emp_id": leave.emp_id,
-                "start_date": leave.start_date,
-                "end_date": leave.end_date,
-                "status": leave.status,
-                "reason": leave.reason,
-                "leave_type": leave.leave_type_name,
-                "total_days":leave.total_days,
-                "used_days": leave.used_days,
-                "remaining_days": leave.total_days -leave.used_days
-            }
-            for leave in leaves
-        ]
-
-        response = {
-            "success": True,
-            "data": leaves_list,
-            "message": "data fetched successfully"
-        }
-
-        return response
     
 
     @staticmethod    

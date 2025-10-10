@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaPlus, FaTrash, FaCalendarAlt, FaEdit } from "react-icons/fa";
-import AddHolidayModal from "../../modals/addHoliday";
+import AddHolidayModal from "../../modals/hr/addHoliday";
 import axios from "axios";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
+import { hrHolidaysService } from "../../api/services/hrDashboard/hrHolidaysService";
 
 export default function Holidays() {
+  const firstLoad = useRef(true);
   const [holidays, setHolidays] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -17,12 +19,12 @@ export default function Holidays() {
   const fetchHolidays = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://127.0.0.1:8000/holidays/get_holidays");
-      if (Array.isArray(res.data?.data)) {
-        setHolidays(res.data.data);
-        setFiltered(res.data.data);
+      const res = await hrHolidaysService.getAllHolidays();
+      if (res.success && res.data) {
+        setHolidays(res.data);
+        setFiltered(res.data);
       } else {
-        toast.error("Failed to fetch holidays");
+        toast.warning("Holdays not found");
       }
     } catch (err) {
       console.error(err);
@@ -38,7 +40,7 @@ export default function Holidays() {
 
   const handleDelete = async (holidays_id) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/holidays/delete_holiday/${holidays_id}`);
+      await hrHolidaysService.deleteHoliday(holidays_id);
       setHolidays((prev) => prev.filter((h) => h.holidays_id !== holidays_id));
       setFiltered((prev) => prev.filter((h) => h.holidays_id !== holidays_id));
       toast.success("Holiday deleted successfully!");
@@ -99,7 +101,7 @@ export default function Holidays() {
         <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filtered.map((holiday, idx) => (
             <motion.div
-              key={holiday.id}
+              key={idx}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.03 }}
@@ -145,7 +147,7 @@ export default function Holidays() {
                   title="Delete"
                 >
                   <FaTrash className="w-3 h-3" />
-                </motion.button> 
+                </motion.button>
               </div>
             </motion.div>
           ))}
@@ -173,23 +175,23 @@ export default function Holidays() {
             </p>
             <div className="flex justify-center gap-3">
               <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-4 py-1 text-sm bg-gray-300 rounded-lg hover:bg-gray-400"
-                  onClick={() => setDeleteHoliday(null)}
-                >
-                  Cancel
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-4 py-1 text-sm bg-gray-300 rounded-lg hover:bg-gray-400"
+                onClick={() => setDeleteHoliday(null)}
+              >
+                Cancel
               </motion.button>
               <motion.button
-                  className="px-4 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
-                  onClick={() => {
-                    handleDelete(deleteHoliday.holidays_id);
-                    setDeleteHoliday(null);
-                  }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Delete
+                className="px-4 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
+                onClick={() => {
+                  handleDelete(deleteHoliday.holidays_id);
+                  setDeleteHoliday(null);
+                }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Delete
               </motion.button>
             </div>
           </div>

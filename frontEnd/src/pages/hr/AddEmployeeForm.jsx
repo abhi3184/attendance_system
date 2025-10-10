@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../../modals/modal";
 import FancyDropdown from "../../modals/dropdowns";
-import axios from "axios";
 import toast from "react-hot-toast";
+import { EmployeeService } from "../../api/services/hrDashboard/employeeManageService";
 
 export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee" }) => {
   const [formData, setFormData] = useState({
@@ -36,27 +36,17 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
   const inputBaseClass =
     "w-full border rounded-md px-3 pt-4 pb-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500";
 
-  // Fetch managers and roles once
-
   useEffect(() => {
     if (isOpen) {
-      axios
-        .get("http://127.0.0.1:8000/registration/getAllManagers")
-        .then((res) => Array.isArray(res.data?.data) && setManagers(res.data.data))
-        .catch((err) => console.error("Error fetching managers:", err));
-
-        setFormData((prev) => ({ ...prev, managerId: "" }));
+      EmployeeService.getAllManagers().then(setManagers).catch(console.error);
+      setFormData((prev) => ({ ...prev, managerId: "" }));
     }
   }, [isOpen]);
 
   useEffect(() => {
-    axios
-      .get("http://127.0.0.1:8000/registration/getAllRoles")
-      .then((res) => Array.isArray(res.data?.data) && setRoles(res.data.data))
-      .catch((err) => console.error("Error fetching roles:", err));
+    EmployeeService.getAllRoles().then(setRoles).catch(console.error);
   }, []);
 
-  // Reset form whenever modal opens
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -171,58 +161,58 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
 
   const checkEmployeeExist = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/registration/checkEmployeeExist", {
-        params: { emailId: formData.email, mobile: formData.mobile },
+      const res = await EmployeeService.checkEmployeeExist({
+        email: formData.email,
+        mobile: formData.mobile,
       });
-      if (response.data?.success === false) {
-        toast.error(response.data.message);
+
+      if (res.success === false) {
+        toast.error(res.message);
         return false;
       }
       return true;
-    } catch (err) {
-      console.error("Error checking employee:", err);
+    } catch {
       toast.error("Failed to check employee. Please try again.");
       return false;
     }
   };
 
   const handleSubmit = async () => {
-    const stepErrors = validateStep();
-    if (Object.keys(stepErrors).length > 0) return setErrors(stepErrors);
-
     setLoading(true);
+
+    const payload = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      emailId: formData.email,
+      mobile: formData.mobile,
+      department: formData.department,
+      shift: formData.shift,
+      password: "",
+      roles: formData.role,
+      manager_id: formData.role === 3 ? formData.managerId : 1,
+      schoolName: formData.schoolName,
+      university: formData.university,
+      degree: formData.degree,
+      fieldOfStudy: formData.fieldOfStudy || formData.degree,
+      passingyear: formData.year,
+      location: formData.location,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zip,
+      phoneAlt: formData.phoneAlt,
+    };
+
     try {
-      const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        emailId: formData.email,
-        mobile: formData.mobile,
-        department: formData.department,
-        shift: formData.shift,
-        password: "",
-        roles: formData.role,
-        manager_id: formData.role === 3 ? formData.managerId : 1, // Employee → selected manager, HR/Manager → 1
-        schoolName: formData.schoolName,
-        university: formData.university,
-        degree: formData.degree,
-        fieldOfStudy: formData.fieldOfStudy || formData.degree,
-        passingyear: formData.year,
-        location: formData.location,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zip: formData.zip,
-        phoneAlt: formData.phoneAlt,
-      };
-
-      const response = await axios.post("http://127.0.0.1:8000/registration/postEmployee", payload);
-
-      if (response.status === 200 || response.status === 201) {
-        onSubmit(formData);
+      const res = await EmployeeService.addEmployee(payload); // API call
+      if (res.success) {
+        toast.success("Employee added successfully ✅");
+        onSubmit();
         onClose();
+      } else {
+        toast.error("Failed to add employee ❌");
       }
     } catch (err) {
-      console.error("Error adding employee:", err);
       toast.error("Failed to add employee ❌");
     } finally {
       setLoading(false);

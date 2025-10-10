@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import FancyDropdown from "./dropdowns";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";
 import jwt_decode from "jwt-decode";
-import Modal from "./Modal";
+import Modal from "./modal";
+import { employeeLeaveService } from "../api/services/employee/leaveService";
 
 export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedType }) {
   const [formData, setFormData] = useState({
@@ -17,20 +18,22 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
   const [errors, setErrors] = useState({});
   const today = new Date().toISOString().split("T")[0];
   const [leaveTypes, setLeaveTypes] = useState([]);
-
+  const fetched = useRef(false);
   // ✅ Fetch leave types
   useEffect(() => {
+    if (fetched.current) return; // ✅ Skip second render in StrictMode
+    fetched.current = true;
     const fetchLeaveTypes = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:8000/leave/getAllLeaveTypes");
-        if (res.data.success && res.data.data) {
-          const options = res.data.data.map((item) => ({
+        const res = await employeeLeaveService.getLeaveTypes();
+        if (res.success && res.data) {
+          const options = res.data.map((item) => ({
             label: item.leave_name,
             value: item.leave_type_id,
           }));
           setLeaveTypes(options);
         } else {
-          toast.error(res.data.message || "Leave types not found!");
+          toast.error(res.message || "Leave types not found!");
         }
       } catch (err) {
         console.error(err);
@@ -101,7 +104,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
     return 0;
   };
 
- 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -127,17 +130,17 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
         start_date: formData.fromDate,
         end_date: formData.toDate,
         reason: formData.reason,
-        manager_id: decoded.manager_id, 
+        manager_id: decoded.manager_id,
       };
 
-      const res = await axios.post("http://127.0.0.1:8000/leave/addleave", payload);
+      const res = await employeeLeaveService.addLeaveRequest(payload);
 
-      if (res.data.success) {
+      if (res.success) {
         toast.success("Leave applied successfully!");
         onClose();
         if (onSubmit) onSubmit();
       } else {
-        toast.error(res.data.message || "Failed to apply leave!");
+        toast.error(res.message || "Failed to apply leave!");
       }
     } catch (err) {
       console.error(err);
@@ -158,7 +161,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
             value={formData.leaveType?.value}
             onChange={(val) => {
               const selected = leaveTypes.find((lt) => lt.value === val);
-              handleChange("leaveType", selected); 
+              handleChange("leaveType", selected);
             }}
 
             placeholder="Select Leave Type"

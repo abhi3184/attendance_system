@@ -26,7 +26,7 @@ class HolidayService:
         result = HolidaysRepo.get_all_holidays(db)
         if not result:
             return {"success":False,"data":result,"message":"There is not any Holiday"}
-        return {"success":False,"data":result,"message":"Holidays response"}
+        return {"success":True,"data":result,"message":"Holidays response"}
     
 
     @staticmethod

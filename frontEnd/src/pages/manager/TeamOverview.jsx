@@ -5,15 +5,8 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import jwt_decode from "jwt-decode";
 import { FaUsers, FaUserCheck, FaUserTimes, FaClipboardList, FaCalendarAlt, FaSun } from "react-icons/fa";
+import { EmployeeOverViewService } from "../../api/services/manager/employeeOverViewService";
 
-// Sample Employees Data
-const initialEmployees = [
-  { emp_id: 1, first_name: "John", last_name: "Doe", department: "IT", salary: 55000, status: "Present", email: "john@example.com", phone: "1234567890" },
-  { emp_id: 2, first_name: "Jane", last_name: "Smith", department: "HR", salary: 48000, status: "Absent", email: "jane@example.com", phone: "9876543210" },
-  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
-  { emp_id: 3, first_name: "Mark", last_name: "Taylor", department: "Finance", salary: 60000, status: "Present", email: "mark@example.com", phone: "1122334455" },
-
-];
 
 export default function TeamDetailsTable() {
   const [employees, setTeamMembers] = useState([]);
@@ -45,10 +38,23 @@ export default function TeamDetailsTable() {
 
   useEffect(() => {
     if (!manager?.emp_id) return;
-    axios.get(`http://127.0.0.1:8000/registration/get_employee_by_manager/${manager.emp_id}`)
-      .then(res => res.data.success && setTeamMembers(res.data.data))
-      .catch(err => console.error(err));
+    fetchEmployees();
   }, [manager]);
+
+  const fetchEmployees = async () => {
+    if (!manager?.emp_id) return;
+    setLoading(true);
+    try {
+      const res = await EmployeeOverViewService.getEmployeeByManager(manager.emp_id);
+      if (res.success && res.data) {
+        setTeamMembers(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching employees");
+    }
+    setLoading(false);
+  }
 
   return (
     <motion.div className="flex-1 flex flex-col max-h-full p-4 relative bg-white rounded-xl shadow-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -93,13 +99,13 @@ export default function TeamDetailsTable() {
                 <td className="px-4 py-2 text-xs">{emp.mobile}</td>
                 <td className="px-4 py-2 text-xs">{emp.department}</td>
                 <td className="px-4 py-2 text-xs flex items-center gap-1">
-                    <motion.div
-                      animate={{ rotate: [0, 360] }}
-                      transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-                    >
-                      <FaSun className="text-yellow-500" />
-                    </motion.div>
-                    <span>{emp.shift_time}</span>
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                  >
+                    <FaSun className="text-yellow-500" />
+                  </motion.div>
+                  <span>{emp.shift_time}</span>
 
                 </td>
                 <td>

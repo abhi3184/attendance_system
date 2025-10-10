@@ -44,7 +44,7 @@ export default function Sidebar({ isOpen, onClose }) {
   };
 
   return (
-    <aside className={`fixed md:static top-0 left-0 h-screen w-20 z-20 bg-white border-r shadow-md transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+    <aside className={`fixed md:static top-0 left-0 h-screen w-20 z-10 bg-white border-r shadow-md transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
       <div className="flex flex-col h-full py-3 items-center">
         {/* Logo */}
         <div className="flex flex-col items-center mb-4">

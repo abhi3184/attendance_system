@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { SunIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
-import axios from "axios";
 import jwt_decode from "jwt-decode";
 
 // Tab Components
@@ -11,17 +10,21 @@ import LeavePreview from "./Leave-preview";
 import AttendancePreview from "./Attendance-preview";
 import Holidays from "./Holidays";
 
+import { employeeHomeService } from "../../api/services/employee/employeeHome";
+
 export default function Home() {
   const [employeeDetails, setEmployeeDetails] = useState(null);
   const [employee, setEmployee] = useState(null);
   const [isCheckedIn, setCheckedIn] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [activeTab, setActiveTab] = useState("ppreview");
-  const [loadingEmployee, setLoadingEmployee] = useState(false);
   const [loadingCheck, setLoadingCheck] = useState(false);
   const [leaveSummary, setLeaveSummary] = useState([]);
   const [holidays, setHolidays] = useState([]);
-  const [attendanePreview , setAttendanceData] = useState([])
+  const [attendanceData, setAttendanceData] = useState([]);
+
+  const firstLoad = useRef(true);
+  const holidaysFetched = useRef(false);
 
   const tabs = [
     { path: "ppreview", label: "Profile" },
@@ -30,7 +33,7 @@ export default function Home() {
     { path: "holidays", label: "Holidays" },
   ];
 
-  // Decode JWT and get employee data
+  // Decode JWT once
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -38,10 +41,7 @@ export default function Home() {
     try {
       const decoded = jwt_decode(token);
       if (decoded.id && decoded.manager_id !== undefined) {
-        setEmployee({
-          emp_id: decoded.id,
-          manager_id: decoded.manager_id,
-        });
+        setEmployee({ emp_id: decoded.id, manager_id: decoded.manager_id });
       } else {
         toast.error("Invalid token structure!");
       }
@@ -51,68 +51,68 @@ export default function Home() {
     }
   }, []);
 
-  // Fetch employee details
+  // Fetch all employee-related data once
   useEffect(() => {
     if (!employee?.emp_id) return;
+    if (!firstLoad.current) return;
 
-    const fetchEmployee = async () => {
-      setLoadingEmployee(true);
+    const fetchAllEmployeeData = async () => {
       try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/registration/get_employee_by_id/${employee.emp_id}`
-        );
-        if (res.data.success && res.data.data) {
-          setEmployeeDetails(res.data.data);
-        } else {
-          toast.error(res.data.message || "Employee not found!");
-        }
-      } catch (err) {
-        toast.error("Failed to fetch employee details!");
-      } finally {
-        setLoadingEmployee(false);
-      }
-    };
+        // Employee Details
+        const empRes = await employeeHomeService.getEmployeeDetails(employee.emp_id);
+        if (empRes.success && empRes.data) setEmployeeDetails(empRes.data);
 
-    fetchEmployee();
-  }, [employee]);
-
-  // Fetch today's attendance status (for live timer)
-  useEffect(() => {
-    if (!employee?.emp_id) return;
-
-    const fetchStatus = async () => {
-      try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/checkIn/status/${employee.emp_id}`
-        );
-
-        const { checked_in, check_in_time } = res.data;
-
-        if (checked_in && check_in_time) {
-          const checkInDate = new Date(check_in_time);
-          const elapsed = Math.floor((new Date() - checkInDate) / 1000);
-          setSecondsElapsed(elapsed);
+        // Attendance Status
+        const statusRes = await employeeHomeService.fetchStatusToday(employee.emp_id);
+        if (statusRes.checked_in && statusRes.check_in_time) {
+          const checkInDate = new Date(statusRes.check_in_time);
+          setSecondsElapsed(Math.floor((new Date() - checkInDate) / 1000));
           setCheckedIn(true);
         } else {
           setSecondsElapsed(0);
           setCheckedIn(false);
         }
+
+        // Leave Summary
+        const leaveRes = await employeeHomeService.getLeaveSummary(employee.emp_id);
+        if (leaveRes) setLeaveSummary(leaveRes);
+
+        // Attendance Records
+        const attRes = await employeeHomeService.getAttendanceRecords(employee.emp_id);
+        if (attRes.success && Array.isArray(attRes.data)) setAttendanceData(attRes.data);
+
       } catch (err) {
-        toast.error("Failed to fetch attendance status!");
+        console.error("Error fetching employee data:", err);
+        toast.error("Failed to fetch employee data!");
+      } finally {
+        firstLoad.current = false; // Prevent duplicate calls in dev
       }
     };
 
-    fetchStatus();
+    fetchAllEmployeeData();
   }, [employee]);
 
-  // Live timer increment
+  // Fetch upcoming holidays (static)
+  useEffect(() => {
+    if (holidaysFetched.current) return; // prevent second call
+    holidaysFetched.current = true;
+
+    const fetchUpcomingHolidays = async () => {
+      try {
+        const res = await employeeHomeService.getUpcominngHolidays();
+        if (res.success && res.data) setHolidays(res.data);
+      } catch (err) {
+        toast.error("Error fetching upcoming holidays!");
+      }
+    };
+
+    fetchUpcomingHolidays();
+  }, []);
+
+  // Live timer
   useEffect(() => {
     if (!isCheckedIn) return;
-
-    const interval = setInterval(() => {
-      setSecondsElapsed(prev => prev + 1);
-    }, 1000);
-
+    const interval = setInterval(() => setSecondsElapsed(prev => prev + 1), 1000);
     return () => clearInterval(interval);
   }, [isCheckedIn]);
 
@@ -123,9 +123,9 @@ export default function Home() {
     const secs = String(sec % 60).padStart(2, "0");
     return [hrs, mins, secs];
   };
-
   const [hours, minutes, secs] = formatTime(secondsElapsed);
 
+  // Tabs
   const tabComponents = {
     ppreview: ProfilePreview,
     lpreview: LeavePreview,
@@ -134,120 +134,44 @@ export default function Home() {
   };
   const ActiveComponent = tabComponents[activeTab];
 
-  // Check-in API
+  // Check-in
   const handleCheckIn = async () => {
     if (!employee?.emp_id) return;
     setLoadingCheck(true);
     try {
-      const res = await axios.post(
-        `http://127.0.0.1:8000/checkIn/checkin?emp_id=${employee.emp_id}&manager_id=${employee.manager_id}`
-      );
-      if (res.data.success) {
+      const res = await employeeHomeService.handleCheckIn(employee);
+      if (res.success) {
         setCheckedIn(true);
         toast.success("Checked in successfully!");
       } else {
-        toast.error(res.data.message || "Check-in failed!");
+        toast.error(res.message || "Check-in failed!");
       }
     } catch (err) {
-      toast.error(
-        err?.response?.data?.detail
-          ? JSON.stringify(err.response.data.detail)
-          : "Error connecting server!"
-      );
+      toast.error(err?.response?.data?.detail || "Error connecting server!");
     } finally {
       setLoadingCheck(false);
     }
   };
 
-  // Check-out API
+  // Check-out
   const handleCheckOut = async () => {
     if (!employee?.emp_id) return;
     setLoadingCheck(true);
     try {
-      const res = await axios.post(
-        `http://127.0.0.1:8000/checkIn/checkout?emp_id=${employee.emp_id}`
-      );
-      if (res.data.success) {
+      const res = await employeeHomeService.handleCheckOut(employee.emp_id);
+      if (res.success) {
         setCheckedIn(false);
+        setSecondsElapsed(0);
         toast.success("Checked out successfully!");
-        setSecondsElapsed(0); // Reset timer on checkout
       } else {
-        toast.error(res.data.message || "Check-out failed!");
+        toast.error(res.message || "Check-out failed!");
       }
     } catch (err) {
-      toast.error(
-        err?.response?.data?.detail
-          ? JSON.stringify(err.response.data.detail)
-          : "Error connecting server!"
-      );
+      toast.error(err?.response?.data?.detail || "Error connecting server!");
     } finally {
       setLoadingCheck(false);
     }
   };
-
-
-  useEffect(() => {
-    if (!employee?.emp_id) return;
-
-    const fetchLeaveSummary = async () => {
-      try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/leave/leave_summary/${employee.emp_id}`
-        );
-        console.log(res.data)
-        if (res.data) {
-          setLeaveSummary(res.data);
-        } else {
-          toast.error(res.data.message || "Failed to fetch leave summary");
-        }
-      } catch (err) {
-        toast.error("Error fetching leave summary!");
-      }
-    };
-
-    fetchLeaveSummary();
-  }, [employee]);
-
-
-  useEffect(() => {
-    const fetchUpcomingHolidays = async () => {
-      try {
-        const res = await axios.get("http://127.0.0.1:8000/holidays/get_upcoming_holidays");
-        if (res.data.success && res.data.data) {
-          setHolidays(res.data.data);
-        } else {
-          toast.error(res.data.message || "Failed to fetch upcoming holidays!");
-        }
-      } catch (err) {
-        toast.error("Error fetching upcoming holidays!");
-      }
-    };
-
-    fetchUpcomingHolidays();
-  }, []);
-
-
-  useEffect(() => {
-    if (!employee?.emp_id) return;
-
-    const fetchAttendance = async () => {
-      try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/checkIn/getAttendanceByEmp/${employee.emp_id}?view_type=weekly`
-        );
-
-        if (res.data.success && Array.isArray(res.data.data)) {
-          setAttendanceData(res.data.data);
-        }
-      } catch (err) {
-        console.error("Attendance fetch error:", err);
-      }
-    };
-
-    fetchAttendance();
-  }, [employee]);
-
-
 
   return (
     <div className="flex flex-col lg:flex-row p-4 gap-4 h-full font-sans pb-0">
@@ -269,23 +193,16 @@ export default function Home() {
           className="w-20 h-20 rounded-full mb-3 shadow-lg"
         />
         <h2 className="text-sm font-semibold text-gray-800 text-center">
-          <span className="text-gray-500 text-sm">
-            {employeeDetails?.emp_code || "N/A"}
-          </span>{" "}
+          <span className="text-gray-500 text-sm">{employeeDetails?.emp_code || "N/A"}</span>{" "}
           -{" "}
           {employeeDetails
             ? `${employeeDetails.firstName || ""} ${employeeDetails.lastName || ""}`
-            : loadingEmployee
-              ? "Loading..."
-              : "N/A"}
+            : "Loading..."}
         </h2>
         <p className="text-gray-600 text-sm mb-3 text-center">
           {employeeDetails?.department || "Loading..."}
         </p>
-        <p
-          className={`text-sm mb-4 text-center ${isCheckedIn ? "text-green-600" : "text-red-600"
-            }`}
-        >
+        <p className={`text-sm font-medium mb-4 text-center ${isCheckedIn ? "text-green-600" : "text-red-600"}`}>
           {isCheckedIn ? "Checked-in" : "Yet to check-in"}
         </p>
 
@@ -329,6 +246,7 @@ export default function Home() {
 
       {/* Right Panel */}
       <div className="lg:w-3/4 flex flex-col gap-4 flex-1">
+        {/* Header */}
         <div className="relative w-full h-20 p-4 bg-gradient-to-r from-blue-200 to-blue-400 rounded-xl overflow-hidden flex items-center">
           <motion.div
             className="relative z-10"
@@ -339,9 +257,7 @@ export default function Home() {
             <h1 className="text-1xl font-bold text-gray-800">
               Good Morning, {employeeDetails?.firstName || "Employee"}
             </h1>
-            <p className="text-gray-600 mt-1 text-sm">
-              Have a productive day!
-            </p>
+            <p className="text-gray-500 mt-1 text-sm font-medium">Have a productive day!</p>
           </motion.div>
           <motion.div
             className="absolute right-6"
@@ -380,31 +296,29 @@ export default function Home() {
             boxShadow: "0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05)",
           }}
         >
-          <div className="h-full">
-            {employeeDetails && activeTab === "lpreview" ? (
-              <LeavePreview employee={employeeDetails} leaves={leaveSummary} />
-            ) : activeTab === "ppreview" ? (
-              <ProfilePreview
-                employee={employeeDetails}
-                isCheckedIn={isCheckedIn}
-                hours={hours}
-                minutes={minutes}
-                secs={secs}
-              />
-            ) : activeTab === "holidays" ? (
-              <Holidays holidays={holidays} />
-            ) : activeTab === "apreview" ? (
-              <AttendancePreview attendance={attendanePreview} />
-            ) : (
-              <ActiveComponent
-                employee={employeeDetails}
-                isCheckedIn={isCheckedIn}
-                hours={hours}
-                minutes={minutes}
-                secs={secs}
-              />
-            )}
-          </div>
+          {activeTab === "lpreview" ? (
+            <LeavePreview employee={employeeDetails} leaves={leaveSummary} />
+          ) : activeTab === "ppreview" ? (
+            <ProfilePreview
+              employee={employeeDetails}
+              isCheckedIn={isCheckedIn}
+              hours={hours}
+              minutes={minutes}
+              secs={secs}
+            />
+          ) : activeTab === "holidays" ? (
+            <Holidays holidays={holidays} />
+          ) : activeTab === "apreview" ? (
+            <AttendancePreview attendance={attendanceData} />
+          ) : (
+            <ActiveComponent
+              employee={employeeDetails}
+              isCheckedIn={isCheckedIn}
+              hours={hours}
+              minutes={minutes}
+              secs={secs}
+            />
+          )}
         </div>
       </div>
     </div>

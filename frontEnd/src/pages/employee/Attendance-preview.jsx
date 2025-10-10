@@ -30,7 +30,7 @@ export default function AttendancePreview({ attendance = [] }) {
                     {getDayName(item.date)}
                     
                   </div>
-                  <div className="mt-1 w-8 h-8 flex items-center justify-center bg-purple-200 text-purple-800 text-sm rounded">
+                  <div className="mt-1 font-medium w-8 h-8 flex items-center justify-center bg-purple-200 text-purple-800 text-sm rounded">
                     {getDate(item.date)}
                   </div>
                 </div>
@@ -52,7 +52,7 @@ export default function AttendancePreview({ attendance = [] }) {
               <td className="p-4 align-middle w-4/6 text-right">
                 <div className="flex items-center justify-center h-full">
                   <span
-                    className={`px-3 py-1 rounded-full text-white text-xs ${item.status.toLowerCase() === "present"
+                    className={`px-3 font-medium py-1 rounded-full text-white text-xs ${item.status.toLowerCase() === "present"
                         ? "bg-green-500"
                         : item.status.toLowerCase() === "holiday"
                           ? "bg-purple-500"

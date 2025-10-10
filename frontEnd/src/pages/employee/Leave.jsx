@@ -1,23 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { FaCalendarAlt, FaWallet, FaStethoscope, FaPlus } from "react-icons/fa";
 import AddLeaveModal from "../../modals/addLeaveModal";
 import jwt_decode from "jwt-decode";
-
-// Upcoming holidays data
-const upcomingHolidays = [
-  { date: "2025-10-02", description: "Gandhi Jayanti" },
-  { date: "2025-10-17", description: "Diwali" },
-  { date: "2025-10-25", description: "Dussehra" },
-];
-
-const statusStyles = {
-  Pending: { bg: "bg-yellow-50", text: "text-yellow-800" },
-  Approved: { bg: "bg-green-50", text: "text-green-800" },
-  Rejected: { bg: "bg-red-50", text: "text-red-800" },
-};
+import { employeeLeaveService } from "../../api/services/employee/leaveService";
 
 const formatHolidayDate = (dateString) => {
   const date = new Date(dateString);
@@ -30,6 +18,7 @@ const formatHolidayDate = (dateString) => {
 };
 
 export default function Leave() {
+  const initialized = useRef(false);
   const [activeTab, setActiveTab] = useState("summary");
   const [requests, setRequests] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,15 +34,16 @@ export default function Leave() {
   const fetchLeaveSummary = async (empId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://127.0.0.1:8000/leave/leave_summary/${empId}`);
-      if (response.data && Array.isArray(response.data)) {
+      const response = await employeeLeaveService.getAllLaves(empId);
+
+      if (response) {
         const colors = [
           { bgColor: "rgba(236, 253, 245, 1)", iconColor: "#22c55e" },
           { bgColor: "rgba(239, 246, 255, 1)", iconColor: "#2563eb" },
           { bgColor: "rgba(255, 247, 237, 1)", iconColor: "#f59e0b" },
         ];
 
-        const formattedData = response.data.map((item, index) => ({
+        const formattedData = response.map((item, index) => ({
           id: index,
           label: item.leave_type,
           available: item.remaining_days,
@@ -73,9 +63,10 @@ export default function Leave() {
 
   const fetchLeaveRequests = async (empId) => {
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/leave/getLeavesById?empId=${empId}`);
-      if (res.data && res.data.data) {
-        setRequests(res.data.data); // assuming res.data.data is an array of leaves
+      const res = await employeeLeaveService.getLeavesByEmpID(empId);
+      console.log("Leave Summary Response:", res);
+      if (res.success && res.data) {
+        setRequests(res.data); // assuming res.data.data is an array of leaves
       } else {
         console.error("Invalid API response:", res.data);
       }
@@ -85,6 +76,8 @@ export default function Leave() {
   };
 
   useEffect(() => {
+    if (initialized.current) return; // 👈 Prevent 2nd run
+    initialized.current = true;
     const token = localStorage.getItem("token");
     if (token) {
       try {
@@ -101,9 +94,9 @@ export default function Leave() {
 
   const fetUpcomigHolidays = async () => {
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/holidays/get_upcoming_holidays`);
-      if (res.data.success && res.data.data) {
-        setUpcomingHolidays(res.data.data);
+      const res = await employeeLeaveService.upcomig_holidays();
+      if (res.success && res.data) {
+        setUpcomingHolidays(res.data);
       } else {
         console.error("Invalid API response:", res.data);
       }
@@ -283,17 +276,17 @@ export default function Leave() {
                       <td className="px-4 py-2 text-xs text-gray-600">{req.end_date}</td>
 
                       {/* Days Info */}
-                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.total_days > 10 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 font-medium rounded ${req.total_days > 10 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>
                         {req.total_days} days
                       </span></td>
                       <td className="px-4 py-2 text-xs text-gray-600"><span
-                        className={`px-2 py-1 rounded-full ${req.used_days > 5 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                        className={`px-2 py-1 rounded font-medium ${req.used_days > 5 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
                           }`}
                       >
                         {req.used_days} days
                       </span></td>
                       <td className="px-4 py-2 text-xs text-gray-600"><span
-                        className={`px-2 py-1 rounded-full ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                        className={`px-2 py-1 rounded font-medium ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
                           }`}
                       >
                         {req.remaining_days} days
@@ -302,7 +295,7 @@ export default function Leave() {
                       {/* Status */}
                       <td className="px-4 py-2 text-xs">
                         <span
-                          className={`inline-block w-20 text-center py-1 rounded-full font-semibold text-xs ${req.status === "Pending"
+                          className={`inline-block w-20 text-center py-1 rounded font-semibold text-xs ${req.status === "Pending"
                             ? "bg-yellow-200 text-yellow-800"
                             : req.status === "Approved"
                               ? "bg-green-200 text-green-800"

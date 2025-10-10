@@ -2,7 +2,15 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaUsers, FaUserTie, FaClock, FaFileAlt } from "react-icons/fa";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import axios from "axios";
+import { toast } from "react-toastify";
+
+import {
+  getAllEmployees,
+  getAllLeaves,
+  getAttendanceCount,
+  getUpcomingHolidays,
+  updateLeaveStatus
+} from "../../api/services/hrDashboard/hrDashboardService";
 
 const HRDashboard = () => {
   const [employees, setEmployees] = useState([]);
@@ -21,78 +29,58 @@ const HRDashboard = () => {
     return `${day}-${month}`;
   };
 
-  // Fetch Employees
+  // Fetch all data
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/registration/getAllEmployees")
-      .then(res => {
-        const allEmployees = res.data.data;
-        setEmployees(allEmployees);
-        setManagerCount(allEmployees.filter(e => e.roles_id === 2).length);
-      })
-      .catch(err => console.error(err));
+    const fetchData = async () => {
+      try {
+        const [emps, allLeaves, attendance, upcomingHolidays] = await Promise.all([
+          getAllEmployees(),
+          getAllLeaves(),
+          getAttendanceCount(),
+          getUpcomingHolidays(),
+        ]);
+        setEmployees(emps);
+        setManagerCount(emps.filter(e => e.roles_id === 2).length);
+        setLeaves(allLeaves);
+        setAttendance(attendance);
+        setHolidays(upcomingHolidays);
+      } catch (err) {
+        console.error(err); // global handler will show toast
+      }
+    };
+    fetchData();
   }, []);
 
-  // Fetch Leaves
-  useEffect(() => {
-    axios.get("http://127.0.0.1:8000/leave/get_all_leaves")
-      .then(res => setLeaves(res.data))
-      .catch(err => console.error(err));
-  }, []);
+  const handleUpdateLeaveStatus = async (leave_id, status) => {
+    // Optimistic UI update
+    setLeaves(prevLeaves =>
+      prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status } : l))
+    );
 
-   // Fetch Attendance
-  useEffect(() => {
-    axios.get("http://127.0.0.1:8000/dashboard/attendance_count")
-      .then(res => console.log("Fetching attendance data",res.data) || res.data.success && setAttendance(res.data.count)  )
-      .catch(err => console.error(err));
-  }, []);
-
-  // Fetch Holidays
-  useEffect(() => {
-    axios.get("http://127.0.0.1:8000/holidays/get_upcoming_holidays")
-      .then(res => res.data.success && setHolidays(res.data.data))
-      .catch(err => console.error(err));
-  }, []);
-
-  // Update leave status via API
- const updateLeaveStatus = (leave_id, status) => {
-  // Optimistic UI update
-  setLeaves(prevLeaves =>
-    prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status } : l))
-  );
-
-  axios.put("http://127.0.0.1:8000/leave/update_status", {
-    leave_id,
-    status,
-    approved_by: "HR",
-  })
-    .then(res => {
-      console.log(res.data);
-      if (!res.data.success) {
+    try {
+      const res = await updateLeaveStatus(leave_id, status);
+      if (!res.success) {
+        toast.error("Failed to update leave status");
         setLeaves(prevLeaves =>
           prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status: "Pending" } : l))
         );
-        console.error("Failed to update leave status");
-      }else{
-        setLeaves(prevLeaves =>
-          prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status } : l))
-        );
       }
-    })
-    .catch(err => {
-      // Revert UI on error
+    } catch (err) {
       setLeaves(prevLeaves =>
         prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status: "Pending" } : l))
       );
-      console.error("Error updating leave status:", err);
-    });
-};
+      console.error(err);
+    }
+  };
 
   // Department distribution for Pie chart
-  const departmentData = Object.values(employees.reduce((acc, emp) => {
-    if (!acc[emp.department]) acc[emp.department] = { name: emp.department, value: 0 };
-    acc[emp.department].value += 1;
-    return acc;
-  }, {}));
+  const departmentData = Object.values(
+    employees.reduce((acc, emp) => {
+      if (!acc[emp.department]) acc[emp.department] = { name: emp.department, value: 0 };
+      acc[emp.department].value += 1;
+      return acc;
+    }, {})
+  );
 
   return (
     <div className="p-4 font-sans space-y-6 h-[500px] pb-5 overflow-auto">
@@ -142,7 +130,6 @@ const HRDashboard = () => {
 
       {/* Charts + Leaves */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Department Distribution */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
           <h2 className="text-sm font-semibold mb-2">Department Distribution</h2>
           <ResponsiveContainer width="100%" height={200}>
@@ -157,7 +144,6 @@ const HRDashboard = () => {
           </ResponsiveContainer>
         </motion.div>
 
-        {/* Team Leaves */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg h-[300px]" whileHover={{ scale: 1.02 }}>
           <h2 className="text-sm font-semibold mb-2">Team Leaves</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto pb-5">
@@ -177,9 +163,9 @@ const HRDashboard = () => {
                     {leave.status === "Pending" && (
                       <>
                         <button className="bg-green-500 text-white px-2 py-1 rounded text-xs"
-                          onClick={() => updateLeaveStatus(leave.leave_id, "Approved")}>✔</button>
+                          onClick={() => handleUpdateLeaveStatus(leave.leave_id, "Approved")}>✔</button>
                         <button className="bg-red-500 text-white px-2 py-1 rounded text-xs"
-                          onClick={() => updateLeaveStatus(leave.leave_id, "Rejected")}>✖</button>
+                          onClick={() => handleUpdateLeaveStatus(leave.leave_id, "Rejected")}>✖</button>
                       </>
                     )}
                   </div>
@@ -191,7 +177,6 @@ const HRDashboard = () => {
 
       {/* Holidays + Payroll */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Holidays */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
           <h2 className="text-sm font-semibold mb-2">Upcoming Holidays</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -204,7 +189,6 @@ const HRDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Payroll */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
           <h2 className="text-sm font-semibold mb-2">Payroll</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">

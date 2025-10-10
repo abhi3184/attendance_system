@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { FaEdit, FaPlus, FaTrash } from "react-icons/fa";
 import { EmployeeModal } from "./AddEmployeeForm";
 import { EditEmployeeModal } from "./EditEmployeeFrom";
-import { DeleteConfirmModal } from "./EmployeeDelete" // Edit modal (Step 1 only)
-import axios from "axios";
+import { DeleteConfirmModal } from "./EmployeeDelete"
 import { toast } from "react-toastify";
+import { EmployeeService } from "../../api/services/hrDashboard/employeeManageService";
 
 export default function EmployeeManagement() {
   const [search, setSearch] = useState("");
@@ -15,14 +15,14 @@ export default function EmployeeManagement() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [deletingEmployee, setDeletingEmployee] = useState(null);
 
-  // Fetch employees
+
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://127.0.0.1:8000/registration/getAllEmployees");
-      if (Array.isArray(res.data?.data)) setEmployees(res.data.data);
-      else toast.error("Failed to fetch employees");
+      const data = await EmployeeService.getAllEmployees();
+      setEmployees(data);
     } catch (err) {
       console.error(err);
       toast.error("Error fetching employees");
@@ -31,68 +31,52 @@ export default function EmployeeManagement() {
     }
   };
 
-  useEffect(() => { fetchEmployees(); }, []);
-
-  const filtered = employees.filter(emp =>
-    `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const handleAddSubmit = (data) => {
-    toast.success("Employee added successfully!");
-    fetchEmployees();
-    setIsAddModalOpen(false);
+  const handleAddSubmit = async () => {
+    await fetchEmployees();
   };
 
-  const handleEditSubmit = (data) => {
-    toast.success("Employee updated successfully!");
-    fetchEmployees();
-    setIsEditModalOpen(false);
-    setEditingEmployee(null);
+  const handleEditSubmit = async () => {
+    await fetchEmployees();
   };
 
   const handleStatusToggle = async (emp) => {
     const newStatus = emp.status === "Active" ? "Inactive" : "Active";
+    setEmployees(prev => prev.map(e => e.emp_id === emp.emp_id ? { ...e, status: newStatus } : e));
 
     try {
-      // Optimistic UI update
-      setEmployees(prev =>
-        prev.map(e => e.emp_id === emp.emp_id ? { ...e, status: newStatus } : e)
-      );
-
-      // Call API
-      await axios.put(`http://127.0.0.1:8000/registration/updateEmployeeStatus`, {
-        emp_id: emp.emp_id,
-        status: newStatus
-      });
-
+      await EmployeeService.updateEmployeeStatus(emp.emp_id, newStatus);
       toast.success(`Employee status updated to ${newStatus}`);
     } catch (err) {
       console.error(err);
       toast.error("Failed to update status");
-      // Revert UI if API fails
-      setEmployees(prev =>
-        prev.map(e => e.emp_code === emp.emp_code ? { ...e, status: emp.status } : e)
-      );
+      setEmployees(prev => prev.map(e => e.emp_id === emp.emp_id ? { ...e, status: emp.status } : e));
     }
   };
 
-  const [deletingEmployee, setDeletingEmployee] = useState(null);
-
   const handleConfirmDelete = async (emp) => {
     try {
-      const res = await axios.delete(`http://127.0.0.1:8000/registration/deleteEmployee`,{
-        params: { emp_id: emp.emp_id }
-      });
-      if (res.status === 200) {
-        toast.success(`${emp.firstName} deleted successfully ✅`);
-        fetchEmployees(); // Refresh table
-        setDeletingEmployee(null);
-      }
+      await EmployeeService.deleteEmployee(emp.emp_id);
+      toast.success(`${emp.firstName} deleted successfully ✅`);
+      fetchEmployees();
+      setDeletingEmployee(null);
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete ❌");
     }
   };
+
+  // Add this inside your component, before return
+  const filtered = employees.filter(emp =>
+    `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+    emp.emp_code.toLowerCase().includes(search.toLowerCase()) ||
+    emp.emailId.toLowerCase().includes(search.toLowerCase()) ||
+    emp.mobile.includes(search)
+  );
+
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col max-h-full p-4 relative bg-white rounded-xl shadow-md">

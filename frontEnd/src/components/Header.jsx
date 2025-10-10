@@ -20,7 +20,7 @@ export default function Header({ activeTab, onToggleSidebar, isProfileOpen, setP
 
   return (
     <>
-      <header className="h-14 w-full bg-white flex items-center justify-between px-6 shadow-md z-20">
+      <header className="h-14 w-full bg-white flex items-center justify-between px-6 shadow-md z-10">
         {/* Sidebar toggle */}
         <button
           className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition"

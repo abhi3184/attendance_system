@@ -1,24 +1,21 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { FaCalendarAlt, FaWallet, FaStethoscope, FaPlus } from "react-icons/fa";
-import AddLeaveModal from "../../modals/addLeaveModal";
 import jwt_decode from "jwt-decode";
+import { toast } from "react-toastify";
 
-// Upcoming holidays data
-const upcomingHolidays = [
-  { date: "2025-10-02", description: "Gandhi Jayanti" },
-  { date: "2025-10-17", description: "Diwali" },
-  { date: "2025-10-25", description: "Dussehra" },
-];
+import AddLeaveModal from "../../modals/addLeaveModal";
+import { EmployeeOverViewService } from "../../api/services/manager/employeeOverViewService";
+import { employeeHomeService } from "../../api/services/employee/employeeHome";
 
+// Styles for status
 const statusStyles = {
   Pending: { bg: "bg-yellow-50", text: "text-yellow-800" },
   Approved: { bg: "bg-green-50", text: "text-green-800" },
   Rejected: { bg: "bg-red-50", text: "text-red-800" },
 };
 
+// Format holiday date
 const formatHolidayDate = (dateString) => {
   const date = new Date(dateString);
   const weekdays = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
@@ -32,28 +29,27 @@ const formatHolidayDate = (dateString) => {
 export default function ManagerLeave() {
   const [activeTab, setActiveTab] = useState("summary");
   const [requests, setRequests] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [summaryData, setSummaryData] = useState([]);
+  const [upcomingHolidays, setUpcomingHolidays] = useState([]);
   const [loading, setLoading] = useState(false);
-  const icons = [FaCalendarAlt, FaWallet, FaStethoscope];
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLeaveType, setSelectedLeaveType] = useState(null);
   const [employee, setEmployeeData] = useState(null);
-  const [upcomingHolidays, setUpcomingHolidays] = useState([])
 
-  const handleCancel = (id) => setRequests((prev) => prev.filter((req) => req.id !== id));
+  const icons = [FaCalendarAlt, FaWallet, FaStethoscope];
 
+  // ---------------------- FETCH DATA ----------------------
   const fetchLeaveSummary = async (empId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://127.0.0.1:8000/leave/leave_summary/${empId}`);
-      if (response.data && Array.isArray(response.data)) {
+      const response = await EmployeeOverViewService.leaveSummary(empId);
+      if (response) {
         const colors = [
           { bgColor: "rgba(236, 253, 245, 1)", iconColor: "#22c55e" },
           { bgColor: "rgba(239, 246, 255, 1)", iconColor: "#2563eb" },
           { bgColor: "rgba(255, 247, 237, 1)", iconColor: "#f59e0b" },
         ];
-
-        const formattedData = response.data.map((item, index) => ({
+        const formattedData = response.map((item, index) => ({
           id: index,
           label: item.leave_type,
           available: item.remaining_days,
@@ -62,67 +58,94 @@ export default function ManagerLeave() {
           bgColor: colors[index % colors.length].bgColor,
           iconColor: colors[index % colors.length].iconColor,
         }));
-
         setSummaryData(formattedData);
       }
     } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchLeaveRequests = async (empId) => {
+  const fetchPersonalLeaves = async (empId) => {
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/leave/getLeavesById?empId=${empId}`);
-      if (res.data && res.data.data) {
-        setRequests(res.data.data); // assuming res.data.data is an array of leaves
+      const res = await EmployeeOverViewService.getPersonalLeaveRequests(empId);
+      if (res.success && res.data) {
+        setRequests(res.data);
       } else {
-        console.error("Invalid API response:", res.data);
+        setRequests([]);
+        toast.warning("No personal leaves found");
       }
     } catch (err) {
-      console.error("Error fetching leave requests:", err);
+      console.error(err);
+      toast.error("Error fetching personal leaves");
     }
   };
 
+  const fetchTeamLeaves = async (managerId) => {
+    try {
+      const res = await EmployeeOverViewService.getleavesByManager(managerId);
+      if (res.success && res.data) {
+        setRequests(res.data);
+      } else {
+        setRequests([]);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchUpcomingHolidays = async () => {
+    try {
+      const res = await employeeHomeService.getUpcominngHolidays();
+      if (res.success && res.data) {
+        setUpcomingHolidays(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ---------------------- EFFECTS ----------------------
+  // Decode token & fetch summary + holidays once
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decoded = jwt_decode(token);
-        setEmployeeData(decoded);
-        fetchLeaveSummary(decoded.id);
-        fetchLeaveRequests(decoded.id)
-        fetUpcomigHolidays()
-      } catch (err) {
-        console.error("Invalid token", err);
-      }
+    if (!token) return;
+    try {
+      const decoded = jwt_decode(token);
+      setEmployeeData(decoded);
+      fetchLeaveSummary(decoded.id);
+      fetchUpcomingHolidays();
+    } catch (err) {
+      console.error("Invalid token", err);
     }
   }, []);
 
-  const fetUpcomigHolidays = async () => {
-    try {
-      const res = await axios.get(`http://127.0.0.1:8000/holidays/get_upcoming_holidays`);
-      if (res.data.success && res.data.data) {
-        setUpcomingHolidays(res.data.data);
-      } else {
-        console.error("Invalid API response:", res.data);
-      }
-    } catch (err) {
-      console.error("Error fetching leave requests:", err);
-    }
-  }
+  // Fetch leaves based on active tab
+  useEffect(() => {
+    if (!employee) return;
 
+    if (activeTab === "summary") {
+      fetchPersonalLeaves(employee.id);
+    } else if (activeTab === "request") {
+      fetchTeamLeaves(employee.id);
+    }
+  }, [activeTab, employee]);
+
+  // ---------------------- HANDLE ADD LEAVE ----------------------
   const handleAddLeave = async (data) => {
-    const newRequest = { ...data, id: Date.now(), status: "Pending" };
-    setRequests([...requests, newRequest]);
     setIsModalOpen(false);
 
-    if (employee?.id) {
-      fetchLeaveSummary(employee.id);
-      fetchLeaveRequests(employee.id);
+    if (!employee?.id) return;
+    await fetchLeaveSummary(employee.id);
+    if (activeTab === "summary") {
+      await fetchPersonalLeaves(employee.id);
+    } else if (activeTab === "request") {
+      await fetchTeamLeaves(employee.id);
     }
   };
 
+  // ---------------------- JSX ----------------------
   return (
     <div className="p-6 pb-0 max-h-screen bg-white rounded-xl shadow-md font-sans">
       {/* Tabs + Add Leave Button */}
@@ -158,10 +181,9 @@ export default function ManagerLeave() {
         </motion.button>
       </div>
 
-      {/* Leave Summary */}
+      {/* ------------------- PERSONAL SUMMARY ------------------- */}
       {activeTab === "summary" && (
         <>
-          {/* Summary Cards */}
           <div className="flex flex-wrap gap-6 mb-6">
             {loading ? (
               <p className="text-gray-500 text-sm">Loading summary...</p>
@@ -181,10 +203,7 @@ export default function ManagerLeave() {
                     whileHover={{ scale: 1.05, boxShadow: "0 10px 20px rgba(0,0,0,0.15)" }}
                   >
                     <p className="text-sm font-semibold text-gray-700 mb-3">{card.label}</p>
-                    <div
-                      className="p-3 rounded-lg mb-4"
-                      style={{ backgroundColor: card.bgColor, color: card.iconColor }}
-                    >
+                    <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: card.bgColor, color: card.iconColor }}>
                       <Icon className="w-8 h-8" />
                     </div>
                     <div className="flex justify-between w-full mt-2">
@@ -203,41 +222,76 @@ export default function ManagerLeave() {
             )}
           </div>
 
-          {/* Upcoming Holidays Table */}
-          <div className="bg-white rounded-xl overflow-hidden">
-            <h2 className=" py-3 text-sm font-semibold">Personal Leave Status</h2>
-            <div className="overflow-x-auto rounded-xl max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
-              <table className="min-w-full divide-y rounded-xl">
-                <thead className="bg-purple-100 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {upcomingHolidays.map((holiday, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-xs text-gray-700">
-                        {formatHolidayDate(holiday.date)}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-gray-700">
-                        {holiday.description}
-                      </td>
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Upcoming Leaves Table */}
+            <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-md">
+              <h2 className="py-3 px-4 text-sm font-semibold border-b border-gray-200">Personal Leaves</h2>
+              <div className="overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
+                <table className="min-w-full divide-y rounded-xl">
+                  <thead className="bg-purple-100 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Leave Type</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">From</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">To</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Used</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {requests.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-6 text-center text-gray-500 text-sm">No upcoming leaves</td>
+                      </tr>
+                    ) : (
+                      requests.map((req, idx) => (
+                        <tr key={req.leave_id || idx} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 text-xs text-gray-700">{req.leave_type}</td>
+                          <td className="px-4 py-2 text-xs text-gray-600">{req.start_date}</td>
+                          <td className="px-4 py-2 text-xs text-gray-600">{req.end_date}</td>
+                          <td className="px-4 py-2 text-xs text-gray-600">{req.total_days} days</td>
+                          <td className="px-4 py-2 text-xs text-gray-600">{req.used_days} days</td>
+                          <td className="px-4 py-2 text-xs text-gray-600">
+                            <span className={`px-2 py-1 rounded font-medium ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>
+                              {req.remaining_days} days
+                            </span>
+
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Personal Leave Status Table */}
+            <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-md">
+              <h2 className="py-3 px-4 text-sm font-semibold border-b border-gray-200">Upcoming Holidays</h2>
+              <div className="overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
+                <table className="min-w-full divide-y rounded-xl">
+                  <thead className="bg-purple-100 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {upcomingHolidays.map((holiday, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 text-xs text-gray-700">{formatHolidayDate(holiday.date)}</td>
+                        <td className="px-4 py-2 text-xs text-gray-700">{holiday.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-
         </>
       )}
 
-      {/* Leave Requests */}
+      {/* ------------------- TEAM LEAVE REQUESTS ------------------- */}
       {activeTab === "request" && (
         <div className="bg-white rounded-xl border-gray-200 overflow-hidden mt-4">
           <div className="max-h-[500px] overflow-y-auto">
@@ -251,80 +305,38 @@ export default function ManagerLeave() {
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Used Leaves</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining Leaves</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                  {/* <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th> */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {requests.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-gray-500 text-sm">
-                      No leaves present
-                    </td>
+                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500 text-sm">No leaves present</td>
                   </tr>
                 ) : (
                   requests.map((req, idx) => (
-                    <motion.tr
-                      key={req.leave_id || idx} // always use unique leave_id if available
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="hover:bg-gray-50"
-                    >
-                      {/* Leave Type with optional icon */}
+                    <motion.tr key={req.leave_id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="hover:bg-gray-50">
                       <td className="px-4 py-2 text-xs text-gray-700 flex items-center gap-1">
                         {req.leave_type === "Sick Leave" && "💊"}
                         {req.leave_type === "Paid Leave" && "💰"}
                         {req.leave_type === "Casual Leave" && "🏖️"}
                         {req.leave_type}
                       </td>
-
-                      {/* Start & End Dates */}
                       <td className="px-4 py-2 text-xs text-gray-600">{req.start_date}</td>
                       <td className="px-4 py-2 text-xs text-gray-600">{req.end_date}</td>
-
-                      {/* Days Info */}
-                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.total_days > 10 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>
-                        {req.total_days} days
-                      </span></td>
-                      <td className="px-4 py-2 text-xs text-gray-600"><span
-                        className={`px-2 py-1 rounded-full ${req.used_days > 5 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-                          }`}
-                      >
-                        {req.used_days} days
-                      </span></td>
-                      <td className="px-4 py-2 text-xs text-gray-600"><span
-                        className={`px-2 py-1 rounded-full ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-                          }`}
-                      >
-                        {req.remaining_days} days
-                      </span></td>
-
-                      {/* Status */}
-                      <td className="px-4 py-2 text-xs">
-                        <span
-                          className={`inline-block w-20 text-center py-1 rounded-full font-semibold text-xs ${req.status === "Pending"
-                            ? "bg-yellow-200 text-yellow-800"
-                            : req.status === "Approved"
-                              ? "bg-green-200 text-green-800"
-                              : "bg-red-200 text-red-800"
-                            }`}
-                        >
-                          {req.status}
-                        </span>
-                      </td>
-
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.total_days > 10 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>{req.total_days} days</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.used_days > 5 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>{req.used_days} days</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>{req.remaining_days} days</span></td>
+                      <td className="px-4 py-2 text-xs"><span className={`inline-block w-20 text-center py-1 rounded-full font-semibold text-xs ${req.status === "Pending" ? "bg-yellow-200 text-yellow-800" : req.status === "Approved" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>{req.status}</span></td>
                     </motion.tr>
                   ))
                 )}
               </tbody>
-
-
-
             </table>
           </div>
         </div>
       )}
 
+      {/* ------------------- ADD LEAVE MODAL ------------------- */}
       <AddLeaveModal
         isOpen={isModalOpen}
         onSubmit={handleAddLeave}

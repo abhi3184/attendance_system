@@ -4,6 +4,7 @@ import Modal from "../../modals/modal";
 import FancyDropdown from "../../modals/dropdowns";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { EmployeeService } from "../../api/services/hrDashboard/employeeManageService";
 
 export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) => {
     const [formData, setFormData] = useState({
@@ -24,15 +25,15 @@ export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) =
 
     const inputBaseClass = "w-full border rounded-md px-3 pt-4 pb-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500";
 
-    // Fetch managers and roles once
     useEffect(() => {
-        axios.get("http://127.0.0.1:8000/registration/getAllManagers")
-            .then(res => Array.isArray(res.data?.data) && setManagers(res.data.data))
-            .catch(err => console.error(err));
+        if (isOpen) {
+            EmployeeService.getAllManagers().then(setManagers).catch(console.error);
+            setFormData((prev) => ({ ...prev, managerId: "" }));
+        }
+    }, [isOpen]);
 
-        axios.get("http://127.0.0.1:8000/registration/getAllRoles")
-            .then(res => Array.isArray(res.data?.data) && setRoles(res.data.data))
-            .catch(err => console.error(err));
+    useEffect(() => {
+        EmployeeService.getAllRoles().then(setRoles).catch(console.error);
     }, []);
 
     // Populate form when modal opens
@@ -44,7 +45,7 @@ export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) =
                 email: employeeData.emailId || "",
                 mobile: employeeData.mobile || "",
                 department: employeeData.department || "",
-                role: employeeData.roles_id  || "",
+                role: employeeData.roles_id || "",
                 shift: employeeData.shift_time || "",
                 managerId: employeeData.manager_id || "",
             });
@@ -78,41 +79,46 @@ export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) =
     };
 
     const handleSubmit = async () => {
+        // Validate all fields
         const stepErrors = {};
         Object.keys(formData).forEach(f => {
             const err = validateField(f, formData[f]);
             if (err) stepErrors[f] = err;
         });
-        if (Object.keys(stepErrors).length > 0) return setErrors(stepErrors);
+        if (Object.keys(stepErrors).length > 0) {
+            setErrors(stepErrors);
+            return;
+        }
 
         setLoading(true);
+
+        const payload = {
+            emp_id: employeeData?.emp_id || employeeData?.emp_code || null, // for edit only
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            department: formData.department,
+            shift: formData.shift,
+            roles: formData.role,
+            manager_id: formData.managerId || 1, // default if no manager
+        };
+
         try {
-            const payload = {
-                emp_id: employeeData.emp_id || employeeData.emp_code, // ensure API receives emp_id
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                department: formData.department,
-                shift: formData.shift,
-                roles: formData.role,
-                manager_id: formData.managerId
-            };
-
-            const res = await axios.put(
-                "http://127.0.0.1:8000/registration/updateEmployee",
-                payload
-            );
-
-            if (res.status === 200) {
-                onSubmit(payload);
+            const res = await EmployeeService.updateEmployee(payload);
+            if (res.success) {
+                toast.success("Employee Updates successfully ✅");
+                onSubmit(); // notify parent to refresh
                 onClose();
+            } else {
+                toast.error("Failed to Update employee ❌");
             }
         } catch (err) {
             console.error(err);
-            toast.error("Update failed ❌");
+            toast.error("Failed to add employee ❌");
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Edit Employee">
@@ -143,6 +149,7 @@ export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) =
                             <input
                                 type={f === "email" ? "email" : "tel"}
                                 name={f}
+                                disabled={f === "email"}
                                 value={formData[f]}
                                 onChange={handleChange}
                                 className={`${inputBaseClass} ${errors[f] ? "border-red-400" : "border-gray-300"}`}

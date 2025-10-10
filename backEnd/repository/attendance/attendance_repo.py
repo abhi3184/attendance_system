@@ -346,7 +346,45 @@ class AttendanceRepo:
             })
 
         return {"success": True, "data": result, "message": "Weekly attendance fetched"}
+    
 
+    @staticmethod
+    def get_attendance_by_manager(db: Session, manager_id: int, date_filter: str):
+        today = date.today()
 
+        if date_filter.lower() == "today":
+            start_date = today
+        elif date_filter.lower() == "yesterday":
+            start_date = today - timedelta(days=1)
+        elif date_filter.lower() == "weekly":
+            start_date = today - timedelta(days=7)
+        elif date_filter.lower() == "monthly":
+            start_date = today - timedelta(days=30)
+        else:
+            start_date = None
 
-        
+        query = select(
+            attendanceTable.c.attendance_id,
+            attendanceTable.c.emp_id,
+            attendanceTable.c.check_in_time,
+            attendanceTable.c.check_out_time,
+            attendanceTable.c.total_hr,
+            attendanceTable.c.isPresent,
+            employeeTable.c.firstName,
+            employeeTable.c.lastName
+        ).join(
+            employeeTable, attendanceTable.c.emp_id == employeeTable.c.emp_id
+        ).where(
+            attendanceTable.c.manager_id == manager_id
+        )
+
+        if start_date:
+            query = query.where(attendanceTable.c.check_in_time >= datetime.combine(start_date, datetime.min.time()))
+
+        return db.execute(query).fetchall()
+
+    @staticmethod
+    def get_holidays(db: Session):
+        rows = db.execute(select(holidaysTable.c.date, holidaysTable.c.description)).fetchall()
+        # Ensure key is date object
+        return {datetime.fromisoformat(row.date).date() if isinstance(row.date, str) else row.date: row.description for row in rows}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Modal from "./Modal";
-import FancyDropdown from "./dropdowns";
+import Modal from "../modal";
+import FancyDropdown from "../dropdowns";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { hrHolidaysService } from "../../api/services/hrDashboard/hrHolidaysService";
 
 export default function AddHolidayModal({ isOpen, onClose, onSave, holiday }) {
   const [formData, setFormData] = useState({
@@ -79,13 +80,13 @@ export default function AddHolidayModal({ isOpen, onClose, onSave, holiday }) {
       let res;
       if (holiday) {
         // Edit → PUT API
-        res = await axios.put(`http://127.0.0.1:8000/holidays/update/${holiday.holidays_id}`, payload);
+        res = await hrHolidaysService.updateHoliday(holiday.holidays_id, payload);
       } else {
         // Add → POST API
-        res = await axios.post("http://127.0.0.1:8000/holidays/add_holiday", payload);
+        res = await hrHolidaysService.addHoliday(payload);
       }
 
-      if (res.data.success) {
+      if (res.success) {
         toast.success(holiday ? "Holiday updated successfully!" : "Holiday added successfully!");
         if (onSave) onSave();
         onClose();
@@ -93,8 +94,6 @@ export default function AddHolidayModal({ isOpen, onClose, onSave, holiday }) {
         toast.error(res.data.message || "Operation failed!");
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong!");
     }
   };
 

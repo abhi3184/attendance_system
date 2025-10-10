@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import jwt_decode from "jwt-decode";
 import toast from "react-hot-toast";
 import axios from "axios";
-
+import { employeeAttendanceService } from "../../api/services/employee/employeeAttendance";
 const statusColors = {
   present: "green-500",
   weekend: "yellow-500",
@@ -59,12 +59,9 @@ const Attendance = () => {
     if (!employee?.emp_id) return;
     setLoading(true);
     try {
-      const res = await axios.get(
-        `http://127.0.0.1:8000/checkIn/getAttendanceByEmp/${employee.emp_id}?view_type=${viewType}`
-      );
-
-      if (res.data.success && Array.isArray(res.data.data)) {
-        const mappedData = res.data.data.map((item) => {
+      const res = await employeeAttendanceService.getAttendanceRecords(employee.emp_id, viewType);
+      if (res.success && Array.isArray(res.data)) {
+        const mappedData = res.data.map((item) => {
           const dateObj = new Date(item.date);
           const day = dateObj.getDate();
           const month = dateObj.toLocaleString("default", { month: "short" });
@@ -116,12 +113,9 @@ const Attendance = () => {
     if (!employee?.emp_id) return;
     const fetchStatus = async () => {
       try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/checkIn/status/${employee.emp_id}`
-        );
-
-        if (res.data.success) {
-          const { checked_in, check_in_time } = res.data;
+        const res = await employeeAttendanceService.getStatus(employee.emp_id);
+        if (res.success) {
+          const { checked_in, check_in_time } = res;
           if (checked_in && check_in_time) {
             const checkInDate = new Date(check_in_time);
             const elapsed = Math.floor((new Date() - checkInDate) / 1000);

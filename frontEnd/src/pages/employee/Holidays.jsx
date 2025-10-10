@@ -43,7 +43,7 @@ export default function Holidays({ holidays = [] }) {
             <div className="text-sm font-semibold text-gray-800 mb-2">{holiday.description}</div>
 
             {/* Date + Day */}
-            <div className="flex items-center gap-2 text-gray-600 text-xs">
+            <div className="flex items-center gap-2 text-gray-400 text-xs font-medium">
               <CalendarIcon className="h-4 w-4 text-purple-500" />
               <span>{formatDate(holiday.date)}, {getDayName(holiday.date)}</span>
             </div>

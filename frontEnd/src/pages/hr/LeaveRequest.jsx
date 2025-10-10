@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaCheck, FaTimes, FaPlus } from "react-icons/fa";
 import FancyDropdown from "../../modals/dropdowns";
 import ConfirmStatusModal from "../../modals/leaveStatusChange";
-import axios from "axios";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
+import { hrleaveService } from "../../api/services/hrDashboard/HrleaveService";
 
 export default function LeaveRequests() {
+  const firstLoad = useRef(true);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
   const [addLeaveModal, setAddLeaveModal] = useState(false);
   const [newLeave, setNewLeave] = useState({ leave_type: "", total_days: "" });
   const [leaveRequests, setLeaveRequests] = useState([]);
+
   const [confirmModal, setConfirmModal] = useState({
     open: false,
     id: null,
@@ -19,18 +22,29 @@ export default function LeaveRequests() {
 
   const leaveTypes = ["Sick Leave", "Paid Leave", "Casual Leave"];
 
-  // ✅ Fetch leave data from API
+
   const fetchLeaves = async () => {
+    setLoading(true);
+    setLeaveRequests([]);
     try {
-      const res = await axios.get("http://127.0.0.1:8000/leave/get_all_leaves");
-      setLeaveRequests(res.data);
+      const data = await hrleaveService.getAllLeaves();
+      if (data.length > 0) {
+        setLeaveRequests(data);
+      } else {
+        toast.warning("No leave found.");
+      }
     } catch (err) {
-      console.error("Error fetching leaves:", err);
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLeaves();
+    if (firstLoad.current) {
+      fetchLeaves();
+      firstLoad.current = false;
+    }
   }, []);
 
 
@@ -44,13 +58,11 @@ export default function LeaveRequests() {
 
   const handleConfirm = async () => {
     try {
-      const payload = {
-        leave_id: confirmModal.id,
-        status: confirmModal.action,
-        approved_by: "HR",
-      };
-
-      const res = await axios.put("http://127.0.0.1:8000/leave/update_status", payload);
+      const res = await hrleaveService.updateStatus(
+        confirmModal.id,
+        confirmModal.action,
+        "HR"
+      );
 
       if (res.data.success || res.status === 200) {
         toast.success(`Leave ${confirmModal.action.toLowerCase()} successfully!`);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import axios from "axios";
 import dayjs from "dayjs";
+import { hrAttendanceService } from "../../api/services/hrDashboard/hrAttendanceService";
 
 export default function HrAttendance() {
   const [attendanceData, setAttendanceData] = useState([]);
@@ -11,11 +11,10 @@ export default function HrAttendance() {
 
   const fetchAttendance = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/checkIn/getAllAttendance", {
-        params: { filter: "today" }, // Only fetch today’s attendance
-      });
-      if (res.data.success && res.data.data) {
-        setAttendanceData(res.data.data);
+      const res = await hrAttendanceService.getAllAttendance();
+      console.log("Attendance Data:", res);
+      if (res.success && res.data) {
+        setAttendanceData(res.data);
       }
     } catch (err) {
       console.error("Error fetching attendance data:", err);
@@ -65,7 +64,7 @@ export default function HrAttendance() {
       {/* Table */}
       <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden border">
         {/* Table Header */}
-        <div className="overflow-x-auto border-b">
+        <div className=" border-b">
           <table className="w-full table-fixed border-collapse">
             <colgroup>
               <col style={{ width: "20%" }} />

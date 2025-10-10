@@ -2,8 +2,10 @@ from datetime import date, datetime, time, timedelta
 from repository.index import AttendanceRepo, IPRepo
 from schemas.index import CheckIn
 from sqlalchemy.orm import Session
-
 class AttendanceService:
+    SHIFT_START = datetime.strptime("10:00:00", "%H:%M:%S").time()
+    SHIFT_END = datetime.strptime("19:00:00", "%H:%M:%S").time() 
+
     def __init__(self, attendance_repo: AttendanceRepo, ip_repo: IPRepo):
         self.attendance_repo = attendance_repo
         self.ip_repo = ip_repo
@@ -189,6 +191,53 @@ class AttendanceService:
         data = AttendanceRepo.get_weekly_attendance(db, manager_id)
         return {"data": data}
     
+    @staticmethod
+    def get_attendance(db: Session, manager_id: int, date_filter: str):
+        # 1️⃣ Fetch attendance
+        records = AttendanceRepo.get_attendance_by_manager(db, manager_id, date_filter)
+        if not records:
+            return {"success": False, "data": [], "message": "No attendance found"}
 
+        # 2️⃣ Fetch holidays
+        holidays_dict = AttendanceRepo.get_holidays(db)
 
-    
+        result = []
+        for r in records:
+            # ✅ Convert datetime safely
+            check_in_time = r.check_in_time if isinstance(r.check_in_time, datetime) else datetime.fromisoformat(str(r.check_in_time))
+            check_out_time = r.check_out_time if isinstance(r.check_out_time, datetime) else datetime.fromisoformat(str(r.check_out_time)) if r.check_out_time else None
+
+            date_obj = check_in_time.date()
+            date_str = date_obj.isoformat()
+
+            # 3️⃣ Late
+            late = None
+            if check_in_time.time() > AttendanceService.SHIFT_START:
+                delta = datetime.combine(datetime.min, check_in_time.time()) - datetime.combine(datetime.min, AttendanceService.SHIFT_START)
+                late = str(delta)
+
+            # 4️⃣ Early leaving
+            early = None
+            if check_out_time and check_out_time.time() < AttendanceService.SHIFT_END:
+                delta = datetime.combine(datetime.min, AttendanceService.SHIFT_END) - datetime.combine(datetime.min, check_out_time.time())
+                early = str(delta)
+
+            # 5️⃣ Holiday
+            is_holiday = date_obj in holidays_dict
+            holiday_description = holidays_dict.get(date_obj, "")
+
+            result.append({
+                "attendance_id": r.attendance_id,
+                "emp_id": r.emp_id,
+                "emp_name": f"{r.firstName} {r.lastName}",
+                "check_in_time": check_in_time.strftime("%Y-%m-%d %H:%M:%S"),
+                "check_out_time": check_out_time.strftime("%Y-%m-%d %H:%M:%S") if check_out_time else None,
+                "total_hr": r.total_hr,
+                "isPresent": r.isPresent,
+                "late": late,
+                "early": early,
+                "is_holiday": is_holiday,
+                "holiday_description": holiday_description
+            })
+
+        return {"success": True, "data": result, "message": "Data fetched successfully"}
