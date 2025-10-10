@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../modal";
-import FancyDropdown from "../dropdowns";
+import FancyDropdown from "../../components/dropdowns";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";

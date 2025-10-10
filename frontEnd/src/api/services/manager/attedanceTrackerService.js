@@ -1,8 +1,21 @@
 import httpClient from "../../http/httpClient";
 
 export const attendanceTrackerService = {
-    getAttendanceByManager: async (managerId) => {
-        const res = await httpClient.get(`/attendance/manager_attendance/${managerId}`);
-        return res?.data;
-    }
+    getAttendanceForManager: async (managerId, dateFilter) => {
+        try {
+            const res = await httpClient.get(
+                `/checkIn/attendance_for_manager`,
+                {
+                    params: {
+                        manager_id: managerId,
+                        date_filter: dateFilter,
+                    },
+                }
+            );
+            return res.data;
+        } catch (error) {
+            console.error("Error fetching attendance:", error);
+            throw error;
+        }
+    },
 }
