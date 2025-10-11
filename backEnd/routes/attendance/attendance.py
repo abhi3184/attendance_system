@@ -5,6 +5,7 @@ from config.db import get_db
 from schemas.index import CheckIn
 from repository.index import AttendanceRepo, IPRepo
 from services.index import AttendanceService
+from utils.deps import get_current_user, role_checker
 
 attendance = APIRouter()
 
@@ -16,7 +17,7 @@ def get_service(db: Session):
 
 # ----- Check-in endpoint -----
 @attendance.post("/checkin")
-def check_in(emp_id: int,manager_id: int, db: Session = Depends(get_db)):
+def check_in(emp_id: int,manager_id: int, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     ip_address = AttendanceRepo.get_local_ip()
     print("ip_address", ip_address)
     if not ip_address:

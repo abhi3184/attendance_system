@@ -8,6 +8,14 @@ from utils.HashPasswor import hash_password
 class employeRegistrationRepository:
 
     @staticmethod
+    def validate_Employee(db, emp_id: int):
+        result = db.execute(
+            select(employeeTable).where(employeeTable.c.emp_id == emp_id)
+        ).mappings().first()
+        print("result",result)
+        return result
+
+    @staticmethod
     def check_user_exist(db, employee:dict):
         result = db.execute(
             employeeTable.select().where(

@@ -1,11 +1,13 @@
 import httpClient from "../../http/httpClient";
-import { setAccessToken, setUser } from "../../http/tokenService";
+import { setAccessToken, setUser, setRefreshToken } from "../../http/tokenService";
 
 export const login = async (credentials) => {
   const response = await httpClient.post("/auth/login", credentials);
-  const { access_token, refreshToken, employee } = response.data;
+  console.log("Login response:", response);
+  const { access_token, refresh_token, employee } = response.data;
   
-  localStorage.setItem("refreshToken", refreshToken);
+  console.log("Access Token:", access_token);
+  setRefreshToken(refresh_token)
   setAccessToken(access_token);
   setUser(employee);
   return { employee, access_token };

@@ -35,14 +35,16 @@ class loginService:
         role_name = role_obj.role 
 
         
-
-        token = create_access_token({
+        employeeData = {
             "sub": employee["emailId"],
             "id": employee["emp_id"],
             "name": f"{employee.firstName} {employee.lastName}",
             "role": role_name,
             "manager_id": employee["manager_id"]
-        })
+         }
+
+        token = create_access_token(employeeData)
+        refresh_token = create_access_token(employeeData)
 
         employee_data = EmployeeResponse(
             emp_id=employee.emp_id,
@@ -56,7 +58,7 @@ class loginService:
             status=employee.status,
             role = role_name,
         )
-        return {"success": True, "access_token": token, "token_type": "bearer","employee": employee_data}
+        return {"success": True, "access_token": token,"refresh_token":refresh_token, "token_type": "bearer","employee": employee_data}
     
 
     @staticmethod

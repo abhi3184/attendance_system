@@ -4,11 +4,10 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import ProfileImage from "../assets/logo/new_color_logo.png";
 import { FaUser, FaSignOutAlt } from "react-icons/fa";
-
+import { clearTokens } from "../api/http/tokenService";
 export default function ProfileDrawer({ isOpen, setIsOpen, details }) {
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("employee");
+    clearTokens()
     window.location.href = "/login";
   };
 
