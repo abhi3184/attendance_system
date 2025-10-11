@@ -64,14 +64,11 @@ export default function Leave() {
   const fetchLeaveRequests = async (empId) => {
     try {
       const res = await employeeLeaveService.getLeavesByEmpID(empId);
-      console.log("Leave Summary Response:", res);
       if (res.success && res.data) {
         setRequests(res.data); // assuming res.data.data is an array of leaves
       } else {
-        console.error("Invalid API response:", res.data);
       }
     } catch (err) {
-      console.error("Error fetching leave requests:", err);
     }
   };
 
@@ -87,7 +84,6 @@ export default function Leave() {
         fetchLeaveRequests(decoded.id)
         fetUpcomigHolidays()
       } catch (err) {
-        console.error("Invalid token", err);
       }
     }
   }, []);
@@ -98,10 +94,8 @@ export default function Leave() {
       if (res.success && res.data) {
         setUpcomingHolidays(res.data);
       } else {
-        console.error("Invalid API response:", res.data);
       }
     } catch (err) {
-      console.error("Error fetching leave requests:", err);
     }
   }
 

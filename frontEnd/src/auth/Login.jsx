@@ -49,6 +49,7 @@ export default function Login() {
     if (!validatePassword()) return;
     e.preventDefault();
     try {
+      setLoading(true);
       const { employee, access_token } = await login({ login: username, password });
       setUser(employee);
       toast.success(`Welcome ${employee.firstName}`);
@@ -56,8 +57,10 @@ export default function Login() {
       if (roles === "Manager") navigate("/dashboard/mhome");
       else if (roles === "Hr") navigate("/dashboard/hrdashboard");
       else navigate("/dashboard/home");
+      setLoading(false);
     } catch (err) {
       // handled by interceptor
+      setLoading(false);
     }
   };
 

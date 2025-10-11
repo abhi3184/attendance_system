@@ -27,13 +27,13 @@ export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) =
 
     useEffect(() => {
         if (isOpen) {
-            EmployeeService.getAllManagers().then(setManagers).catch(console.error);
+            EmployeeService.getAllManagers().then(setManagers).catch();
             setFormData((prev) => ({ ...prev, managerId: "" }));
         }
     }, [isOpen]);
 
     useEffect(() => {
-        EmployeeService.getAllRoles().then(setRoles).catch(console.error);
+        EmployeeService.getAllRoles().then(setRoles).catch();
     }, []);
 
     // Populate form when modal opens
@@ -112,7 +112,6 @@ export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) =
                 toast.error("Failed to Update employee ❌");
             }
         } catch (err) {
-            console.error(err);
             toast.error("Failed to add employee ❌");
         } finally {
             setLoading(false);

@@ -27,7 +27,6 @@ export default function Sidebar({ isOpen, onClose }) {
         const decoded = jwtDecode.default(token);
         setUserRole(roleMap[decoded.role]);
       } catch (err) {
-        console.error("Invalid token", err);
       }
     }
   }, []);

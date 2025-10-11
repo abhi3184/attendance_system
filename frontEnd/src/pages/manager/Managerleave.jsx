@@ -61,7 +61,6 @@ export default function ManagerLeave() {
         setSummaryData(formattedData);
       }
     } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -77,7 +76,6 @@ export default function ManagerLeave() {
         toast.warning("No personal leaves found");
       }
     } catch (err) {
-      console.error(err);
       toast.error("Error fetching personal leaves");
     }
   };
@@ -91,7 +89,6 @@ export default function ManagerLeave() {
         setRequests([]);
       }
     } catch (err) {
-      console.error(err);
     }
   };
 
@@ -102,7 +99,6 @@ export default function ManagerLeave() {
         setUpcomingHolidays(res.data);
       }
     } catch (err) {
-      console.error(err);
     }
   };
 
@@ -117,7 +113,6 @@ export default function ManagerLeave() {
       fetchLeaveSummary(decoded.id);
       fetchUpcomingHolidays();
     } catch (err) {
-      console.error("Invalid token", err);
     }
   }, []);
 

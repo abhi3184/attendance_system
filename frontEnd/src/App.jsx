@@ -26,14 +26,17 @@ const Holiday = lazy(() => import("./pages/hr/Holidays"));
 export default function App() {
   return (
     <BrowserRouter>
-      <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={true} />
       <Toaster
         position="top-right"
         reverseOrder={false}
         toastOptions={{
           style: {
-            background: "#545454ff",
-            color: "#fff",
+            background: "#525252ff", // dark gray / slate color
+            color: "#F9FAFB",      // light text
+            fontWeight: "500",
+            borderRadius: "8px",
+            padding: "12px 16px",
           },
         }}
       />

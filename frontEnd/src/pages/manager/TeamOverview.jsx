@@ -28,10 +28,11 @@ export default function TeamDetailsTable() {
       const decoded = jwt_decode(token);
       if (decoded.id !== undefined) {
         setManager({ emp_id: decoded.id, manager_id: decoded.manager_id || null });
-      } else toast.error("Invalid token structure!");
+      } else {
+        //  toast.error("Invalid token structure!"); 
+        }
     } catch (err) {
-      console.error("Invalid token", err);
-      toast.error("Invalid token!");
+      // toast.error("Invalid token!");
     }
   }, []);
 
@@ -50,7 +51,6 @@ export default function TeamDetailsTable() {
         setTeamMembers(res.data);
       }
     } catch (err) {
-      console.error(err);
       toast.error("Error fetching employees");
     }
     setLoading(false);

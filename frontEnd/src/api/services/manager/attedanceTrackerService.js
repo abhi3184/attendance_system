@@ -14,7 +14,6 @@ export const attendanceTrackerService = {
             );
             return res.data;
         } catch (error) {
-            console.error("Error fetching attendance:", error);
             throw error;
         }
     },

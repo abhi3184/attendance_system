@@ -1,3 +1,5 @@
+import httpClient from "./httpClient";
+
 export const getAccessToken = () => localStorage.getItem("token");
 export const setAccessToken = (token) => localStorage.setItem("token", token);
 export const setRefreshToken = (token) => localStorage.setItem("refresh_token", token);
@@ -9,19 +11,18 @@ export const clearTokens = () => {
   localStorage.removeItem("employee");
 };
 
-// Refresh token logic
+// Refresh token logic using Axios (not fetch)
 export const refreshAccessToken = async () => {
   const refresh_token = localStorage.getItem("refresh_token");
   if (!refresh_token) throw new Error("No refresh token");
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: refresh_token }),
-  });
-  if (!response.ok) throw new Error("Failed to refresh token");
-
-  const data = await response.json();
-  setAccessToken(data.refresh_token);
-  return data.accessToken;
+  try {
+    const response = await httpClient.post("/auth/refresh", { refresh_token });
+    if (!response.data?.access_token) throw new Error("Failed to refresh token");
+    setAccessToken(response.data.access_token);
+    return response.data.access_token;
+  } catch (err) {
+    console.error("Token refresh failed:", err);
+    throw err; // important: throw to trigger global handler
+  }
 };

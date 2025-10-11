@@ -43,11 +43,10 @@ export default function Home() {
       if (decoded.id && decoded.manager_id !== undefined) {
         setEmployee({ emp_id: decoded.id, manager_id: decoded.manager_id });
       } else {
-        toast.error("Invalid token structure!");
+        // toast.error("Invalid token structure!");
       }
     } catch (err) {
-      console.error("Invalid token", err);
-      toast.error("Invalid token!");
+      // toast.error("Invalid token!");
     }
   }, []);
 
@@ -82,7 +81,6 @@ export default function Home() {
         if (attRes.success && Array.isArray(attRes.data)) setAttendanceData(attRes.data);
 
       } catch (err) {
-        console.error("Error fetching employee data:", err);
         toast.error("Failed to fetch employee data!");
       } finally {
         firstLoad.current = false; // Prevent duplicate calls in dev
@@ -147,7 +145,7 @@ export default function Home() {
         toast.error(res.message || "Check-in failed!");
       }
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Error connecting server!");
+      // toast.error(err?.response?.data?.detail || "Error connecting server!");
     } finally {
       setLoadingCheck(false);
     }

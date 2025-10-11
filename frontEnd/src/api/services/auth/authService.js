@@ -3,10 +3,7 @@ import { setAccessToken, setUser, setRefreshToken } from "../../http/tokenServic
 
 export const login = async (credentials) => {
   const response = await httpClient.post("/auth/login", credentials);
-  console.log("Login response:", response);
   const { access_token, refresh_token, employee } = response.data;
-  
-  console.log("Access Token:", access_token);
   setRefreshToken(refresh_token)
   setAccessToken(access_token);
   setUser(employee);

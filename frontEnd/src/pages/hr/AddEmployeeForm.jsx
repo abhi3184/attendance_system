@@ -38,13 +38,13 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
 
   useEffect(() => {
     if (isOpen) {
-      EmployeeService.getAllManagers().then(setManagers).catch(console.error);
+      EmployeeService.getAllManagers().then(setManagers).catch();
       setFormData((prev) => ({ ...prev, managerId: "" }));
     }
   }, [isOpen]);
 
   useEffect(() => {
-    EmployeeService.getAllRoles().then(setRoles).catch(console.error);
+    EmployeeService.getAllRoles().then(setRoles).catch();
   }, []);
 
   useEffect(() => {

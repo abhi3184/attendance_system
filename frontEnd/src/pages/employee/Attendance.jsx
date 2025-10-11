@@ -50,7 +50,7 @@ const Attendance = () => {
         });
       }
     } catch (err) {
-      toast.error("Invalid token!");
+      // toast.error("Invalid token!");
     }
   }, []);
 

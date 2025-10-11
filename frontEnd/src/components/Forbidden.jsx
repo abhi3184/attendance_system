@@ -15,7 +15,6 @@ export default function Forbidden() {
   };
 
   const handleGoBack = () => {
-    console.log("role",role)
     if (role && roleHomePath[role]) {
       navigate(roleHomePath[role], { replace: true });
     } else {

@@ -15,7 +15,7 @@ export const employeeHomeService = {
 
     handleCheckIn: async (employee) => {
         const res = await httpClient.post(`/checkIn/checkin?emp_id=${employee.emp_id}&manager_id=${employee.manager_id}`);
-        return res.data || [];
+        return res.data;
     },
 
     handleCheckOut: async (emp_id) => {

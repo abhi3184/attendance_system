@@ -20,3 +20,7 @@ class EmployeeResponse(BaseModel):
 class UpdatePasswordReq(BaseModel):
     email: str
     password: str
+
+
+class RefreTokenRequest(BaseModel):
+    refresh_token: str  

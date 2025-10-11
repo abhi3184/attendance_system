@@ -9,11 +9,41 @@ class employeRegistrationRepository:
 
     @staticmethod
     def validate_Employee(db, emp_id: int):
-        result = db.execute(
-            select(employeeTable).where(employeeTable.c.emp_id == emp_id)
-        ).mappings().first()
-        print("result",result)
-        return result
+        query = (
+            select(
+                employeeTable.c.emp_id,
+                employeeTable.c.emp_code,
+                employeeTable.c.firstName,
+                employeeTable.c.lastName,
+                employeeTable.c.emailId,
+                employeeTable.c.mobile,
+                employeeTable.c.department,
+                employeeTable.c.shift_time,
+                employeeTable.c.status,
+                employeeTable.c.manager_id,
+                roles.c.role.label("role_name")  # get role string
+            )
+            .join(roles, employeeTable.c.roles_id == roles.c.role_id)
+            .where(employeeTable.c.emp_id == emp_id)
+        )
+
+        result = db.execute(query).mappings().first()
+        if not result:
+            return None
+        return EmployeeResponse(
+            emp_id=result["emp_id"],
+            emp_code=result["emp_code"],
+            firstName=result["firstName"],
+            lastName=result["lastName"],
+            emailId=result["emailId"],
+            mobile=result["mobile"],
+            department=result["department"],
+            shift=result["shift_time"],
+            status=result["status"],
+            role=result["role_name"],
+            manager_id=result["manager_id"]
+        )
+    
 
     @staticmethod
     def check_user_exist(db, employee:dict):

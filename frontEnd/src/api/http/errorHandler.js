@@ -1,38 +1,34 @@
-// src/http/errorHandler.js
-import { toast } from "react-toastify";
-import { logError } from "../../utils/logger";
+import toast from "react-hot-toast";
 
 export const handleApiError = (error) => {
   if (!error.response) {
     toast.error("Network error! Check your connection.");
-    logError(error, "Network error");
+    console.error("Network error:", error);
     return Promise.reject(error);
   }
 
   const { status, data } = error.response;
+  console.log("API Error Response:", error.response);
 
   switch (status) {
     case 400:
-      toast.error(data?.detail || "Bad request");
+      toast.error(data?.detail || "Bad request",{ autoClose: 3000 });
       break;
     case 401:
-      toast.error("Unauthorized! Please login again.");
-      localStorage.clear();
-      window.location.href = "/login";
+      toast.error("Unauthorized! Please login again.",{ autoClose: 3000 });
       break;
     case 403:
-      toast.error("Forbidden");
+      toast.error("Session expired! Please login again.", { autoClose: 3000 });
       break;
     case 404:
-      toast.error("Not found");
+      toast.error("Not found",{ autoClose: 3000 });
       break;
     case 500:
-      toast.error("Server error");
+      toast.error("Server error",{ autoClose: 3000 });
       break;
     default:
       toast.error(data?.detail || "Something went wrong");
   }
 
-  logError(error, "API error");
   return Promise.reject(error);
 };

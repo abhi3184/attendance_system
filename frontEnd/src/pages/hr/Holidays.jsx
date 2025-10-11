@@ -27,7 +27,6 @@ export default function Holidays() {
         toast.warning("Holdays not found");
       }
     } catch (err) {
-      console.error(err);
       toast.error("Error fetching holidays");
     } finally {
       setLoading(false);

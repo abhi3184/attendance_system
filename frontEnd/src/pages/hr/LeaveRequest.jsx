@@ -34,7 +34,6 @@ export default function LeaveRequests() {
         toast.warning("No leave found.");
       }
     } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -72,7 +71,6 @@ export default function LeaveRequests() {
       }
     } catch (err) {
       toast.error("Server error. Please try again.");
-      console.error(err);
     } finally {
       setConfirmModal({ open: false, id: null, action: "" });
     }

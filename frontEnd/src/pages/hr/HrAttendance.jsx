@@ -12,12 +12,10 @@ export default function HrAttendance() {
   const fetchAttendance = async () => {
     try {
       const res = await hrAttendanceService.getAllAttendance();
-      console.log("Attendance Data:", res);
       if (res.success && res.data) {
         setAttendanceData(res.data);
       }
     } catch (err) {
-      console.error("Error fetching attendance data:", err);
     }
   };
 

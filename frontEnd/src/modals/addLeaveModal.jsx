@@ -36,7 +36,6 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
           toast.error(res.message || "Leave types not found!");
         }
       } catch (err) {
-        console.error(err);
         toast.error("Failed to fetch leave types!");
       }
     };
@@ -143,7 +142,6 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
         toast.error(res.message || "Failed to apply leave!");
       }
     } catch (err) {
-      console.error(err);
       toast.error("Something went wrong!");
     }
   };

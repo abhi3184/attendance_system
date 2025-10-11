@@ -7,7 +7,7 @@ from sqlalchemy import select
 from fastapi import APIRouter, HTTPException
 from repository.index import loginRepo
 from sqlalchemy.orm import Session
-from utils.jwt_handler import create_access_token
+from utils.jwt_handler import create_access_token,create_refresh_token
 from models.index import roles
 import bcrypt
 class loginService:
@@ -44,7 +44,7 @@ class loginService:
          }
 
         token = create_access_token(employeeData)
-        refresh_token = create_access_token(employeeData)
+        refresh_token = create_refresh_token(employeeData)
 
         employee_data = EmployeeResponse(
             emp_id=employee.emp_id,

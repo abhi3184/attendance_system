@@ -33,9 +33,11 @@ export default function ManagerDashboard() {
       const decoded = jwt_decode(token);
       if (decoded.id) {
         setManager({ emp_id: decoded.id, manager_id: decoded.manager_id || null });
-      } else toast.error("Invalid token structure!");
+      } else {
+        // toast.error("Invalid token structure!");
+      }
     } catch (err) {
-      toast.error("Invalid token!");
+      // toast.error("Invalid token!");
     }
   }, []);
 
@@ -77,7 +79,6 @@ export default function ManagerDashboard() {
         // Holidays
         if (holidaysRes.success) setHolidays(holidaysRes.data);
       } catch (err) {
-        console.error("Dashboard fetch error:", err);
         toast.error("Failed to load dashboard data.");
       }
     };

@@ -45,7 +45,6 @@ const HRDashboard = () => {
         setAttendance(attendance);
         setHolidays(upcomingHolidays);
       } catch (err) {
-        console.error(err); // global handler will show toast
       }
     };
     fetchData();
@@ -69,7 +68,6 @@ const HRDashboard = () => {
       setLeaves(prevLeaves =>
         prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status: "Pending" } : l))
       );
-      console.error(err);
     }
   };
 

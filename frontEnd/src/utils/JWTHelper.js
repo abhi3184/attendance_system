@@ -5,7 +5,6 @@ export const getDecodedToken = (token) => {
   try {
     return jwt_decode(token); // returns payload
   } catch (error) {
-    console.error("Invalid token", error);
     return null;
   }
 };

@@ -24,7 +24,6 @@ export default function EmployeeManagement() {
       const data = await EmployeeService.getAllEmployees();
       setEmployees(data);
     } catch (err) {
-      console.error(err);
       toast.error("Error fetching employees");
     } finally {
       setLoading(false);
@@ -47,7 +46,6 @@ export default function EmployeeManagement() {
       await EmployeeService.updateEmployeeStatus(emp.emp_id, newStatus);
       toast.success(`Employee status updated to ${newStatus}`);
     } catch (err) {
-      console.error(err);
       toast.error("Failed to update status");
       setEmployees(prev => prev.map(e => e.emp_id === emp.emp_id ? { ...e, status: emp.status } : e));
     }
@@ -60,7 +58,6 @@ export default function EmployeeManagement() {
       fetchEmployees();
       setDeletingEmployee(null);
     } catch (err) {
-      console.error(err);
       toast.error("Failed to delete ❌");
     }
   };

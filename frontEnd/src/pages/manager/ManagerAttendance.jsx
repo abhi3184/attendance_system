@@ -23,7 +23,6 @@ export default function ManagerAttendance() {
         setAttendance(res.data);
       }
     } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }
