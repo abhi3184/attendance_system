@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import "./Login.css";
 import { getUserRole } from "../utils/JWTHelper";
+import FullScreenLoader from "../components/loader";
 
 import { login, getEmployeeByEmail } from "../api/services/auth/authService";
 import { AuthContext } from "../context/AuthContext";
@@ -65,6 +66,8 @@ export default function Login() {
   };
 
   return (
+    <>
+    {loading && <FullScreenLoader />}
     <div className="login-page flex min-h-screen">
       <div className="login-left w-1/2 bg-blue-600 hidden md:block"></div>
       <div className="login-right w-full md:w-1/2 flex justify-center items-center p-6">
@@ -146,5 +149,6 @@ export default function Login() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }

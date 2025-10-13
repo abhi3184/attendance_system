@@ -8,6 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Toaster } from "react-hot-toast";
 import ForgotPassword from "./auth/ForgetPassword";
 
+
 const Login = lazy(() => import("./auth/Login"));
 const Home = lazy(() => import("./pages/employee/Home"));
 const HRDashboard = lazy(() => import("./pages//hr/HrDashboard"));
@@ -41,11 +42,7 @@ export default function App() {
         }}
       />
 
-      <Suspense fallback={
-        <div className="flex items-center justify-center h-screen bg-gray-100">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-        </div>
-      }>
+      <Suspense>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
