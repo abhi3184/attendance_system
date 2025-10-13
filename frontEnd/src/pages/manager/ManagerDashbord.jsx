@@ -100,7 +100,7 @@ export default function ManagerDashboard() {
 
       if (res.success) {
         toast.success(`Leave ${confirmModal.action.toLowerCase()} successfully!`);
-        const updatedLeaves = leaves.map(l => 
+        const updatedLeaves = leaves.map(l =>
           l.leave_id === confirmModal.id ? { ...l, status: confirmModal.action } : l
         );
         setLeaves(updatedLeaves);
@@ -115,7 +115,7 @@ export default function ManagerDashboard() {
 
   const totalTeam = teamMembers.length;
   const totalPending = pendingLeaves.length;
-  const onLeaveToday = leaves.filter(l => 
+  const onLeaveToday = leaves.filter(l =>
     l.status === "Approved" && new Date(l.start_date).toDateString() === new Date().toDateString()
   ).length;
 
@@ -151,16 +151,29 @@ export default function ManagerDashboard() {
 
         <div className="bg-white p-5 rounded-2xl shadow-md">
           <h2 className="text-md font-semibold text-gray-700 mb-3">Leave Status</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={leaveStatusData} dataKey="value" nameKey="name" outerRadius={80} innerRadius={40} label>
-                {leaveStatusData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {!leaveStatusData || leaveStatusData.length === 0 ? (
+            <div className="flex items-center justify-center h-[250px] text-gray-400 text-sm">
+              No leave data available 📊
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={leaveStatusData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={80}
+                  innerRadius={40}
+                  label
+                >
+                  {leaveStatusData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -194,14 +207,27 @@ export default function ManagerDashboard() {
           <h2 className="text-md font-semibold text-gray-700 mb-3 flex items-center gap-2">
             <FaCalendarAlt className="text-blue-500" /> Upcoming Holidays
           </h2>
-          <ul className="text-sm text-gray-600 space-y-2 max-h-80 overflow-y-auto">
-            {upcomingHolidays.map((holiday, index) => (
-              <li key={index} className="flex justify-between items-center bg-blue-50 rounded-lg px-3 py-2">
-                <span>{holiday.emoji} {holiday.description}</span>
-                <span className="text-gray-500">{new Date(holiday.date).toLocaleDateString("en-GB")}</span>
-              </li>
-            ))}
-          </ul>
+          {!upcomingHolidays || upcomingHolidays.length === 0 ? (
+            <div className="flex items-center justify-center h-[200px] text-gray-400 text-sm">
+              No upcoming holidays 🎉
+            </div>
+          ) : (
+            <ul className="text-sm text-gray-600 space-y-2 max-h-80 overflow-y-auto">
+              {upcomingHolidays.map((holiday, index) => (
+                <li
+                  key={index}
+                  className="flex justify-between items-center bg-blue-50 rounded-lg px-3 py-2"
+                >
+                  <span>
+                    {holiday.emoji} {holiday.description}
+                  </span>
+                  <span className="text-gray-500">
+                    {new Date(holiday.date).toLocaleDateString("en-GB")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </motion.div>
       </div>
 

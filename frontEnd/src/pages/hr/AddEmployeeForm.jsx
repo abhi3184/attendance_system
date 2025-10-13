@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../../modals/modal";
-import FancyDropdown from "../../modals/dropdowns";
+import FancyDropdown from "../../components/dropdowns";
 import toast from "react-hot-toast";
 import { EmployeeService } from "../../api/services/hrDashboard/employeeManageService";
 

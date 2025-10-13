@@ -42,40 +42,35 @@ class LeaveService:
     
     @staticmethod
     def get_leave_by_empId(db: Session, emp_Id):
-        return LeaveRepo.get_leave_by_empId(db, emp_Id)
+        return LeaveRepo.get_leaves_by_empId(db, emp_Id)
     
     @staticmethod
-    def get_leave_by_empId(db: Session, empId: str) -> dict:
-        leaves = LeaveRepo.get_leaves_by_empId(db, empId)
+    def get_leave_by_managerID(db: Session, manager_id: str) -> dict:
+        result = LeaveRepo.get_leave_by_manger_id(db, manager_id)
 
+        if not result.get("success"):
+            return result
+
+        leaves = result["data"]
         if not leaves:
             return {"success": False, "data": [], "message": "Leaves not found"}
 
-        # Calculate total used_days per leave_type_id
+        # Calculate total used_days per leave_type
         leave_type_used = defaultdict(int)
         for leave in leaves:
-            leave_type_used[leave.leave_type_id] += leave.used_days
+            leave_type_used[leave["leave_type"]] += leave["used_days"]
 
         leaves_list = []
-        latest_leave_id = max(leave.leave_id for leave in leaves)
+        latest_leave_id = max(leave["leave_id"] for leave in leaves)
 
         for leave in leaves:
-            # If this is the latest leave for this type, calculate remaining_days considering all used_days
-            if leave.leave_id == latest_leave_id:
-                remaining_days = leave.total_days - leave_type_used[leave.leave_type_id]
+            if leave["leave_id"] == latest_leave_id:
+                remaining_days = leave["total_days"] - leave_type_used[leave["leave_type"]]
             else:
-                remaining_days = leave.total_days - leave.used_days  # Historical entry
+                remaining_days = leave["total_days"] - leave["used_days"]
 
             leaves_list.append({
-                "leave_id": leave.leave_id,
-                "emp_id": leave.emp_id,
-                "start_date": leave.start_date,
-                "end_date": leave.end_date,
-                "status": leave.status,
-                "reason": leave.reason,
-                "leave_type": leave.leave_type_name,
-                "total_days": leave.total_days,
-                "used_days": leave.used_days,
+                **leave,
                 "remaining_days": remaining_days
             })
 

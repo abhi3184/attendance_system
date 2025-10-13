@@ -67,7 +67,6 @@ export default function Login() {
 
   return (
     <>
-    {loading && <FullScreenLoader />}
     <div className="login-page flex min-h-screen">
       <div className="login-left w-1/2 bg-blue-600 hidden md:block"></div>
       <div className="login-right w-full md:w-1/2 flex justify-center items-center p-6">

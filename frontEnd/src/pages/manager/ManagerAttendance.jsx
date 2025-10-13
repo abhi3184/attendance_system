@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import FancyDropdown from "../../components/dropdowns";
 import { attendanceTrackerService } from "../../api/services/manager/attedanceTrackerService";
+import { getDecodedToken } from "../../utils/JWTHelper";
 
 const filterOptions = ["Today", "Yesterday", "Last Week", "Last Month"];
 
@@ -10,13 +11,15 @@ export default function ManagerAttendance() {
   const [filterType, setFilterType] = useState("Today");
   const [loading, setLoading] = useState(false);
 
-  const managerId = 2; // Can be dynamic
+
+  const token = localStorage.getItem("token"); // or your storage key
+  const decoded = getDecodedToken(token);
 
   const fetchAttendance = async () => {
     setLoading(true);
     try {
       const res = await attendanceTrackerService.getAttendanceForManager(
-        managerId,
+        decoded.id,
         filterType.toLowerCase().replace(" ", "_")
       );
       if (res.success && res.data) {
@@ -49,25 +52,25 @@ export default function ManagerAttendance() {
   return (
     <div className="flex-1 flex flex-col max-h-full p-4 relative bg-white rounded-xl shadow-md">
       {/* Search + Dropdown */}
-        <div className="mb-4 flex flex-wrap justify-between items-center gap-4">
-          {/* Search input */}
-          <input
-            type="text"
-            placeholder="Search employee..."
-            className="border border-gray-300 rounded-lg px-4 py-2 text-xs flex-1 max-w-[300px] focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="mb-4 flex flex-wrap justify-between items-center gap-4">
+        {/* Search input */}
+        <input
+          type="text"
+          placeholder="Search employee..."
+          className="border border-gray-300 rounded-lg px-4 py-2 text-xs flex-1 max-w-[300px] focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-          {/* Dropdown on the right with smaller width */}
-          <div className="w-[150px]">
-            <FancyDropdown
-              options={filterOptions}
-              value={filterType}
-              onChange={(val) => setFilterType(val)}
-            />
-          </div>
+        {/* Dropdown on the right with smaller width */}
+        <div className="w-[150px]">
+          <FancyDropdown
+            options={filterOptions}
+            value={filterType}
+            onChange={(val) => setFilterType(val)}
+          />
         </div>
+      </div>
 
       {/* Attendance Table */}
       <div className="overflow-auto rounded-2xl">
