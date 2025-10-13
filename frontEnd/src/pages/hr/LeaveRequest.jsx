@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaCheck, FaTimes, FaPlus } from "react-icons/fa";
-import FancyDropdown from "../../modals/dropdowns";
+import FancyDropdown from "../../components/dropdowns";
 import ConfirmStatusModal from "../../modals/leaveStatusChange";
 import { toast } from "react-toastify";
 import { hrleaveService } from "../../api/services/hrDashboard/HrleaveService";
