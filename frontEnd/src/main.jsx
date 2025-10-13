@@ -8,10 +8,8 @@ import { LoaderProvider } from "./context/LoaderContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-     <LoaderProvider>
     <AuthProvider>
       <App />
     </AuthProvider>
-    </LoaderProvider>
   </React.StrictMode>
 );
