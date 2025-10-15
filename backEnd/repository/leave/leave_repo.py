@@ -1,4 +1,5 @@
 from typing import List, Optional
+from fastapi import HTTPException
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO,LeaveStatus
@@ -56,24 +57,45 @@ class LeaveRepo:
                 db.query(
                     Leave.leave_id,
                     Leave.emp_id,
+                    Leave.leave_type_id,
                     Leave.start_date,
                     Leave.end_date,
-                    Leave.status,
                     Leave.reason,
-                    Leave.used_days,
-                    Leave.leave_type_id,
-                    leaveTypeTable.c.leave_name.label("leave_type_name"),
-                    leaveTypeTable.c.total_days.label("total_days")
+                    Leave.status,
+                    Leave.applied_on,
+                    Leave.approved_by,
+                    Leave.approved_on,
+                    Leave.firstName,          # optional, if exists
+                    Leave.lastName,           # optional
+                    leaveTypeTable.c.leave_name.label("leave_type")  # map to DTO
                 )
                 .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
                 .filter(Leave.emp_id == empId)
                 .order_by(Leave.start_date.desc())
                 .all()
             )
-            print("✅ Query executed successfully:", result)
-            return result
+
+            leaves_list = []
+            for row in result:
+                leaves_list.append({
+                    "leave_id": row.leave_id,
+                    "emp_id": row.emp_id,
+                    "leave_type_id": row.leave_type_id,
+                    "first_name": getattr(row, "first_name", None),
+                    "last_name": getattr(row, "last_name", None),
+                    "leave_type": getattr(row, "leave_type", None),
+                    "start_date": row.start_date,
+                    "end_date": row.end_date,
+                    "reason": row.reason,
+                    "status": row.status.value if hasattr(row.status, "value") else str(row.status),
+                    "applied_on": row.applied_on,
+                    "approved_by": row.approved_by,
+                    "approved_on": row.approved_on,
+                })
+
+            return leaves_list
+
         except SQLAlchemyError as e:
-            print("❌ SQLAlchemyError:", e)
             db.rollback()
             raise HTTPException(status_code=500, detail=str(e))
     
