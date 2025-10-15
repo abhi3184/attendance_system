@@ -21,6 +21,7 @@ def get_all_leave_types(
     db : Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     ):
+    print("controller","yes")
     return LeaveService.get_all_leave_type(db)
 
 @leave.put("/update_status")
@@ -37,6 +38,7 @@ async def get_users_by_id(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     ):
+  
     return LeaveService.get_leave_by_empId(db, empId)
 
 @leave.get("/getLeavesByManagerID/{manager_id}")

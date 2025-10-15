@@ -1,13 +1,19 @@
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from repository.index import employeRegistrationRepository
 from config.jwt_config import SECRET_KEY
 from config.db import get_db
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+bearer_scheme = HTTPBearer()
 
-def get_current_user(token: str = Depends(oauth2_scheme),db: Session = Depends(get_db)):
+def get_current_user(
+        credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
+        db: Session = Depends(get_db)):
+    
+    token = credentials.credentials
+    print("Reached here", flush=True)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         emp_id = payload.get("id")

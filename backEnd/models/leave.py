@@ -14,16 +14,16 @@ class LeaveStatus(str, enum.Enum):
 class Leave(Base):
     __tablename__ = "leaves"
 
-    leave_id = Column(Integer, primary_key=True, index=True,nullable=False, autoincrement=True)
+    leave_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     emp_id = Column(Integer, nullable=False)
     leave_type_id = Column(Integer, nullable=False)
     total_days = Column(Integer, nullable=False)
-    used_days = Column(Integer, nullable=False)
+    used_days = Column(Integer, nullable=False, default=0)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     status = Column(Enum(LeaveStatus), default=LeaveStatus.Pending)
     reason = Column(String, nullable=True)
     applied_on = Column(DateTime, default=datetime.now)
-    approved_by = Column(String, nullable=False)
-    approved_on = Column(DateTime, nullable=False)
-    manager_id = Column(Integer, nullable=False)
+    approved_by = Column(String, nullable=True)   # काही वेळा leave pending असतो म्हणून nullable=True
+    approved_on = Column(DateTime, nullable=True)
+    manager_id = Column(Integer, nullable=True)   # काही users कडे manager नसतो म्हणून nullable=True

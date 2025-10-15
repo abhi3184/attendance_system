@@ -5,6 +5,7 @@ from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO,LeaveS
 from models.index import Leave,leaveTypeTable,employeeTable
 from datetime import datetime
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 
 class LeaveRepo:
     def __init__(self, db: Session):
@@ -49,24 +50,32 @@ class LeaveRepo:
         return {"success":True,"message": "Leave updated successfully"}
 
     @staticmethod    
-    def get_leaves_by_empId(db: Session, empId: str):
-        return (
-            db.query(
-                Leave.leave_id,
-                Leave.emp_id,
-                Leave.start_date,
-                Leave.end_date,
-                Leave.status,
-                Leave.reason,
-                Leave.used_days,
-                Leave.leave_type_id,
-                leaveTypeTable.c.leave_name.label("leave_type_name"),
-                leaveTypeTable.c.total_days.label("total_days")
+    def get_leaves_by_empId(db: Session, empId: int):
+        try:
+            result = (
+                db.query(
+                    Leave.leave_id,
+                    Leave.emp_id,
+                    Leave.start_date,
+                    Leave.end_date,
+                    Leave.status,
+                    Leave.reason,
+                    Leave.used_days,
+                    Leave.leave_type_id,
+                    leaveTypeTable.c.leave_name.label("leave_type_name"),
+                    leaveTypeTable.c.total_days.label("total_days")
+                )
+                .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+                .filter(Leave.emp_id == empId)
+                .order_by(Leave.start_date.desc())
+                .all()
             )
-            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
-            .filter(Leave.emp_id == empId)  # Latest leave first
-            .all()
-        )
+            print("✅ Query executed successfully:", result)
+            return result
+        except SQLAlchemyError as e:
+            print("❌ SQLAlchemyError:", e)
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
     
 
     @staticmethod    
