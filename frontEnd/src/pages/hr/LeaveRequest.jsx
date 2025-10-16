@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaCheck, FaTimes, FaPlus, FaSearch } from "react-icons/fa";
 import FancyDropdown from "../../components/dropdowns";
-import ConfirmStatusModal from "../../modals/leaveStatusChange"; // For approve/reject
+import ConfirmStatusModal from "../../modals/leaveStatusChange";
 import { toast } from "react-toastify";
 import { hrleaveService } from "../../api/services/hrDashboard/HrleaveService";
 
@@ -16,11 +16,8 @@ export default function LeaveRequests() {
   const [expandedId, setExpandedId] = useState(null);
   const [addLeaveModal, setAddLeaveModal] = useState(false);
   const [newLeave, setNewLeave] = useState({ leave_type: "", total_days: "" });
-  const [confirmModal, setConfirmModal] = useState({
-    open: false,
-    id: null,
-    action: "",
-  });
+  const [confirmModal, setConfirmModal] = useState({ open: false, id: null, action: "" });
+
   const leaveTypes = ["Paid Leave", "Sick Leave", "Casual Leave"];
 
   useEffect(() => {
@@ -31,24 +28,67 @@ export default function LeaveRequests() {
     setLoading(true);
     try {
       const res = await hrleaveService.getAllLeaves();
-      setLeaveRequests(res);
-      setFiltered(res);
-    } catch {
+
+      // Map API data to include a `status` field based on hr_status
+      const mappedLeaves = res.data.map((l) => ({
+        ...l,
+        status:
+          l.hr_status === "Approved"
+            ? "Approved"
+            : l.hr_status === "Rejected"
+            ? "Rejected"
+            : "Pending",
+      }));
+
+      setLeaveRequests(mappedLeaves);
+      setFiltered(mappedLeaves);
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to load leave requests");
     } finally {
       setLoading(false);
     }
   };
 
-   const handleAddLeave = () => {
+  const handleAddLeave = () => {
     setAddLeaveModal(false);
     toast.success(`Added leave type: ${newLeave.leave_type} (${newLeave.total_days} days)`);
     setNewLeave({ leave_type: "", total_days: "" });
   };
 
+  const handleApprove = async (id) => {
+    try {
+      const leave = leaveRequests.find((l) => l.leave_id === id);
+      if (!leave) return;
+      const payload = { leave_id: id, status: "Approved" };
+      const res = await hrleaveService.updateLeaveStatus(payload);
+      if (res.success) {
+        toast.success("Leave approved successfully!");
+        loadData();
+      } else {
+        toast.error(res.message || "Failed to approve leave");
+      }
+    } catch {
+      toast.error("Something went wrong!");
+    }
+  };
 
-  const handleApprove = (id) => setConfirmModal({ open: true, id, action: "Approved" });
-  const handleReject = (id) => setConfirmModal({ open: true, id, action: "Rejected" });
+  const handleReject = async (id) => {
+    try {
+      const leave = leaveRequests.find((l) => l.leave_id === id);
+      if (!leave) return;
+      const payload = { leave_id: id, status: "Rejected" };
+      const res = await hrleaveService.updateLeaveStatus(payload);
+      if (res.success) {
+        toast.success("Leave rejected successfully!");
+        loadData();
+      } else {
+        toast.error(res.message || "Failed to reject leave");
+      }
+    } catch {
+      toast.error("Something went wrong!");
+    }
+  };
 
   // Search + Filter logic
   useEffect(() => {
@@ -70,17 +110,16 @@ export default function LeaveRequests() {
     setFiltered(data);
   }, [searchTerm, statusFilter, leaveRequests]);
 
-  const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+  const toggleExpand = (id) => setExpandedId(expandedId === id ? null : id);
 
   const openConfirmModal = (id, action) => {
     setConfirmModal({ open: true, id, action });
   };
 
   const handleConfirm = async () => {
-    if (confirmModal.action === "approve") await handleApprove(confirmModal.id);
-    if (confirmModal.action === "reject") await handleReject(confirmModal.id);
+    if (!confirmModal.id) return;
+    if (confirmModal.action === "Approved") await handleApprove(confirmModal.id);
+    if (confirmModal.action === "Rejected") await handleReject(confirmModal.id);
     setConfirmModal({ open: false, id: null, action: "" });
   };
 
@@ -92,10 +131,11 @@ export default function LeaveRequests() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-2 font-semibold transition-all text-sm ${activeTab === tab
-              ? "text-purple-700 border-b-2 border-purple-700"
-              : "text-gray-500 hover:text-purple-600"
-              }`}
+            className={`pb-2 font-semibold transition-all text-sm ${
+              activeTab === tab
+                ? "text-purple-700 border-b-2 border-purple-700"
+                : "text-gray-500 hover:text-purple-600"
+            }`}
           >
             {tab === "requests" ? "Leave Requests" : "Leave Policy"}
           </button>
@@ -152,12 +192,13 @@ export default function LeaveRequests() {
                   key={req.leave_id}
                   layout
                   onClick={() => toggleExpand(req.leave_id)}
-                  className={`bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl shadow-sm p-4 border-l-4 cursor-pointer transition-all ${req.status === "Approved"
-                    ? "border-green-400"
-                    : req.status === "Rejected"
+                  className={`bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl shadow-sm p-4 border-l-4 cursor-pointer transition-all ${
+                    req.status === "Approved"
+                      ? "border-green-400"
+                      : req.status === "Rejected"
                       ? "border-red-400"
                       : "border-yellow-400"
-                    }`}
+                  }`}
                 >
                   {/* Top Row */}
                   <div className="flex justify-between items-center">
@@ -178,7 +219,7 @@ export default function LeaveRequests() {
                       <p className="text-xs text-gray-600">
                         🟣 Available Leaves:{" "}
                         <span className="font-semibold text-purple-700">
-                          {req.available_leaves ?? "0"} days
+                          {req.remaining_days ?? "0"} days
                         </span>
                       </p>
                       <p className="text-xs mt-1 font-medium text-orange-900 bg-orange-200 px-2 rounded">
@@ -200,45 +241,32 @@ export default function LeaveRequests() {
                     <div className="flex gap-2">
                       {req.status === "Pending" ? (
                         <>
-                          {/* Approve Button */}
-                          <div className="relative group">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleApprove(req.leave_id)
-                              }}
-                              className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full"
-                            >
-                              <FaCheck size={12} />
-                            </button>
-                            <span className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                              Approve
-                            </span>
-                          </div>
-
-                          {/* Reject Button */}
-                          <div className="relative group">
-                            <button
-
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(req.leave_id)
-                              }}
-                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full"
-                            >
-                              <FaTimes size={12} />
-                            </button>
-                            <span className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                              Reject
-                            </span>
-                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openConfirmModal(req.leave_id, "Approved");
+                            }}
+                            className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-full"
+                          >
+                            <FaCheck size={12} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openConfirmModal(req.leave_id, "Rejected");
+                            }}
+                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full"
+                          >
+                            <FaTimes size={12} />
+                          </button>
                         </>
                       ) : (
                         <span
-                          className={`px-3 py-1 text-xs rounded-full font-medium ${req.status === "Approved"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                            }`}
+                          className={`px-3 py-1 text-xs rounded-full font-medium ${
+                            req.status === "Approved"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
                         >
                           {req.status}
                         </span>
@@ -261,7 +289,7 @@ export default function LeaveRequests() {
                           Duration:{" "}
                           {Math.ceil(
                             (new Date(req.end_date) - new Date(req.start_date)) /
-                            (1000 * 60 * 60 * 24)
+                              (1000 * 60 * 60 * 24)
                           ) + 1}{" "}
                           days
                         </p>
@@ -273,7 +301,7 @@ export default function LeaveRequests() {
             )}
           </motion.div>
         ) : (
-          // Leave Policy tab
+          // Leave Policy Tab
           <motion.div
             key="policy"
             initial={{ opacity: 0 }}
@@ -325,11 +353,11 @@ export default function LeaveRequests() {
             <h2 className="text-lg font-semibold mb-4">Add Leave Type</h2>
             <div className="flex flex-col gap-3">
               <label className="text-sm font-medium">Leave Type</label>
-                  <input
+              <input
                 type="text"
-                placeholder="e.g. Sick, Paid, Casual... "
-                value={newLeave.total_days}
-                onChange={(e) => setNewLeave({ ...newLeave, total_days: e.target.value })}
+                placeholder="e.g. Sick, Paid, Casual..."
+                value={newLeave.leave_type}
+                onChange={(e) => setNewLeave({ ...newLeave, leave_type: e.target.value })}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
               <label className="text-sm font-medium">Total Days</label>
@@ -366,7 +394,6 @@ export default function LeaveRequests() {
         onConfirm={handleConfirm}
         status={confirmModal.action}
       />
-
     </div>
   );
 }

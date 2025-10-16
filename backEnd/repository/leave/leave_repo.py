@@ -223,21 +223,21 @@ class LeaveRepo:
                 Leave.start_date,
                 Leave.end_date,
                 Leave.reason,
-                Leave.status,
+                Leave.manager_status,
+                Leave.hr_status,           # <-- Add this
                 Leave.applied_on,
+                Leave.total_days,
+                Leave.used_days,
                 employeeTable.c.lastName.label("last_name"),
+                employeeTable.c.department.label("department")
             )
             .join(employeeTable, Leave.emp_id == employeeTable.c.emp_id)
             .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
-            .filter(
-                (Leave.current_approver == "HR") 
-            ) 
             .all()
         )
 
-        
         leaves_list = [
-           LeaveResponseDTO(
+            LeaveResponseDTO(
                 leave_id=r[0],
                 emp_id=r[1],
                 leave_type_id=r[2],
@@ -246,12 +246,15 @@ class LeaveRepo:
                 start_date=r[5],
                 end_date=r[6],
                 reason=r[7],
-                status=r[8],
-                applied_on=r[9],
-                last_name=r[10],
-
+                manager_status=r[8],
+                hr_status=r[9],        
+                applied_on=r[10],
+                total_days=r[11],
+                used_days=r[12],
+                last_name=r[13],
+                department=r[14],
             )
             for r in result
         ]
-        
+
         return leaves_list

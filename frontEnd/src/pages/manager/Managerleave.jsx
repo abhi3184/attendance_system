@@ -82,7 +82,7 @@ export default function ManagerLeave() {
       if (res.success && res.data) setRequests(res.data);
       else {
         setRequests([]);
-        toast.warning("No personal leaves found");
+        // toast.warning("No personal leaves found");
       }
     } catch (err) {
       toast.error("Error fetching personal leaves");
@@ -241,9 +241,9 @@ export default function ManagerLeave() {
           {/* Upcoming Leaves & Holidays */}
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Personal Leaves Table */}
-            <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-md">
-              <h2 className="py-3 px-4 text-sm font-semibold border-b border-gray-200">Personal Leaves</h2>
-              <div className="overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
+            <div className="flex-1 bg-white rounded-xl overflow-hidden ">
+              <h2 className="py-3 px-4 text-sm font-semibold ">Personal Leaves</h2>
+              <div className="px-2 rounded-xl overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
                 <table className="min-w-full divide-y rounded-xl">
                   <thead className="bg-purple-100 sticky top-0 z-10">
                     <tr>
@@ -282,9 +282,9 @@ export default function ManagerLeave() {
             </div>
 
             {/* Upcoming Holidays Table */}
-            <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-md">
-              <h2 className="py-3 px-4 text-sm font-semibold border-b border-gray-200">Upcoming Holidays</h2>
-              <div className="overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
+            <div className="flex-1 bg-white rounded-xl overflow-hidden">
+              <h2 className="py-3 px-4 text-sm font-semibold">Upcoming Holidays</h2>
+              <div className="px-2 overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
                 <table className="min-w-full divide-y rounded-xl">
                   <thead className="bg-purple-100 sticky top-0 z-10">
                     <tr>

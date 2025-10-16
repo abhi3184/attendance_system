@@ -20,8 +20,6 @@ class LeaveUpdate(BaseModel):
 class LeaveUpdateHr(BaseModel):
     leave_id: int
     status: str
-    approved_by: str
-    hr_id : int
 
 class LeaveResponseDTO(BaseModel):
     leave_id: int
@@ -31,10 +29,14 @@ class LeaveResponseDTO(BaseModel):
     leave_type: Optional[str] = None
     start_date: date
     end_date: date
-    reason: Optional[str]
-    status: str
+    reason: Optional[str] = None
+    manager_status: str
+    hr_status: Optional[str] = None   # <-- make optional
+    total_days: int
+    used_days: int
     applied_on: datetime
     last_name: Optional[str] = None
+    department : Optional[str] = None
 
 
     class Config:

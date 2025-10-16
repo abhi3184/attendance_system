@@ -81,7 +81,7 @@ def get_leave_summary(
     ):
     return LeaveService.get_leave_summary(db, emp_id)
 
-@leave.get("/get_all_leaves", response_model=List[LeaveResponseDTO])
+@leave.get("/get_all_leaves")
 def get_leave_leaves(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),

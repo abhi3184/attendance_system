@@ -59,23 +59,14 @@ class LeaveService:
         leave = LeaveRepo.get_leave_By_id(db,req)
         if not leave:
             return {"success": False, "message": "Leave not found"}
-        leave.status = req.status
-        leave.approved_by = req.approved_by
+        leave.hr_status = req.status
         leave.hr_approved_on = datetime.now()
-        leave.hr_id = req.hr_id
-        if req.status == "Approved" and leave.current_approver == "HR":
-            leave.current_approver = "HR"
-        else:
-            leave.current_approver = None
-
-
         LeaveRepo.save_leave(db, leave)
 
         return {
             "success": True,
             "message": f"Leave {req.status.lower()} successfully",
             "leave_id": leave.leave_id,
-            "current_approver": leave.current_approver
         }
     
     @staticmethod
@@ -172,7 +163,38 @@ class LeaveService:
         return {"success":True,"data":result,"message":"leave type not found"}
     
     @staticmethod
-    def get_all_leaves(db:Session):
-        result = LeaveRepo.get_all_leaves(db)
-        return result
-        
+    def get_all_leaves(db: Session):
+        # Fetch all leaves from repository
+        leaves = LeaveRepo.get_all_leaves(db)  # this returns a list of DTOs
+
+        if not leaves:
+            return {"success": False, "data": [], "message": "Leaves not found"}
+
+        # Track used days per employee per leave type
+        leave_type_used = defaultdict(int)  # key: (emp_id, leave_type_id)
+        # Track latest leave_id per employee per leave type
+        latest_leave_map = {}  # key: (emp_id, leave_type_id) -> leave_id
+
+        for leave in leaves:
+            key = (leave.emp_id, leave.leave_type_id)
+            leave_type_used[key] += leave.used_days
+            if key not in latest_leave_map or leave.leave_id > latest_leave_map[key]:
+                latest_leave_map[key] = leave.leave_id
+
+        # Prepare final list with remaining_days
+        leaves_list = []
+        for leave in leaves:
+            key = (leave.emp_id, leave.leave_type_id)
+            if leave.leave_id == latest_leave_map[key]:
+                # Latest leave: remaining_days = total_days - total used_days
+                remaining_days = leave.total_days - leave_type_used[key]
+            else:
+                # Older leaves: remaining_days = total_days - used_days
+                remaining_days = leave.total_days - leave.used_days
+
+            leaves_list.append({
+                **leave.__dict__,  # convert DTO to dict
+                "remaining_days": remaining_days
+            })
+
+        return {"success": True, "data": leaves_list, "message": "Data fetched successfully"}

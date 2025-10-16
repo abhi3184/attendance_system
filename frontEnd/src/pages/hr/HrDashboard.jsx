@@ -1,35 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FaUsers, FaUserTie, FaClock, FaFileAlt, FaCheck, FaTimes } from "react-icons/fa";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "react-toastify";
 import ConfirmStatusModal from "../../modals/leaveStatusChange";
-import { hrleaveService } from "../../api/services/hrDashboard/HrleaveService"
-import { getDecodedToken } from "../../utils/JWTHelper";
+import { hrleaveService } from "../../api/services/hrDashboard/HrleaveService";
 
 import {
   getAllEmployees,
   getAllLeaves,
   getAttendanceCount,
-  getUpcomingHolidays,
-  updateLeaveStatus
+  getUpcomingHolidays
 } from "../../api/services/hrDashboard/hrDashboardService";
 
 const HRDashboard = () => {
-  const loggedInUserDetails = JSON.parse(localStorage.getItem("employee"));
   const [employees, setEmployees] = useState([]);
-  const [managerCount, setManagerCount] = useState(0);
-  const [attendanceCount, setAttendance] = useState(0);
   const [leaves, setLeaves] = useState([]);
+  const [attendanceCount, setAttendance] = useState(0);
   const [holidays, setHolidays] = useState([]);
   const [confirmModal, setConfirmModal] = useState({ open: false, leaveId: null, action: "" });
+
   const deptColors = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
-  const statusColors = { Pending: "bg-red-500", Approved: "bg-green-500", Rejected: "bg-gray-400" };
-
-
-
-  const token = localStorage.getItem("token"); // or your storage key
-  const decoded = getDecodedToken(token);
 
   const formatToDDMMM = (dateStr) => {
     const date = new Date(dateStr);
@@ -38,7 +29,7 @@ const HRDashboard = () => {
     return `${day}-${month}`;
   };
 
-  // Fetch all data
+  // Fetch all dashboard data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -49,107 +40,109 @@ const HRDashboard = () => {
           getUpcomingHolidays(),
         ]);
         setEmployees(emps);
-        setManagerCount(emps.filter(e => e.roles_id === 2).length);
-        setLeaves(allLeaves);
+        setLeaves(allLeaves?.data || []); // <--- FIXED: use .data
         setAttendance(attendance);
         setHolidays(upcomingHolidays);
       } catch (err) {
+        toast.error("Failed to fetch dashboard data");
       }
     };
     fetchData();
   }, []);
 
-  const handleConfirmLeave = async (leaveId, action) => {
+  // Count managers
+  const managerCount = useMemo(() => employees.filter(e => e.roles_id === 2).length, [employees]);
 
+  // Department distribution for PieChart
+  const departmentData = useMemo(() => {
+    return Object.values(
+      employees.reduce((acc, emp) => {
+        if (!acc[emp.department]) acc[emp.department] = { name: emp.department, value: 0 };
+        acc[emp.department].value += 1;
+        return acc;
+      }, {})
+    );
+  }, [employees]);
+
+  // Pending leaves (HR action pending)
+  const pendingLeaves = useMemo(() => {
+    if (!leaves || !Array.isArray(leaves)) return [];
+    return leaves
+      .filter(l => l.manager_status === "Approved" && l.hr_status === null) // only HR-pending leaves
+      .sort((a, b) => new Date(b.applied_on) - new Date(a.applied_on));
+  }, [leaves]);
+
+  // Approve/Reject leave
+  const handleConfirmLeave = async (leaveId, action) => {
     try {
-      console.log("decoed",decoded)
       const payload = {
         leave_id: leaveId,
         status: action === "Approve" ? "Approved" : "Rejected",
-        approved_by: `${loggedInUserDetails.firstName} ${loggedInUserDetails.lastName}`,
-        hr_id: decoded.id
       };
-      console.log("hiii", payload)
       const res = await hrleaveService.updateLeaveStatus(payload);
       if (res.success) {
-        toast.success(`Leave ${action.toLowerCase()}d successfully!`);
-        fetchTeamLeaves(employee.id);
+        toast.success(`Leave ${action.toLowerCase()} successfully!`);
+        setLeaves(prev => prev.filter(l => l.leave_id !== leaveId));
       } else {
         toast.error(res.message || "Failed to update leave status");
       }
-    } catch (err) {
+    } catch {
+      toast.error("Something went wrong!");
     } finally {
       setConfirmModal({ open: false, leaveId: null, action: "" });
     }
   };
 
-
-  // Department distribution for Pie chart
-  const departmentData = Object.values(
-    employees.reduce((acc, emp) => {
-      if (!acc[emp.department]) acc[emp.department] = { name: emp.department, value: 0 };
-      acc[emp.department].value += 1;
-      return acc;
-    }, {})
-  );
-
-
   const handleApproveClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Approve" });
   const handleRejectClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Reject" });
 
   return (
-    <div className="p-4 font-sans space-y-6 h-[500px] pb-5 overflow-auto">
+    <div className="p-4 font-sans h-[500px] space-y-6 overflow-auto">
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <motion.div className="bg-indigo-50 p-4 rounded-xl shadow-lg flex flex-col justify-between hover:scale-105 transition-transform">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-xs text-indigo-800">Total Employees</p>
-              <h2 className="text-2xl font-bold text-indigo-900">{employees.length}</h2>
-            </div>
-            <FaUsers className="text-3xl text-indigo-500" />
+        <motion.div className="bg-indigo-50 p-4 rounded-xl shadow-lg flex justify-between items-center hover:scale-105 transition-transform">
+          <div>
+            <p className="text-xs text-indigo-800">Total Employees</p>
+            <h2 className="text-2xl font-bold text-indigo-900">{employees.length}</h2>
           </div>
+          <FaUsers className="text-3xl text-indigo-500" />
         </motion.div>
 
-        <motion.div className="bg-emerald-50 p-4 rounded-xl shadow-lg flex flex-col justify-between hover:scale-105 transition-transform">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-xs text-emerald-800">Total Managers</p>
-              <h2 className="text-2xl font-bold text-emerald-900">{managerCount}</h2>
-            </div>
-            <FaUserTie className="text-3xl text-emerald-500" />
+        <motion.div className="bg-emerald-50 p-4 rounded-xl shadow-lg flex justify-between items-center hover:scale-105 transition-transform">
+          <div>
+            <p className="text-xs text-emerald-800">Total Managers</p>
+            <h2 className="text-2xl font-bold text-emerald-900">{managerCount}</h2>
           </div>
+          <FaUserTie className="text-3xl text-emerald-500" />
         </motion.div>
 
-        <motion.div className="bg-amber-50 p-4 rounded-xl shadow-lg flex flex-col justify-between hover:scale-105 transition-transform">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-xs text-amber-800">Pending Leaves</p>
-              <h2 className="text-2xl font-bold text-amber-900">{leaves.filter(l => l.status === "Pending").length}</h2>
-            </div>
-            <FaFileAlt className="text-3xl text-amber-500" />
+        <motion.div className="bg-amber-50 p-4 rounded-xl shadow-lg flex justify-between items-center hover:scale-105 transition-transform">
+          <div>
+            <p className="text-xs text-amber-800">Pending Leaves</p>
+            <h2 className="text-2xl font-bold text-amber-900">{pendingLeaves.length}</h2>
           </div>
+          <FaFileAlt className="text-3xl text-amber-500" />
         </motion.div>
 
-        <motion.div className="bg-purple-50 p-4 rounded-xl shadow-lg flex flex-col justify-between hover:scale-105 transition-transform">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-xs text-purple-800">Today's Attendance</p>
-              <h2 className="text-2xl font-bold text-purple-900">{attendanceCount}</h2>
-            </div>
-            <FaClock className="text-3xl text-purple-500" />
+        <motion.div className="bg-purple-50 p-4 rounded-xl shadow-lg flex justify-between items-center hover:scale-105 transition-transform">
+          <div>
+            <p className="text-xs text-purple-800">Today's Attendance</p>
+            <h2 className="text-2xl font-bold text-purple-900">{attendanceCount}</h2>
           </div>
+          <FaClock className="text-3xl text-purple-500" />
         </motion.div>
       </div>
 
       {/* Charts + Leaves */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Department Pie */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
           <h2 className="text-sm font-semibold mb-2">Department Distribution</h2>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
-              <Pie data={departmentData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
+              <Pie data={departmentData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                 {departmentData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={deptColors[index % deptColors.length]} />
                 ))}
@@ -159,42 +152,37 @@ const HRDashboard = () => {
           </ResponsiveContainer>
         </motion.div>
 
-        <motion.div className="bg-white p-4 rounded-xl shadow-lg h-[300px]" whileHover={{ scale: 1.02 }}>
-          <h2 className="text-sm font-semibold mb-2">Leaves</h2>
-          <div className="space-y-2 max-h-64 overflow-y-auto pb-5">
-            {leaves
-              .slice()
-              .sort((a, b) => a.status === "Pending" && b.status !== "Pending" ? -1 : b.status === "Pending" && a.status !== "Pending" ? 1 : 0)
-              .map(leave => (
-                <div key={leave.leave_id} className="flex justify-between items-center p-2 border rounded-xl hover:bg-gray-100 transition">
-                  <div>
-                    <p className="font-semibold text-sm">{leave.first_name} {leave.last_name}</p>
-                    <p className="text-xs text-gray-400">{formatToDDMMM(leave.start_date)} → {formatToDDMMM(leave.end_date)}</p>
+        {/* Pending Leaves */}
+        <motion.div className="bg-white p-5 rounded-2xl shadow-xl h-[350px] flex flex-col" whileHover={{ scale: 1.02 }}>
+          <h2 className="text-md font-medium mb-4 text-gray-700 border-b pb-2">Pending Leaves</h2>
+          <div className="flex-1 space-y-3 overflow-y-auto pr-2">
+            {pendingLeaves.length === 0 ? (
+              <p className="text-center text-gray-400 mt-10">No pending leaves</p>
+            ) : (
+              pendingLeaves.map((leave) => (
+                <div key={leave.leave_id} className="flex justify-between items-center p-3 border-l-4 border-blue-500 rounded-xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-col sm:flex-row">
+                  <div className="flex flex-col">
+                    <p className="font-semibold text-sm text-gray-800">{leave.first_name} {leave.last_name}</p>
+                    <p className="text-xs text-gray-500 flex items-center space-x-1"><FaUserTie className="w-3 h-3" /><span>{leave.department}</span></p>
+                    <p className="text-xs text-gray-400 mt-1">{formatToDDMMM(leave.start_date)} → {formatToDDMMM(leave.end_date)}</p>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded text-white font-medium text-xs ${statusColors[leave.status]}`}>
-                      {leave.leave_type}
-                    </span>
-                    {leave.status === "Approved By Manager" && (
-                      <>
-                        <button className="bg-green-500 text-red-700 px-2 py-1 rounded text-xs"
-                          onClick={() => handleApproveClick(leave.leave_id, "Approved")} title="Approve">
-                          <FaCheck className="w-3 h-3 text-green-900" /></button>
-                        <button className="bg-red-500 text-white px-2 py-1 rounded text-xs"
-                          onClick={() => handleRejectClick(leave.leave_id, "Rejected")}>
-                          <FaTimes className="w-3 h-3 text-red-900" />
-                        </button>
-                      </>
-                    )}
+
+                  <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+                    <span className="px-2 py-1 rounded-full text-black text-xs font-semibold">{leave.leave_type}</span>
+                    <button onClick={() => handleApproveClick(leave.leave_id)} className="bg-green-100 hover:bg-green-200 text-green-800 p-1 rounded-md"><FaCheck /></button>
+                    <button onClick={() => handleRejectClick(leave.leave_id)} className="bg-red-100 hover:bg-red-200 text-red-800 p-1 rounded-md"><FaTimes /></button>
                   </div>
                 </div>
-              ))}
+              ))
+            )}
           </div>
         </motion.div>
+
       </div>
 
       {/* Holidays + Payroll */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Holidays */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
           <h2 className="text-sm font-semibold mb-2">Upcoming Holidays</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -207,13 +195,14 @@ const HRDashboard = () => {
           </div>
         </motion.div>
 
+        {/* Payroll */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
           <h2 className="text-sm font-semibold mb-2">Payroll</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {employees.map(emp => (
               <div key={emp.emp_id} className="flex justify-between items-center p-2 border rounded-xl hover:bg-gray-100 transition">
                 <div>
-                  <p className="font-semibold text-sm">{emp.firstName} {emp.lastname}</p>
+                  <p className="font-semibold text-sm">{emp.firstName} {emp.lastName}</p>
                   <p className="text-xs text-gray-400">{emp.department}</p>
                 </div>
                 <p className={`text-xs font-semibold ${emp.salary > 50000 ? 'text-green-600' : 'text-red-500'}`}>
@@ -224,16 +213,17 @@ const HRDashboard = () => {
           </div>
         </motion.div>
       </div>
+
       {confirmModal.open && (
         <ConfirmStatusModal
           isOpen={confirmModal.open}
-          status={confirmModal.action} // Approve/Reject
+          status={confirmModal.action}
           onClose={() => setConfirmModal({ open: false, leaveId: null, action: "" })}
           onConfirm={() => handleConfirmLeave(confirmModal.leaveId, confirmModal.action)}
         />
       )}
-    </div>
 
+    </div>
   );
 };
 
