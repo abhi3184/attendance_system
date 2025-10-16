@@ -7,12 +7,8 @@ export const hrleaveService = {
     return res?.data || [];
   },
 
-  updateStatus: async (id, status,approvedby) => {
-    const res = await httpClient.put(`http://127.0.0.1:8000/leave/update_status`, {
-      leave_id: id,
-      status,
-      approved_by: approvedby,
-    });
-    return res || null;
-  },
+    updateLeaveStatus : async (obj) => {
+        const res = await httpClient.put(`leave/update_status_By_HR`,obj);
+        return res?.data || []; 
+    }
 };

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FaUsers, FaUserTie, FaClock, FaFileAlt } from "react-icons/fa";
+import { FaUsers, FaUserTie, FaClock, FaFileAlt, FaCheck, FaTimes } from "react-icons/fa";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "react-toastify";
+import ConfirmStatusModal from "../../modals/leaveStatusChange";
+import { hrleaveService } from "../../api/services/hrDashboard/HrleaveService"
+import { getDecodedToken } from "../../utils/JWTHelper";
 
 import {
   getAllEmployees,
@@ -13,14 +16,20 @@ import {
 } from "../../api/services/hrDashboard/hrDashboardService";
 
 const HRDashboard = () => {
+  const loggedInUserDetails = JSON.parse(localStorage.getItem("employee"));
   const [employees, setEmployees] = useState([]);
   const [managerCount, setManagerCount] = useState(0);
   const [attendanceCount, setAttendance] = useState(0);
   const [leaves, setLeaves] = useState([]);
   const [holidays, setHolidays] = useState([]);
-
+  const [confirmModal, setConfirmModal] = useState({ open: false, leaveId: null, action: "" });
   const deptColors = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
   const statusColors = { Pending: "bg-red-500", Approved: "bg-green-500", Rejected: "bg-gray-400" };
+
+
+
+  const token = localStorage.getItem("token"); // or your storage key
+  const decoded = getDecodedToken(token);
 
   const formatToDDMMM = (dateStr) => {
     const date = new Date(dateStr);
@@ -50,26 +59,30 @@ const HRDashboard = () => {
     fetchData();
   }, []);
 
-  const handleUpdateLeaveStatus = async (leave_id, status) => {
-    // Optimistic UI update
-    setLeaves(prevLeaves =>
-      prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status } : l))
-    );
+  const handleConfirmLeave = async (leaveId, action) => {
 
     try {
-      const res = await updateLeaveStatus(leave_id, status);
-      if (!res.success) {
-        toast.error("Failed to update leave status");
-        setLeaves(prevLeaves =>
-          prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status: "Pending" } : l))
-        );
+      console.log("decoed",decoded)
+      const payload = {
+        leave_id: leaveId,
+        status: action === "Approve" ? "Approved" : "Rejected",
+        approved_by: `${loggedInUserDetails.firstName} ${loggedInUserDetails.lastName}`,
+        hr_id: decoded.id
+      };
+      console.log("hiii", payload)
+      const res = await hrleaveService.updateLeaveStatus(payload);
+      if (res.success) {
+        toast.success(`Leave ${action.toLowerCase()}d successfully!`);
+        fetchTeamLeaves(employee.id);
+      } else {
+        toast.error(res.message || "Failed to update leave status");
       }
     } catch (err) {
-      setLeaves(prevLeaves =>
-        prevLeaves.map(l => (l.leave_id === leave_id ? { ...l, status: "Pending" } : l))
-      );
+    } finally {
+      setConfirmModal({ open: false, leaveId: null, action: "" });
     }
   };
+
 
   // Department distribution for Pie chart
   const departmentData = Object.values(
@@ -79,6 +92,10 @@ const HRDashboard = () => {
       return acc;
     }, {})
   );
+
+
+  const handleApproveClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Approve" });
+  const handleRejectClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Reject" });
 
   return (
     <div className="p-4 font-sans space-y-6 h-[500px] pb-5 overflow-auto">
@@ -143,7 +160,7 @@ const HRDashboard = () => {
         </motion.div>
 
         <motion.div className="bg-white p-4 rounded-xl shadow-lg h-[300px]" whileHover={{ scale: 1.02 }}>
-          <h2 className="text-sm font-semibold mb-2">Team Leaves</h2>
+          <h2 className="text-sm font-semibold mb-2">Leaves</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto pb-5">
             {leaves
               .slice()
@@ -155,15 +172,18 @@ const HRDashboard = () => {
                     <p className="text-xs text-gray-400">{formatToDDMMM(leave.start_date)} → {formatToDDMMM(leave.end_date)}</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded text-white text-xs ${statusColors[leave.status]}`}>
-                      {leave.status}
+                    <span className={`px-2 py-1 rounded text-white font-medium text-xs ${statusColors[leave.status]}`}>
+                      {leave.leave_type}
                     </span>
-                    {leave.status === "Pending" && (
+                    {leave.status === "Approved By Manager" && (
                       <>
-                        <button className="bg-green-500 text-white px-2 py-1 rounded text-xs"
-                          onClick={() => handleUpdateLeaveStatus(leave.leave_id, "Approved")}>✔</button>
+                        <button className="bg-green-500 text-red-700 px-2 py-1 rounded text-xs"
+                          onClick={() => handleApproveClick(leave.leave_id, "Approved")} title="Approve">
+                          <FaCheck className="w-3 h-3 text-green-900" /></button>
                         <button className="bg-red-500 text-white px-2 py-1 rounded text-xs"
-                          onClick={() => handleUpdateLeaveStatus(leave.leave_id, "Rejected")}>✖</button>
+                          onClick={() => handleRejectClick(leave.leave_id, "Rejected")}>
+                          <FaTimes className="w-3 h-3 text-red-900" />
+                        </button>
                       </>
                     )}
                   </div>
@@ -204,7 +224,16 @@ const HRDashboard = () => {
           </div>
         </motion.div>
       </div>
+      {confirmModal.open && (
+        <ConfirmStatusModal
+          isOpen={confirmModal.open}
+          status={confirmModal.action} // Approve/Reject
+          onClose={() => setConfirmModal({ open: false, leaveId: null, action: "" })}
+          onConfirm={() => handleConfirmLeave(confirmModal.leaveId, confirmModal.action)}
+        />
+      )}
     </div>
+
   );
 };
 

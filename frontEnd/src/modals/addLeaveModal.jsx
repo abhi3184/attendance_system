@@ -142,7 +142,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
         toast.error(res.message || "Failed to apply leave!");
       }
     } catch (err) {
-      toast.error("Something went wrong!");
+      // toast.error("Something went wrong!");
     }
   };
 

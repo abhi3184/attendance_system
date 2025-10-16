@@ -64,7 +64,9 @@ export default function Leave() {
   const fetchLeaveRequests = async (empId) => {
     try {
       const res = await employeeLeaveService.getLeavesByEmpID(empId);
+      console.log("response",res)
       if (res.success && res.data) {
+        
         setRequests(res.data); // assuming res.data.data is an array of leaves
       } else {
       }
@@ -237,7 +239,8 @@ export default function Leave() {
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leaves</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Used Leaves</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining Leaves</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Manager Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Hr Status</th>
                   {/* <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th> */}
                 </tr>
               </thead>
@@ -289,14 +292,30 @@ export default function Leave() {
                       {/* Status */}
                       <td className="px-4 py-2 text-xs">
                         <span
-                          className={`inline-block w-20 text-center py-1 rounded font-semibold text-xs ${req.status === "Pending"
+                          className={`inline-block w-40 text-center py-1 rounded font-semibold text-xs ${req.manager_status === "Pending"
                             ? "bg-yellow-200 text-yellow-800"
-                            : req.status === "Approved"
+                            : req.manager_status === "Approved"
                               ? "bg-green-200 text-green-800"
                               : "bg-red-200 text-red-800"
                             }`}
                         >
-                          {req.status}
+                          {req.manager_status}
+                        </span>
+                      </td>
+
+                       {/* Status */}
+                      <td className="px-4 py-2 text-xs">
+                        <span
+                          className={`inline-block w-40 text-center py-1 rounded font-semibold text-xs ${req.hr_status === "Pending"
+                            ? "bg-yellow-200 text-yellow-800"
+                            : req.hr_status === "Approved"
+                              ? "bg-green-200 text-green-800"
+                            :req.hr_status === "None" 
+                            ? "bg-blue-200 text-blue-800"
+                              : "bg-red-200 text-red-800"
+                            }`}
+                        >
+                          {req.hr_status}
                         </span>
                       </td>
 

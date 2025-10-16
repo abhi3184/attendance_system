@@ -16,7 +16,7 @@ const FancyDropdown = ({ options = [], value, onChange, placeholder = "Select" }
     <div className="relative flex-1">
       <div
         onClick={() => setOpen(!open)}
-        className="border text-sm rounded px-3 py-2 cursor-pointer flex justify-between items-center shadow-sm hover:ring-2 hover:ring-purple-500 transition"
+        className="border border-gray-300 text-sm rounded-lg px-3 py-2 cursor-pointer flex justify-between items-center shadow-sm hover:ring-2 hover:ring-purple-500 transition"
       >
         <span className={displayValue ? "text-gray-900" : "text-gray-400"}>
           {displayValue || placeholder}

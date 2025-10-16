@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import List
 from fastapi import HTTPException
+from schemas.leave.leave import LeaveUpdateHr
 from models.index import Leave,leaveTypeTable
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp
 from repository.index import LeaveRepo
@@ -32,17 +33,79 @@ class LeaveService:
             end_date = req.end_date,
             reason = req.reason,
             applied_on = datetime.now(),
-            manager_id = req.manager_id,
+            manager_status = "Pending",
+            manager_id = req.manager_id
         )
         return LeaveRepo.apply_leave(db, leave)
     
     @staticmethod
-    def update_leave_status(db,req: LeaveUpdate):
-        return LeaveRepo.update_leave_status(db,req)
+    def update_leave_status_by_manager(db,req: LeaveUpdate):
+        leave = LeaveRepo.get_leave_By_id(db,req)
+        if not leave:
+            return {"success": False, "message": "Leave not found"}
+        leave.manager_status = req.status
+        leave.manager_approved_on = datetime.now()
+
+        LeaveRepo.save_leave(db, leave)
+
+        return {
+            "success": True,
+            "message": f"Leave {req.status.lower()} successfully",
+            "leave_id": leave.leave_id,
+        }
+    
+    @staticmethod
+    def update_leave_status_by_Hr(db,req: LeaveUpdateHr):
+        leave = LeaveRepo.get_leave_By_id(db,req)
+        if not leave:
+            return {"success": False, "message": "Leave not found"}
+        leave.status = req.status
+        leave.approved_by = req.approved_by
+        leave.hr_approved_on = datetime.now()
+        leave.hr_id = req.hr_id
+        if req.status == "Approved" and leave.current_approver == "HR":
+            leave.current_approver = "HR"
+        else:
+            leave.current_approver = None
+
+
+        LeaveRepo.save_leave(db, leave)
+
+        return {
+            "success": True,
+            "message": f"Leave {req.status.lower()} successfully",
+            "leave_id": leave.leave_id,
+            "current_approver": leave.current_approver
+        }
     
     @staticmethod
     def get_leave_by_empId(db: Session, emp_Id):
-        return LeaveRepo.get_leaves_by_empId(db, emp_Id)
+        result = LeaveRepo.get_leaves_by_empId(db, emp_Id)
+        if not result.get("success"):
+            return result
+
+        leaves = result["data"]
+        if not leaves:
+            return {"success": False, "data": [], "message": "Leaves not found"}
+        leave_type_used = defaultdict(int)
+        for leave in leaves:
+            leave_type_used[leave["leave_type"]] += leave["used_days"]
+
+        leaves_list = []
+        latest_leave_id = max(leave["leave_id"] for leave in leaves)
+
+        for leave in leaves:
+            if leave["leave_id"] == latest_leave_id:
+                remaining_days = leave["total_days"] - leave_type_used[leave["leave_type"]]
+            else:
+                remaining_days = leave["total_days"] - leave["used_days"]
+
+            leaves_list.append({
+                **leave,
+                "remaining_days": remaining_days
+            })
+
+        return {"success": True, "data": leaves_list, "message": "Data fetched successfully"}
     
     @staticmethod
     def get_leave_by_managerID(db: Session, manager_id: str) -> dict:

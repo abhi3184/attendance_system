@@ -3,19 +3,26 @@ import { motion } from "framer-motion";
 import { FaCalendarAlt, FaWallet, FaStethoscope, FaPlus } from "react-icons/fa";
 import jwt_decode from "jwt-decode";
 import { toast } from "react-toastify";
-
 import AddLeaveModal from "../../modals/addLeaveModal";
+import ConfirmStatusModal from "../../modals/leaveStatusChange";
 import { EmployeeOverViewService } from "../../api/services/manager/employeeOverViewService";
 import { employeeHomeService } from "../../api/services/employee/employeeHome";
 
-// Styles for status
+// ---------------------- Status Styles ----------------------
 const statusStyles = {
   Pending: { bg: "bg-yellow-50", text: "text-yellow-800" },
   Approved: { bg: "bg-green-50", text: "text-green-800" },
   Rejected: { bg: "bg-red-50", text: "text-red-800" },
 };
 
-// Format holiday date
+// ---------------------- Map DB Status to UI Status ----------------------
+const uiStatusMapping = {
+  Pending: "Pending",
+  Approved: "Approved",
+  Rejected: "Rejected",
+};
+
+// ---------------------- Format Holiday Date ----------------------
 const formatHolidayDate = (dateString) => {
   const date = new Date(dateString);
   const weekdays = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
@@ -27,6 +34,7 @@ const formatHolidayDate = (dateString) => {
 };
 
 export default function ManagerLeave() {
+  const loggedInUserDetails = JSON.parse(localStorage.getItem("employee"));
   const [activeTab, setActiveTab] = useState("summary");
   const [requests, setRequests] = useState([]);
   const [summaryData, setSummaryData] = useState([]);
@@ -35,8 +43,9 @@ export default function ManagerLeave() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLeaveType, setSelectedLeaveType] = useState(null);
   const [employee, setEmployeeData] = useState(null);
-
+  const [confirmModal, setConfirmModal] = useState({ open: false, leaveId: null, action: "" });
   const icons = [FaCalendarAlt, FaWallet, FaStethoscope];
+  const [teamLeaveFilter, setTeamLeaveFilter] = useState("Pending");
 
   // ---------------------- FETCH DATA ----------------------
   const fetchLeaveSummary = async (empId) => {
@@ -61,6 +70,7 @@ export default function ManagerLeave() {
         setSummaryData(formattedData);
       }
     } catch (err) {
+      toast.error("Error fetching summary");
     } finally {
       setLoading(false);
     }
@@ -69,9 +79,8 @@ export default function ManagerLeave() {
   const fetchPersonalLeaves = async (empId) => {
     try {
       const res = await EmployeeOverViewService.getPersonalLeaveRequests(empId);
-      if (res.success && res.data) {
-        setRequests(res.data);
-      } else {
+      if (res.success && res.data) setRequests(res.data);
+      else {
         setRequests([]);
         toast.warning("No personal leaves found");
       }
@@ -83,27 +92,53 @@ export default function ManagerLeave() {
   const fetchTeamLeaves = async (managerId) => {
     try {
       const res = await EmployeeOverViewService.getleavesByManager(managerId);
-      if (res.success && res.data) {
-        setRequests(res.data);
-      } else {
-        setRequests([]);
-      }
+      if (res.success && res.data) setRequests(res.data);
+      else setRequests([]);
     } catch (err) {
+      toast.error("Error fetching team leaves");
     }
   };
 
   const fetchUpcomingHolidays = async () => {
     try {
       const res = await employeeHomeService.getUpcominngHolidays();
-      if (res.success && res.data) {
-        setUpcomingHolidays(res.data);
-      }
+      if (res.success && res.data) setUpcomingHolidays(res.data);
     } catch (err) {
+      toast.error("Error fetching holidays");
     }
   };
 
+  // ---------------------- HANDLE CONFIRM LEAVE ----------------------
+  const handleConfirmLeave = async (leaveId, action) => {
+    try {
+      const payload = {
+        leave_id: leaveId,
+        status: action === "Approve" ? "Approved" : "Rejected",
+        approved_by: `${loggedInUserDetails.firstName} ${loggedInUserDetails.lastName}`,
+      };
+
+      const res = await EmployeeOverViewService.updateLeaveStatus(payload);
+      if (res.success) {
+        toast.success(`Leave ${action.toLowerCase()} successfully!`);
+        // Update requests state
+        const updatedRequests = requests.map((req) =>
+          req.leave_id === leaveId
+            ? { ...req, manager_status: action === "Approve" ? "Approved" : "Rejected" }
+            : req
+        );
+        setRequests(updatedRequests);
+      } else toast.error("Failed to update leave status.");
+    } catch {
+      toast.error("Server error. Please try again.");
+    } finally {
+      setConfirmModal({ open: false, leaveId: null, action: "" });
+    }
+  };
+
+  const handleApproveClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Approve" });
+  const handleRejectClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Reject" });
+
   // ---------------------- EFFECTS ----------------------
-  // Decode token & fetch summary + holidays once
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -113,31 +148,23 @@ export default function ManagerLeave() {
       fetchLeaveSummary(decoded.id);
       fetchUpcomingHolidays();
     } catch (err) {
+      toast.error("Invalid token");
     }
   }, []);
 
-  // Fetch leaves based on active tab
   useEffect(() => {
     if (!employee) return;
-
-    if (activeTab === "summary") {
-      fetchPersonalLeaves(employee.id);
-    } else if (activeTab === "request") {
-      fetchTeamLeaves(employee.id);
-    }
+    if (activeTab === "summary") fetchPersonalLeaves(employee.id);
+    else if (activeTab === "request") fetchTeamLeaves(employee.id);
   }, [activeTab, employee]);
 
   // ---------------------- HANDLE ADD LEAVE ----------------------
-  const handleAddLeave = async (data) => {
+  const handleAddLeave = async () => {
     setIsModalOpen(false);
-
     if (!employee?.id) return;
     await fetchLeaveSummary(employee.id);
-    if (activeTab === "summary") {
-      await fetchPersonalLeaves(employee.id);
-    } else if (activeTab === "request") {
-      await fetchTeamLeaves(employee.id);
-    }
+    if (activeTab === "summary") await fetchPersonalLeaves(employee.id);
+    else if (activeTab === "request") await fetchTeamLeaves(employee.id);
   };
 
   // ---------------------- JSX ----------------------
@@ -148,24 +175,17 @@ export default function ManagerLeave() {
         <div className="flex">
           <button
             onClick={() => setActiveTab("summary")}
-            className={`px-6 py-2 text-xs font-semibold ${activeTab === "summary"
-              ? "border-b-2 border-purple-600 text-purple-600"
-              : "text-gray-500 hover:text-gray-700"
-              }`}
+            className={`px-6 py-2 text-xs font-semibold ${activeTab === "summary" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-500 hover:text-gray-700"}`}
           >
             Personal Leave
           </button>
           <button
             onClick={() => setActiveTab("request")}
-            className={`px-6 py-2 text-xs font-semibold ${activeTab === "request"
-              ? "border-b-2 border-purple-600 text-purple-600"
-              : "text-gray-500 hover:text-gray-700"
-              }`}
+            className={`px-6 py-2 text-xs font-semibold ${activeTab === "request" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-500 hover:text-gray-700"}`}
           >
             Team Leave Requests
           </button>
         </div>
-
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.95 }}
@@ -179,6 +199,7 @@ export default function ManagerLeave() {
       {/* ------------------- PERSONAL SUMMARY ------------------- */}
       {activeTab === "summary" && (
         <>
+          {/* Summary Cards */}
           <div className="flex flex-wrap gap-6 mb-6">
             {loading ? (
               <p className="text-gray-500 text-sm">Loading summary...</p>
@@ -217,8 +238,9 @@ export default function ManagerLeave() {
             )}
           </div>
 
+          {/* Upcoming Leaves & Holidays */}
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Upcoming Leaves Table */}
+            {/* Personal Leaves Table */}
             <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-md">
               <h2 className="py-3 px-4 text-sm font-semibold border-b border-gray-200">Personal Leaves</h2>
               <div className="overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
@@ -236,7 +258,7 @@ export default function ManagerLeave() {
                   <tbody className="divide-y divide-gray-100">
                     {requests.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="px-4 py-6 text-center text-gray-500 text-sm">No upcoming leaves</td>
+                        <td colSpan={6} className="px-4 py-6 text-center text-gray-500 text-sm">No upcoming leaves</td>
                       </tr>
                     ) : (
                       requests.map((req, idx) => (
@@ -250,7 +272,6 @@ export default function ManagerLeave() {
                             <span className={`px-2 py-1 rounded font-medium ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>
                               {req.remaining_days} days
                             </span>
-
                           </td>
                         </tr>
                       ))
@@ -260,7 +281,7 @@ export default function ManagerLeave() {
               </div>
             </div>
 
-            {/* Personal Leave Status Table */}
+            {/* Upcoming Holidays Table */}
             <div className="flex-1 bg-white rounded-xl overflow-hidden shadow-md">
               <h2 className="py-3 px-4 text-sm font-semibold border-b border-gray-200">Upcoming Holidays</h2>
               <div className="overflow-x-auto max-h-[25vh] md:max-h-[20vh] lg:max-h-[20vh] xl:max-h-[23vh] overflow-y-auto">
@@ -288,40 +309,64 @@ export default function ManagerLeave() {
 
       {/* ------------------- TEAM LEAVE REQUESTS ------------------- */}
       {activeTab === "request" && (
-        <div className="bg-white rounded-xl border-gray-200 overflow-hidden mt-4">
+        <div className="bg-white border-gray-200 overflow-hidden p-4 rounded-xl">
+          <div className="flex gap-2 mb-4">
+            {["Pending", "Approved", "Rejected"].map((status) => (
+              <button
+                key={status}
+                onClick={() => setTeamLeaveFilter(status)}
+                className={`px-4 py-1 rounded-full text-xs font-semibold ${teamLeaveFilter === status ? "bg-purple-600 text-white shadow" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+
           <div className="max-h-[500px] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-purple-100 sticky top-0 z-10">
                 <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Leave Type</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">From</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">To</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leaves</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Used Leaves</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining Leaves</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Used</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {requests.length === 0 ? (
+                {requests.filter(r => r.manager_status === teamLeaveFilter).length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500 text-sm">No leaves present</td>
+                    <td colSpan={9} className="px-4 py-6 text-center text-gray-500 text-sm">No leaves present</td>
                   </tr>
                 ) : (
-                  requests.map((req, idx) => (
-                    <motion.tr key={req.leave_id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-xs text-gray-700 flex items-center gap-1">
-                        {req.leave_type === "Sick Leave" && "💊"}
-                        {req.leave_type === "Paid Leave" && "💰"}
-                        {req.leave_type === "Casual Leave" && "🏖️"}
-                        {req.leave_type}
-                      </td>
+                  requests.filter(r => r.manager_status === teamLeaveFilter).map((req, idx) => (
+                    <motion.tr
+                      key={req.leave_id || idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-2 text-xs text-gray-600">{req.first_name} {req.last_name}</td>
+                      <td className="px-4 py-2 text-xs text-gray-700">{req.leave_type}</td>
                       <td className="px-4 py-2 text-xs text-gray-600">{req.start_date}</td>
                       <td className="px-4 py-2 text-xs text-gray-600">{req.end_date}</td>
-                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.total_days > 10 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>{req.total_days} days</span></td>
-                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.used_days > 5 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>{req.used_days} days</span></td>
-                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded-full ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>{req.remaining_days} days</span></td>
-                      <td className="px-4 py-2 text-xs"><span className={`inline-block w-20 text-center py-1 rounded-full font-semibold text-xs ${req.status === "Pending" ? "bg-yellow-200 text-yellow-800" : req.status === "Approved" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>{req.status}</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 font-medium rounded ${req.total_days > 10 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}>{req.total_days} days</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded font-medium ${req.used_days > 5 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>{req.used_days} days</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-600"><span className={`px-2 py-1 rounded font-medium ${req.remaining_days <= 2 ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>{req.remaining_days} days</span></td>
+                      <td className="px-4 py-2 text-xs"><span className={`${statusStyles[req.manager_status].bg} ${statusStyles[req.manager_status].text} px-2 py-1 rounded-full text-xs font-semibold`}>{req.manager_status}</span></td>
+                      <td className="px-4 py-2">
+                        {req.manager_status === "Pending" && (
+                          <div className="flex gap-2">
+                            <button onClick={() => handleApproveClick(req.leave_id)} className="font-medium bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs hover:bg-green-200">Approve</button>
+                            <button onClick={() => handleRejectClick(req.leave_id)} className="font-medium bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs hover:bg-red-200">Reject</button>
+                          </div>
+                        )}
+                      </td>
                     </motion.tr>
                   ))
                 )}
@@ -334,13 +379,20 @@ export default function ManagerLeave() {
       {/* ------------------- ADD LEAVE MODAL ------------------- */}
       <AddLeaveModal
         isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setSelectedLeaveType(null); }}
         onSubmit={handleAddLeave}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedLeaveType(null);
-        }}
         preselectedType={selectedLeaveType}
       />
+
+      {/* ------------------- CONFIRM MODAL ------------------- */}
+      {confirmModal.open && (
+        <ConfirmStatusModal
+          isOpen={confirmModal.open}
+          status={confirmModal.action}
+          onClose={() => setConfirmModal({ open: false, leaveId: null, action: "" })}
+          onConfirm={() => handleConfirmLeave(confirmModal.leaveId, confirmModal.action)}
+        />
+      )}
     </div>
   );
 }

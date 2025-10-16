@@ -28,7 +28,7 @@ class LeaveRepo:
 
         return db.query(Leave).filter(
             Leave.emp_id == emp_id,
-            Leave.status != "rejected",
+            Leave.manager_status != "rejected",
             Leave.start_date <= end_date,
             Leave.end_date >= start_date
         ).first()
@@ -53,6 +53,7 @@ class LeaveRepo:
     @staticmethod    
     def get_leaves_by_empId(db: Session, empId: int):
         try:
+            # Query the database
             result = (
                 db.query(
                     Leave.leave_id,
@@ -61,12 +62,11 @@ class LeaveRepo:
                     Leave.start_date,
                     Leave.end_date,
                     Leave.reason,
-                    Leave.status,
+                    Leave.manager_status,
+                    Leave.hr_status,
                     Leave.applied_on,
-                    Leave.approved_by,
-                    Leave.approved_on,
-                    Leave.firstName,          # optional, if exists
-                    Leave.lastName,           # optional
+                    Leave.total_days,
+                    Leave.used_days,
                     leaveTypeTable.c.leave_name.label("leave_type")  # map to DTO
                 )
                 .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
@@ -75,6 +75,7 @@ class LeaveRepo:
                 .all()
             )
 
+            # Convert result to list of dicts
             leaves_list = []
             for row in result:
                 leaves_list.append({
@@ -87,13 +88,21 @@ class LeaveRepo:
                     "start_date": row.start_date,
                     "end_date": row.end_date,
                     "reason": row.reason,
-                    "status": row.status.value if hasattr(row.status, "value") else str(row.status),
+                    "manager_status": row.manager_status.value if hasattr(row.manager_status, "value") else str(row.manager_status),
+                    "hr_status": row.hr_status.value if hasattr(row.hr_status, "value") else str(row.hr_status),
                     "applied_on": row.applied_on,
-                    "approved_by": row.approved_by,
-                    "approved_on": row.approved_on,
+                    "total_days" : row.total_days,
+                    "used_days": row.used_days
                 })
 
-            return leaves_list
+            # ✅ Wrap in response dict
+            response = {
+                "success": True,
+                "data": leaves_list,
+                "message": "Data fetched successfully"
+            }
+
+            return response
 
         except SQLAlchemyError as e:
             db.rollback()
@@ -108,7 +117,8 @@ class LeaveRepo:
                 Leave.emp_id,
                 Leave.start_date,
                 Leave.end_date,
-                Leave.status,
+                Leave.manager_status,
+                Leave.hr_status,
                 Leave.reason,
                 Leave.used_days,
                 leaveTypeTable.c.leave_name.label("leave_type_name"),
@@ -118,7 +128,9 @@ class LeaveRepo:
             )
             .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
             .join(employeeTable, Leave.emp_id == employeeTable.c.emp_id)
-            .filter(Leave.manager_id == managerID)
+            .filter(
+                (Leave.manager_id == managerID)
+            )
             .all()
         )
 
@@ -134,7 +146,8 @@ class LeaveRepo:
                 "first_name": leave.first_name,   
                 "last_name": leave.last_name, 
                 "end_date": leave.end_date,
-                "status": leave.status,
+                "manager_status": leave.manager_status,
+                "hr_status": leave.hr_status,
                 "reason": leave.reason,
                 "leave_type": leave.leave_type_name,
                 "total_days":leave.total_days,
@@ -161,6 +174,17 @@ class LeaveRepo:
         db.commit()
         return {"message": f"Leave with id {leave_Id} deleted successfully"}
     
+    @staticmethod
+    def get_leave_By_id(db,req: int):
+        leave = db.query(Leave).filter(Leave.leave_id == req.leave_id).first()
+        return leave
+    
+    @staticmethod
+    def save_leave(db: Session, leave: Leave):
+        db.add(leave)
+        db.commit()
+        db.refresh(leave)
+        return leave    
 
     @staticmethod
     def get_leave_summary(db: Session, emp_id: int):
@@ -201,13 +225,13 @@ class LeaveRepo:
                 Leave.reason,
                 Leave.status,
                 Leave.applied_on,
-                Leave.approved_by,
-                Leave.approved_on,
                 employeeTable.c.lastName.label("last_name"),
             )
             .join(employeeTable, Leave.emp_id == employeeTable.c.emp_id)
             .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
-            .filter(Leave.status != "Rejected")
+            .filter(
+                (Leave.current_approver == "HR") 
+            ) 
             .all()
         )
 
@@ -224,9 +248,7 @@ class LeaveRepo:
                 reason=r[7],
                 status=r[8],
                 applied_on=r[9],
-                approved_by=r[10],
-                approved_on=r[11],
-                last_name=r[12],
+                last_name=r[10],
 
             )
             for r in result

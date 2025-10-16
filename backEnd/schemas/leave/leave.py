@@ -14,8 +14,14 @@ class AddleaveRequestDTO(BaseModel):
 
 class LeaveUpdate(BaseModel):
     leave_id: int
-    status: LeaveStatus
+    status: str
     approved_by: str
+
+class LeaveUpdateHr(BaseModel):
+    leave_id: int
+    status: str
+    approved_by: str
+    hr_id : int
 
 class LeaveResponseDTO(BaseModel):
     leave_id: int
@@ -28,8 +34,6 @@ class LeaveResponseDTO(BaseModel):
     reason: Optional[str]
     status: str
     applied_on: datetime
-    approved_by: Optional[str]
-    approved_on: Optional[datetime]
     last_name: Optional[str] = None
 
 
@@ -45,5 +49,5 @@ class LeaveSummaryResp(BaseModel):
 
 class LeaveStatus(str, Enum):
     pending = "Pending"
-    approved = "Approved"
+    approved = "Approved By Manager"
     rejected = "Rejected"

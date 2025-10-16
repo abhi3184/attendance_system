@@ -25,6 +25,11 @@ export const EmployeeOverViewService = {
     getPersonalLeaveRequests: async (employeeId) => {
         const res = await httpClient.get(`leave/getLeavesById?empId=${employeeId}`);
         return res?.data || [];
+    },
+
+    updateLeaveStatus : async (obj) => {
+        const res = await httpClient.put(`leave/update_status_By_manager`,obj);
+        return res?.data || []; 
     }
 
 }

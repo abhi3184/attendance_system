@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException,Security,status
 from sqlalchemy.orm import Session
+from schemas.leave.leave import LeaveUpdateHr
 from config.db import get_db
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp,LeaveResponseDTO
 from services.index import LeaveService
@@ -23,16 +24,24 @@ def get_all_leave_types(
     ):
     return LeaveService.get_all_leave_type(db)
 
-@leave.put("/update_status")
+@leave.put("/update_status_By_HR")
 def update_leave_status(
+    req: LeaveUpdateHr,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    ):
+    return LeaveService.update_leave_status_by_Hr(db,req)
+
+@leave.put("/update_status_By_manager")
+def update_leave_status_by_manager(
     req: LeaveUpdate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     ):
-    return LeaveService.update_leave_status(db,req)
+    return LeaveService.update_leave_status_by_manager(db,req)
 
-@leave.get("/getLeavesById",response_model=List[LeaveResponseDTO])
-async def get_users_by_id(
+@leave.get("/getLeavesById")
+async def get_users_by_emp_id(
     empId: int, 
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -47,6 +56,13 @@ async def get_users_by_id(
     current_user: dict = Depends(get_current_user),
     ):
     return LeaveService.get_leave_by_managerID(db, manager_id)
+
+@leave.get("/get_leaves_by_Hr", response_model=List[LeaveResponseDTO])
+def get_leave_leaves(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    ):
+    return LeaveService.get_all_leaves(db)
 
 
 @leave.delete("/deleteLeave")
