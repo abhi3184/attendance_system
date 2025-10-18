@@ -53,3 +53,16 @@ class LeaveStatus(str, Enum):
     pending = "Pending"
     approved = "Approved By Manager"
     rejected = "Rejected"
+
+class addLeaveBalanceReq(BaseModel):
+    leave_name:str
+    total_days: int
+
+
+class LeaveTypeResponse(BaseModel):
+    leave_type_id: int
+    leave_name: str
+    total_days: int
+
+    class Config:
+        orm_mode = True 

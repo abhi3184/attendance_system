@@ -13,7 +13,6 @@ def get_current_user(
         db: Session = Depends(get_db)):
     
     token = credentials.credentials
-    print("Reached here", flush=True)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         emp_id = payload.get("id")

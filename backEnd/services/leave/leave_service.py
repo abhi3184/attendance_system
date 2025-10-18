@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import List
 from fastapi import HTTPException
-from schemas.leave.leave import LeaveUpdateHr
+from schemas.leave.leave import LeaveUpdateHr,addLeaveBalanceReq
 from models.index import Leave,leaveTypeTable
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp
 from repository.index import LeaveRepo
@@ -198,3 +198,12 @@ class LeaveService:
             })
 
         return {"success": True, "data": leaves_list, "message": "Data fetched successfully"}
+    
+
+    def add_leave_type(db, payload: addLeaveBalanceReq) -> Leave:
+        existing = LeaveRepo.get_leave_by_type(db,payload)
+        if existing:
+            print("exist",existing)
+            update = LeaveRepo.update_leave_balance(db,existing,payload.total_days)
+            return update
+        return LeaveRepo.add_leave_balance(payload.leave_name, payload.total_days)

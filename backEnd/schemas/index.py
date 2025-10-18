@@ -5,7 +5,7 @@ from .employee_DTO.updateEmployeeReq_DTO import UpdateEmployeeRequest,UpdateEmpl
 from .auth.auth_DTO import Login,UpdatePasswordReq,RefreTokenRequest
 from .employee_DTO.getManagerRes_DTO import GetManagerRes
 from .employee_DTO.getEmployeeRes_DTO import EducationResponse, EmployeeResponse, AddressResponse
-from .leave.leave import LeaveSummaryResp,LeaveStatus
+from .leave.leave import LeaveSummaryResp,LeaveStatus,addLeaveBalanceReq,LeaveTypeResponse
 from .holidays.holidays import AddHolidayReq,UpdateHolidayReq
 from .OTP.otp import EmailOTPVerifyRequest
 
@@ -30,5 +30,7 @@ all_schemas = [
     UpdateHolidayReq,
     EmailOTPVerifyRequest,
     UpdatePasswordReq,
-    RefreTokenRequest
+    RefreTokenRequest,
+    addLeaveBalanceReq,
+    
 ]

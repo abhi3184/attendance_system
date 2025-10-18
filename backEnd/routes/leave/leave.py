@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException,Security,status
 from sqlalchemy.orm import Session
-from schemas.leave.leave import LeaveUpdateHr
+from schemas.leave.leave import LeaveUpdateHr, addLeaveBalanceReq
 from config.db import get_db
 from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp,LeaveResponseDTO
 from services.index import LeaveService
@@ -87,3 +87,11 @@ def get_leave_leaves(
     current_user: dict = Depends(get_current_user),
     ):
     return LeaveService.get_all_leaves(db)
+
+@leave.post("/add_leave_balance")
+def add_leave_balance(
+    req: addLeaveBalanceReq,
+    db : Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    ):
+    return LeaveService.add_leave_type(db,req)

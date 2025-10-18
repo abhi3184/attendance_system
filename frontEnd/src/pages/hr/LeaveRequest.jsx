@@ -17,7 +17,7 @@ export default function LeaveRequests() {
   const [addLeaveModal, setAddLeaveModal] = useState(false);
   const [newLeave, setNewLeave] = useState({ leave_type: "", total_days: "" });
   const [confirmModal, setConfirmModal] = useState({ open: false, id: null, action: "" });
-
+  const [errors, setErrors] = useState({});
   const leaveTypes = ["Paid Leave", "Sick Leave", "Casual Leave"];
 
   useEffect(() => {
@@ -36,8 +36,8 @@ export default function LeaveRequests() {
           l.hr_status === "Approved"
             ? "Approved"
             : l.hr_status === "Rejected"
-            ? "Rejected"
-            : "Pending",
+              ? "Rejected"
+              : "Pending",
       }));
 
       setLeaveRequests(mappedLeaves);
@@ -51,10 +51,53 @@ export default function LeaveRequests() {
   };
 
   const handleAddLeave = () => {
+    let validationErrors = {};
+
+    if (!newLeave.leave_type || newLeave.leave_type.trim() === "") {
+      validationErrors.leave_type = "Please enter a leave type.";
+    }
+
+    if (!newLeave.total_days || newLeave.total_days <= 0) {
+      validationErrors.total_days = "Please enter valid total days.";
+    }
+
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) return;
+
+    // ✅ Check if same leave type already exists
+    const existingLeaveIndex = leaves.findIndex(
+      (l) => l.leave_type.toLowerCase() === newLeave.leave_type.toLowerCase()
+    );
+
+    if (existingLeaveIndex !== -1) {
+      // 🟡 If exists — ask HR whether to update or not
+      if (
+        window.confirm(
+          `${newLeave.leave_type} already exists. Do you want to update the total days?`
+        )
+      ) {
+        // 🟢 Update existing leave total days
+        const updatedLeaves = [...leaves];
+        updatedLeaves[existingLeaveIndex].total_days = Number(newLeave.total_days);
+        setLeaves(updatedLeaves);
+
+        alert(`${newLeave.leave_type} updated successfully!`);
+      } else {
+        return; // ❌ cancel update
+      }
+    } else {
+      // 🆕 Add new leave
+      setLeaves([...leaves, { ...newLeave, total_days: Number(newLeave.total_days) }]);
+      alert(`${newLeave.leave_type} added successfully!`);
+    }
+
+    // Reset form
     setAddLeaveModal(false);
-    toast.success(`Added leave type: ${newLeave.leave_type} (${newLeave.total_days} days)`);
     setNewLeave({ leave_type: "", total_days: "" });
   };
+  ;
+
 
   const handleApprove = async (id) => {
     try {
@@ -131,11 +174,10 @@ export default function LeaveRequests() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-2 font-semibold transition-all text-sm ${
-              activeTab === tab
-                ? "text-purple-700 border-b-2 border-purple-700"
-                : "text-gray-500 hover:text-purple-600"
-            }`}
+            className={`pb-2 font-semibold transition-all text-sm ${activeTab === tab
+              ? "text-purple-700 border-b-2 border-purple-700"
+              : "text-gray-500 hover:text-purple-600"
+              }`}
           >
             {tab === "requests" ? "Leave Requests" : "Leave Policy"}
           </button>
@@ -192,13 +234,12 @@ export default function LeaveRequests() {
                   key={req.leave_id}
                   layout
                   onClick={() => toggleExpand(req.leave_id)}
-                  className={`bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl shadow-sm p-4 border-l-4 cursor-pointer transition-all ${
-                    req.status === "Approved"
-                      ? "border-green-400"
-                      : req.status === "Rejected"
+                  className={`bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl shadow-sm p-4 border-l-4 cursor-pointer transition-all ${req.status === "Approved"
+                    ? "border-green-400"
+                    : req.status === "Rejected"
                       ? "border-red-400"
                       : "border-yellow-400"
-                  }`}
+                    }`}
                 >
                   {/* Top Row */}
                   <div className="flex justify-between items-center">
@@ -262,11 +303,10 @@ export default function LeaveRequests() {
                         </>
                       ) : (
                         <span
-                          className={`px-3 py-1 text-xs rounded-full font-medium ${
-                            req.status === "Approved"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
+                          className={`px-3 py-1 text-xs rounded-full font-medium ${req.status === "Approved"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}
                         >
                           {req.status}
                         </span>
@@ -289,7 +329,7 @@ export default function LeaveRequests() {
                           Duration:{" "}
                           {Math.ceil(
                             (new Date(req.end_date) - new Date(req.start_date)) /
-                              (1000 * 60 * 60 * 24)
+                            (1000 * 60 * 60 * 24)
                           ) + 1}{" "}
                           days
                         </p>
@@ -357,17 +397,33 @@ export default function LeaveRequests() {
                 type="text"
                 placeholder="e.g. Sick, Paid, Casual..."
                 value={newLeave.leave_type}
-                onChange={(e) => setNewLeave({ ...newLeave, leave_type: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                onChange={(e) => {
+                  setNewLeave({ ...newLeave, leave_type: e.target.value });
+                  setErrors((prev) => ({ ...prev, leave_type: "" })); // clear error
+                }}
+                className={`border ${errors.leave_type ? "border-red-400" : "border-gray-300"
+                  } rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500`}
               />
+              {errors.leave_type && (
+                <span className="text-xs text-red-500">{errors.leave_type}</span>
+              )}
+
               <label className="text-sm font-medium">Total Days</label>
               <input
                 type="number"
                 placeholder="e.g. 12"
                 value={newLeave.total_days}
-                onChange={(e) => setNewLeave({ ...newLeave, total_days: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                onChange={(e) => {
+                  setNewLeave({ ...newLeave, total_days: e.target.value });
+                  setErrors((prev) => ({ ...prev, total_days: "" })); // clear error
+                }}
+                className={`border ${errors.total_days ? "border-red-400" : "border-gray-300"
+                  } rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500`}
               />
+              {errors.total_days && (
+                <span className="text-xs text-red-500">{errors.total_days}</span>
+              )}
+
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setAddLeaveModal(false)}

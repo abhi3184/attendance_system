@@ -2,8 +2,8 @@ from typing import List, Optional
 from fastapi import HTTPException
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
-from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO,LeaveStatus
-from models.index import Leave,leaveTypeTable,employeeTable
+from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveResponseDTO,LeaveStatus,addLeaveBalanceReq
+from models.index import Leave,LeaveType,employeeTable
 from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -67,9 +67,9 @@ class LeaveRepo:
                     Leave.applied_on,
                     Leave.total_days,
                     Leave.used_days,
-                    leaveTypeTable.c.leave_name.label("leave_type")  # map to DTO
+                    LeaveType.c.leave_name.label("leave_type")  # map to DTO
                 )
-                .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+                .join(LeaveType, Leave.leave_type_id == LeaveType.c.leave_type_id)
                 .filter(Leave.emp_id == empId)
                 .order_by(Leave.start_date.desc())
                 .all()
@@ -121,12 +121,12 @@ class LeaveRepo:
                 Leave.hr_status,
                 Leave.reason,
                 Leave.used_days,
-                leaveTypeTable.c.leave_name.label("leave_type_name"),
-                leaveTypeTable.c.total_days.label("total_days"),
+                LeaveType.c.leave_name.label("leave_type_name"),
+                LeaveType.c.total_days.label("total_days"),
                 employeeTable.c.firstName.label("first_name"), 
                 employeeTable.c.lastName.label("last_name") 
             )
-            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+            .join(LeaveType, Leave.leave_type_id == LeaveType.c.leave_type_id)
             .join(employeeTable, Leave.emp_id == employeeTable.c.emp_id)
             .filter(
                 (Leave.manager_id == managerID)
@@ -203,12 +203,12 @@ class LeaveRepo:
 
     @staticmethod
     def get_leave_types(db):
-        result = db.execute(leaveTypeTable.select()).mappings().all()
+        result = db.execute(LeaveType.select()).mappings().all()
         return result
     
     @staticmethod
     def get_total_days_by_leave_type(db,leaveTypeID : int):
-        result = db.execute(leaveTypeTable.select().where(leaveTypeTable.c.leave_type_id == leaveTypeID)).mappings().first()
+        result = db.execute(LeaveType.select().where(LeaveType.c.leave_type_id == leaveTypeID)).mappings().first()
         return result
     
     @staticmethod
@@ -219,7 +219,7 @@ class LeaveRepo:
                 Leave.emp_id,
                 Leave.leave_type_id,
                 employeeTable.c.firstName.label("first_name"),
-                leaveTypeTable.c.leave_name.label("leave_type"),
+                LeaveType.c.leave_name.label("leave_type"),
                 Leave.start_date,
                 Leave.end_date,
                 Leave.reason,
@@ -232,7 +232,7 @@ class LeaveRepo:
                 employeeTable.c.department.label("department")
             )
             .join(employeeTable, Leave.emp_id == employeeTable.c.emp_id)
-            .join(leaveTypeTable, Leave.leave_type_id == leaveTypeTable.c.leave_type_id)
+            .join(LeaveType, Leave.leave_type_id == LeaveType.c.leave_type_id)
             .all()
         )
 
@@ -258,3 +258,31 @@ class LeaveRepo:
         ]
 
         return leaves_list
+
+
+    @staticmethod
+    def get_leave_by_type(db,payload:addLeaveBalanceReq):
+        existing = (
+            db.query(LeaveType)
+            .filter(func.lower(func.trim(LeaveType.c.leave_name)) == payload.leave_name.strip().lower())
+            .first()
+        )
+        print("Existing LeaveType:", existing)
+        return existing
+            
+    @staticmethod
+    def add_leave_balance(db,payload:addLeaveBalanceReq):
+        db.add(payload)
+        db.commit()
+        db.refresh(payload)
+        return payload  
+
+    @staticmethod
+    def update_leave_balance(db, existing_leave, total_days: int):
+        existing_leave.total_days = total_days
+        db.add(existing_leave)
+        db.commit()
+        db.refresh(existing_leave)
+        return existing_leave
+
+        
