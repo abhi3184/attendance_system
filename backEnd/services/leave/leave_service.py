@@ -39,11 +39,7 @@ class LeaveService:
     @staticmethod
     def update_leave_status(db,req: LeaveUpdate):
         return LeaveRepo.update_leave_status(db,req)
-    
-    @staticmethod
-    def get_leave_by_empId(db: Session, emp_Id):
-        return LeaveRepo.get_leave_by_empId(db, emp_Id)
-    
+        
     @staticmethod
     def get_leave_by_empId(db: Session, empId: str) -> dict:
         leaves = LeaveRepo.get_leaves_by_empId(db, empId)
