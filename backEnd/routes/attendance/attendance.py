@@ -2,14 +2,14 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from config.db import get_db
-from repository.index import AttendanceRepo
+from repository.index import AttendanceRepo,IPRepo
 from services.index import AttendanceService
 
 attendance = APIRouter()
 
 def get_service(db: Session):
     attendance_repo = AttendanceRepo(db)
-    ip_repo = attendance_repo  # assuming same repo handles IP, or replace with IPRepo
+    ip_repo = IPRepo(db)
     return AttendanceService(attendance_repo, ip_repo)
 
 # ----- Check-in -----

@@ -23,7 +23,7 @@ export const employeeLeaveService = {
     },
 
     getLeaveTypes: async () => {
-        const res = await httpClient.get('leave/getAllLeaveTypes');
+        const res = await httpClient.get('leave/get_all_leave_types');
         return res.data || [];
     },
 }

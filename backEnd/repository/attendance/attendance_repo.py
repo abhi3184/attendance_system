@@ -20,32 +20,51 @@ class AttendanceRepo:
         except:
             return None
 
-    # ----- Active check-in -----
+    def get_india_time():
+        return datetime.utcnow() + timedelta(hours=5, minutes=30)
+
     def get_active_checkin(self, emp_id: int):
         today = date.today()
         return self.db.query(Attendance).filter(
             Attendance.emp_id == emp_id,
-            func.date(Attendance.check_in_time) == today,
-            Attendance.check_out_time.is_(None)
+            func.date(Attendance.check_in_time) == today
         ).first()
 
-    # ----- Check-in -----
     def checkin(self, emp_id: int, manager_id: int, ip_address: str):
-        active = self.get_active_checkin(emp_id)
-        if active:
-            return {"success": True, "message": "Already checked in."}
+        today_check = self.get_active_checkin(emp_id)
 
+        if today_check:
+            # जर आधीच check-in आहे आणि checkout केला असेल
+            if today_check.check_out_time:
+                today_check.isPresent = 1
+                today_check.check_out_time = None
+                # first check-in time maintain करा
+                self.db.commit()
+                self.db.refresh(today_check)
+                return {
+                    "success": True,
+                    "message": "Checked in again today. Existing record updated.",
+                    "attendance_id": today_check.attendance_id
+                }
+            else:
+                return {"success": True, "message": "Already checked in today."}
+
+        # First time check-in for today
         attendance = Attendance(
             emp_id=emp_id,
             manager_id=manager_id,
             ip_address=ip_address,
-            check_in_time=datetime.utcnow(),
-            is_present=True
+            check_in_time=self.get_india_time(),
+            isPresent=1
         )
         self.db.add(attendance)
         self.db.commit()
         self.db.refresh(attendance)
-        return {"success": True, "message": "Checked in successfully", "attendance_id": attendance.attendance_id}
+        return {
+            "success": True,
+            "message": "Checked in successfully.",
+            "attendance_id": attendance.attendance_id
+        }
 
     # ----- Check-out -----
     def checkout(self, emp_id: int):
@@ -53,12 +72,12 @@ class AttendanceRepo:
         if not active:
             return {"success": False, "message": "No active check-in."}
 
-        check_out_time = datetime.utcnow()
+        check_out_time = AttendanceRepo.get_india_time()
         total_hours = round((check_out_time - active.check_in_time).total_seconds() / 3600, 2)
 
         active.check_out_time = check_out_time
         active.total_hr = total_hours
-        active.is_present = False
+        active.isPresent = False
         self.db.commit()
         self.db.refresh(active)
         return {"success": True, "message": "Checked out successfully", "total_hours": total_hours}

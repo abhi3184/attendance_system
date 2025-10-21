@@ -1,17 +1,19 @@
 from datetime import datetime, timedelta, time
 
+from repository.index import IPRepo,AttendanceRepo
+
 class AttendanceService:
     SHIFT_START = time(10, 0)
     SHIFT_END = time(19, 0)
 
-    def __init__(self, attendance_repo, ip_repo):
+    def __init__(self, attendance_repo : AttendanceRepo, ip_repo : IPRepo):
         self.attendance_repo = attendance_repo
         self.ip_repo = ip_repo
 
     # ----- Check-in -----
     def check_in(self, emp_id, manager_id, ip_address):
         if not self.ip_repo.is_ip_allowed(ip_address):
-            return {"success": False, "message": "You are not allowed from this location"}
+            return {"success": False,"data":ip_address, "message": "You are not allowed from this location"}
         return self.attendance_repo.checkin(emp_id, manager_id, ip_address)
 
     # ----- Check-out -----
