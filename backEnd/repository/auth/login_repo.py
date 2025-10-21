@@ -1,27 +1,25 @@
+# repositories/login_repo.py
+from sqlalchemy.orm import Session
+from models.employee import Employee
+from utils.HashPasswor import hash_password
 
-from models.index import employeeTable
-
-class loginRepo:
-
-    @staticmethod
-    def user_exist_by_email(db,email):
-        result = db.execute(employeeTable.select().where(employeeTable.c.emailId == email)).mappings().first()
-        return result
+class LoginRepo:
 
     @staticmethod
-    def user_login(db,req):
-        result = db.execute(
-            employeeTable.select().where(
-                (employeeTable.c.emailId == req.login) 
-            )
-        ).mappings().first()
-        return result
-    
+    def user_exist_by_email(db: Session, email: str):
+        return db.query(Employee).filter(Employee.emailId == email).first()
 
     @staticmethod
-    def update_password(db,email, password):
-        from utils.HashPasswor import hash_password
-        hashed_pw = hash_password(password)
-        db.execute(employeeTable.update().where(employeeTable.c.emailId == email).values(password=hashed_pw))
+    def user_login(db: Session, login: str):
+        return db.query(Employee).filter(Employee.emailId == login).first()
+
+    @staticmethod
+    def update_password(db: Session, email: str, password: str):
+        user = db.query(Employee).filter(Employee.emailId == email).first()
+        if not user:
+            return {"success": False, "message": "User not found"}
+
+        user.password = hash_password(password)
         db.commit()
+        db.refresh(user)
         return {"success": True, "message": "Password updated successfully"}

@@ -81,7 +81,6 @@ export default function Home() {
         if (attRes.success && Array.isArray(attRes.data)) setAttendanceData(attRes.data);
 
       } catch (err) {
-        toast.error("Failed to fetch employee data!");
       } finally {
         firstLoad.current = false; // Prevent duplicate calls in dev
       }
@@ -100,7 +99,6 @@ export default function Home() {
         const res = await employeeHomeService.getUpcominngHolidays();
         if (res.success && res.data) setHolidays(res.data);
       } catch (err) {
-        toast.error("Error fetching upcoming holidays!");
       }
     };
 

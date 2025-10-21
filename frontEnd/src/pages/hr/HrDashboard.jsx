@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaUsers, FaUserTie, FaClock, FaFileAlt, FaCheck, FaTimes } from "react-icons/fa";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
@@ -20,6 +20,8 @@ const HRDashboard = () => {
   const [holidays, setHolidays] = useState([]);
   const [confirmModal, setConfirmModal] = useState({ open: false, leaveId: null, action: "" });
 
+  const fetchCalled = useRef(false); // ✅ Ref to prevent double fetch
+
   const deptColors = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   const formatToDDMMM = (dateStr) => {
@@ -29,8 +31,11 @@ const HRDashboard = () => {
     return `${day}-${month}`;
   };
 
-  // Fetch all dashboard data
+  // Fetch all dashboard data (once)
   useEffect(() => {
+    if (fetchCalled.current) return; // skip if already called
+    fetchCalled.current = true;
+
     const fetchData = async () => {
       try {
         const [emps, allLeaves, attendance, upcomingHolidays] = await Promise.all([
@@ -40,7 +45,7 @@ const HRDashboard = () => {
           getUpcomingHolidays(),
         ]);
         setEmployees(emps);
-        setLeaves(allLeaves?.data || []); // <--- FIXED: use .data
+        setLeaves(allLeaves?.data || []);
         setAttendance(attendance);
         setHolidays(upcomingHolidays);
       } catch (err) {
@@ -68,7 +73,7 @@ const HRDashboard = () => {
   const pendingLeaves = useMemo(() => {
     if (!leaves || !Array.isArray(leaves)) return [];
     return leaves
-      .filter(l => l.manager_status === "Approved" && l.hr_status === null) // only HR-pending leaves
+      .filter(l => l.manager_status === "Approved" && l.hr_status === null)
       .sort((a, b) => new Date(b.applied_on) - new Date(a.applied_on));
   }, [leaves]);
 

@@ -1,48 +1,40 @@
+# services/holiday_service.py
 from repository.index import HolidaysRepo
 
 class HolidayService:
 
     @staticmethod
     def add_holidays(db, req):
-        isExist = HolidaysRepo.get_by_date(db,req.date)
-        if isExist:
-            return {"success":False,"message":"Holiday already added for this date"}
-        emp_res = HolidaysRepo.add_holiday(db, req)
-        return {"success":True,"message":"Holiday added for this date"}
+        existing = HolidaysRepo.get_by_date(db, req.holiday_date)
+        if existing:
+            return {"success": False, "message": "Holiday already exists for this date"}
+        HolidaysRepo.add_holiday(db, req)
+        return {"success": True, "message": "Holiday added successfully"}
 
     @staticmethod
     def get_upcoming_holidays(db):
-        upcoming = HolidaysRepo.get_upcoming_holidays(db)
-        if not upcoming:
-            return {"success":False,"data":upcoming,"message":"There is not any upcoming Holiday"}
-        return {
-            "success": True,
-            "data": upcoming,
-            "message": "Upcoming holidays fetched successfully"
-        }
-    
-    @staticmethod
-    def get_all_holidays(db):
-        result = HolidaysRepo.get_all_holidays(db)
-        if not result:
-            return {"success":False,"data":result,"message":"There is not any Holiday"}
-        return {"success":True,"data":result,"message":"Holidays response"}
-    
+        holidays = HolidaysRepo.get_upcoming_holidays(db)
+        if not holidays:
+            return {"success": False, "data": [], "message": "No upcoming holidays"}
+        return {"success": True, "data": holidays, "message": "Upcoming holidays fetched successfully"}
 
     @staticmethod
-    def delete_holiday(db, holiday_id):
-        return HolidaysRepo.delete_holiday(db,holiday_id)
-    
+    def get_all_holidays(db):
+        holidays = HolidaysRepo.get_all_holidays(db)
+        if not holidays:
+            return {"success": False, "data": [], "message": "No holidays found"}
+        return {"success": True, "data": holidays, "message": "Holidays fetched successfully"}
 
     @staticmethod
     def update_holiday(db, holiday_id: int, data: dict):
-        existing = HolidaysRepo.get_by_date(db, data["date"])
-        if existing and existing.holidays_id != holiday_id:
-            return {"success": False, "message": "Holiday Not found"}
         result = HolidaysRepo.update_holiday(db, holiday_id, data)
-
         if result.rowcount == 0:
             return {"success": False, "message": "Holiday not found"}
-        return {"success": True, "message": f"Holiday updated successfully"}
-        
-    
+        return {"success": True, "message": "Holiday updated successfully"}
+
+    @staticmethod
+    def delete_holiday(db, holiday_id: int):
+        result = HolidaysRepo.delete_holiday(db, holiday_id)
+        if result.rowcount == 0:
+            return {"success": False, "message": "Holiday not found"}
+        return {"success": True, "message": "Holiday deleted successfully"}

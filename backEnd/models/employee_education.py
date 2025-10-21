@@ -1,14 +1,17 @@
-from sqlalchemy import Table, Column, Integer, String
-from config.db import meta
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from models.base_class import Base
 
-employeeEducationTable = Table(
-    "emp_education", meta,
-    Column("education_id", Integer, primary_key=True, autoincrement=True),   
-    Column("school_name", String(50), unique=False, nullable=True),
-    Column("degree", String(100), unique=False, nullable=True),
-    Column("passing_year", String(100), unique=False, nullable=True),
-    Column("field_of_study", String(15), unique=False, nullable=True),
-    Column("university", String(15), unique=False, nullable=True),
-    Column("location", String(100), unique=False, nullable=True),
-    Column("emp_id", String(100), unique=False, nullable=True),
-)
+class EmployeeEducation(Base):
+    __tablename__ = "emp_education"
+
+    education_id = Column(Integer, primary_key=True, autoincrement=True)
+    school_name = Column(String(100))
+    degree = Column(String(100))
+    passing_year = Column(String(10))
+    field_of_study = Column(String(100))
+    university = Column(String(100))
+    location = Column(String(100))
+    emp_id = Column(Integer, ForeignKey("employee.emp_id"))
+
+    employee = relationship("Employee", back_populates="education")

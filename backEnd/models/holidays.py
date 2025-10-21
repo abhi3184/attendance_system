@@ -1,10 +1,13 @@
-from sqlalchemy import Table, Column, Integer, String
-from config.db import meta
+# models/holidays.py
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base
 
-holidaysTable = Table(
-    "holidays", meta,
-    Column("holidays_id", Integer, primary_key=True, autoincrement=True),   
-    Column("date", String(50), unique=True, nullable=False),
-    Column("description", String(100), unique=False, nullable=False),
-    Column("type", String(100), unique=False, nullable=False),
-)
+Base = declarative_base()
+
+class Holidays(Base):
+    __tablename__ = "holidays"
+
+    holidays_id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(String(50), unique=True, nullable=False)
+    description = Column(String(100), nullable=False)
+    type = Column(String(100), nullable=False)

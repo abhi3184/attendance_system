@@ -1,23 +1,14 @@
-
-from fastapi import APIRouter, Depends, HTTPException, Body
-from sqlalchemy import select
-from utils.HashPasswor import hash_password, verify_password
-from schemas.index import AddEmployeeReq,UpdateEmployeeRequest,EmployeeExistReq,UpdateEmployeeStatus
-from repository.index import employeRegistrationRepository
-from sqlalchemy.orm import Session
-from utils.registrationEmail import send_registration_email
+import random, string
 from utils.HashPasswor import hash_password
-import random
-import string
+from repository.index import EmployeeRegistrationRepository
+from utils.registrationEmail import send_registration_email
+from schemas.index import AddEmployeeReq, UpdateEmployeeRequest, UpdateEmployeeStatus
 
 class employeeRegistrationService:
 
     @staticmethod
     def generate_password(length=8):
-        import random, string
-        if length < 4:
-            raise ValueError("Password length must be at least 4 to satisfy all constraints.")
-
+        """Generate a strong password with upper, lower, digit, special characters."""
         upper = string.ascii_uppercase
         lower = string.ascii_lowercase
         digits = string.digits
@@ -29,23 +20,21 @@ class employeeRegistrationService:
             random.choice(digits),
             random.choice(special)
         ]
-
         all_chars = upper + lower + digits + special
         password += random.choices(all_chars, k=length - 4)
         random.shuffle(password)
-
         return "".join(password)
-    
-    def register_full_employee(db, employee):
+
+    @staticmethod
+    def register_full_employee(db, employee: AddEmployeeReq):
         if not isinstance(employee, dict):
             employee = employee.dict()
 
-        # Employee main fields (password removed from request)
         emp_fields = ["firstName", "lastName", "emailId", "mobile", "department", "shift", "roles", "manager_id"]
         emp_data = {k: employee[k] for k in emp_fields if k in employee}
 
         # Check if employee exists
-        exist_res = employeRegistrationRepository.check_user_exist(db, emp_data)
+        exist_res = EmployeeRegistrationRepository.check_user_exist(db, emp_data)
         if exist_res:
             conflicts = exist_res.get("conflicts", [])
             if len(conflicts) == 2:
@@ -56,22 +45,15 @@ class employeeRegistrationService:
                 return {"success": False, "message": "Mobile already exists"}
 
         # Generate emp_code
-        latest_emp_code = employeRegistrationRepository.get_highest_emp_code(db)
-        if latest_emp_code:
-            try:
-                number = int(latest_emp_code[1:]) + 1
-                emp_data["emp_code"] = f"A{number:02d}"
-            except:
-                emp_data["emp_code"] = "A01"
-        else:
-            emp_data["emp_code"] = "A01"
+        latest_emp_code = EmployeeRegistrationRepository.get_highest_emp_code(db)
+        emp_data["emp_code"] = f"A{int(latest_emp_code[1:]) + 1:02d}" if latest_emp_code else "A01"
 
-        # **Auto-generate password**
-        raw_password = employeeRegistrationService.generate_password(8)
+        # Generate password
+        raw_password = employeeRegistrationService.generate_password()
         emp_data["password"] = hash_password(raw_password)
 
-        # Insert Employee
-        emp_res = employeRegistrationRepository.post_user(db, emp_data)
+
+        emp_res = EmployeeRegistrationRepository.post_user(db, emp_data)
         emp_id = emp_res["emp_id"]
 
         # Insert Education
@@ -84,10 +66,10 @@ class employeeRegistrationService:
             "field_of_study": employee.get("fieldOfStudy"), 
             "emp_id": emp_id
         }
-        employeRegistrationRepository.add_education(db, edu_data)
+        EmployeeRegistrationRepository.add_education(db, edu_data)
 
         # Insert Address
-        addr_data_db = {
+        addr_data = {
             "emp_id": emp_id,
             "address": employee.get("address"),
             "city": employee.get("city"),
@@ -95,111 +77,83 @@ class employeeRegistrationService:
             "zip_code": employee.get("zip"),
             "contact": employee.get("phoneAlt")
         }
-        employeRegistrationRepository.create(db, addr_data_db)
+        EmployeeRegistrationRepository.create_address(db, addr_data)
 
-        # **Return the raw password so you can email it to the employee**
+        # Send email
         try:
             send_registration_email(emp_data["emailId"], raw_password, emp_data["firstName"])
         except Exception as e:
             print(f"Failed to send email: {str(e)}")
 
-        return {
-            "success": True,
-            "emp_id": emp_id,
-            "message": f"Employee added successfully. Credentials sent to {emp_data['emailId']}"
-        }
+        return {"success": True, "emp_id": emp_id, "message": f"Employee added successfully. Credentials sent to {emp_data['emailId']}"}
 
-    
     @staticmethod
     def check_employee_exist(db, email: str, mobile: str):
-        isExist = employeRegistrationRepository.check_user_exist_for_registration(db, email, mobile)
-
-        if isExist:
-            if isExist.get("exists"):
-                conflicts = isExist.get("conflicts", [])
-                if conflicts == ["emailId", "mobile"] or set(conflicts) == {"emailId", "mobile"}:
-                 message = "Email and Mobile already exist"
-                elif "emailId" in conflicts:
-                    message = "Email already exists"
-                elif "mobile" in conflicts:
-                    message = "Mobile already exists"
-                else:
-                    message = "Unknown conflict"
-
-                return {"success": False, "message": message}
-
+        res = EmployeeRegistrationRepository.check_user_exist_for_registration(db, email, mobile)
+        if res:
+            conflicts = res.get("conflicts", [])
+            if set(conflicts) == {"emailId", "mobile"}:
+                msg = "Email and Mobile already exist"
+            elif "emailId" in conflicts:
+                msg = "Email already exists"
+            elif "mobile" in conflicts:
+                msg = "Mobile already exists"
+            else:
+                msg = "Unknown conflict"
+            return {"success": False, "message": msg}
         return {"success": True, "message": "User can be added"}
 
     @staticmethod
-    def get_all_employess(db : Session):
-        result = employeRegistrationRepository.get_all_employees(db)
+    def get_all_employess(db):
+        result = EmployeeRegistrationRepository.get_all_employees(db)
         if result:
-            return {"success":True,"data":result,"Message":"All employees"}
-        return {"success":False,"data":result,"Message":"Employees not found"}
-    
+            return {"success": True, "data": result, "message": "All employees"}
+        return {"success": False, "data": [], "message": "Employees not found"}
+
     @staticmethod
-    def get_employesBy_id(db:Session, emp_id:int):
-        result = employeRegistrationRepository.get_employeeby_Id(db,emp_id)
+    def get_employesBy_id(db, emp_id: int):
+        result = EmployeeRegistrationRepository.get_employee_by_id(db, emp_id)
         if result:
-            return {"success":True,"data":result,"Message":"Employee by id"}
-        return {"success":False,"data":result,"Message":"Employee not found"}
-    
+            return {"success": True, "data": result, "message": "Employee found"}
+        return {"success": False, "data": {}, "message": "Employee not found"}
+
     @staticmethod
-    def get_employesBy_manager(db:Session, managerId:int):
-        result = employeRegistrationRepository.get_employee_by_manager(db,managerId)
+    def get_employesBy_manager(db, manager_id: int):
+        result = EmployeeRegistrationRepository.get_employee_by_manager(db, manager_id)
         if result:
-            return {"success":True,"data":result,"Message":"Employee by id"}
-        return {"success":False,"data":result,"Message":"Employee not found"}
-    
+            return {"success": True, "data": result, "message": "Employees found"}
+        return {"success": False, "data": [], "message": "No employees found"}
+
     @staticmethod
-    def get_all_managers(db:Session):
-        result = employeRegistrationRepository.get_all_managers(db)
+    def get_all_managers(db):
+        result = EmployeeRegistrationRepository.get_all_managers(db)
         if result:
-            return {"success":True,"data":result,"Message":"All Managers"}
-        return {"success":False,"data":result,"Message":"Managers not found"}
-    
-    @staticmethod
-    def update_employee(db: Session, payload:UpdateEmployeeRequest):
-        isExist = employeRegistrationRepository.get_employeeby_Id(db,payload.emp_id)
-
-        if not isExist:
-            return {"success":False,"data":isExist,"message":"No records found"}
-        
-        return employeRegistrationRepository.update_employee(db, payload)
-    
+            return {"success": True, "data": result, "message": "All managers"}
+        return {"success": False, "data": [], "message": "Managers not found"}
 
     @staticmethod
-    def get_all_roles(db:Session):
-        result = employeRegistrationRepository.get_all_roles(db)
+    def get_all_roles(db):
+        result = EmployeeRegistrationRepository.get_all_roles(db)
         if result:
-            return {"success":True,"data":result,"message":"All Roless"}
-        return {"success":False,"data":result,"message":"Roles not found"}
-    
+            return {"success": True, "data": result, "message": "All roles"}
+        return {"success": False, "data": [], "message": "Roles not found"}
 
     @staticmethod
-    def change_employee_status(db: Session, payload:UpdateEmployeeStatus):
-        isExist = employeRegistrationRepository.get_employeeby_Id(db,payload.emp_id)
-
-        if not isExist:
-            return {"success":False,"data":isExist,"message":"No records found"}
-        
-        return employeRegistrationRepository.change_stats(db, payload)
-    
+    def update_employee(db, payload: UpdateEmployeeRequest):
+        existing = EmployeeRegistrationRepository.get_employee_by_id(db, payload.emp_id)
+        if not existing:
+            return {"success": False, "message": "Employee not found"}
+        return EmployeeRegistrationRepository.update_employee(db, payload)
 
     @staticmethod
-    def delete_employee(db: Session, emp_id):
-        education = employeRegistrationRepository.delete_employee_education(db, emp_id)
-        if not education:
-            return {"success":False,"data":education,"message":"No education found"}
-        
-        address = employeRegistrationRepository.delete_employee(db, emp_id)
-        if not address:
-            return {"success":False,"data":address,"message":"No address found"}
+    def change_employee_status(db, payload: UpdateEmployeeStatus):
+        existing = EmployeeRegistrationRepository.get_employee_by_id(db, payload.emp_id)
+        if not existing:
+            return {"success": False, "message": "Employee not found"}
+        return EmployeeRegistrationRepository.change_stats(db, payload)
 
-        employee = employeRegistrationRepository.delete_employee(db, emp_id)
-        if not employee:
-            return {"success":False,"data":employee,"message":"No employee found"}
-        
-        return {"success":True,"message":"Employee deleted successfully"}
-
-    
+    @staticmethod
+    def delete_employee(db, emp_id: int):
+        EmployeeRegistrationRepository.delete_employee_education(db, emp_id)
+        EmployeeRegistrationRepository.delete_employee_address(db, emp_id)
+        return EmployeeRegistrationRepository.delete_employee(db, emp_id)

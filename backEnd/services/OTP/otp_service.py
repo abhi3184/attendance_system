@@ -1,6 +1,6 @@
 import time
 from fastapi import HTTPException
-from repository.index import OTPRepository, loginRepo
+from repository.index import OTPRepository, LoginRepo
 from sqlalchemy.orm import Session
 from schemas.index import EmailOTPVerifyRequest
 
@@ -9,7 +9,7 @@ class OTPService:
     @staticmethod
     def send_email_otp(db: Session, emailId: str):
         # Check if user exists
-        user = loginRepo.user_exist_by_email(db, emailId)
+        user = LoginRepo.user_exist_by_email(db, emailId)
         if not user:
             return {"success": False, "message": "Email ID not found"}
 

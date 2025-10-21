@@ -2,7 +2,7 @@ from fastapi.security import HTTPBearer
 from fastapi import APIRouter,Depends, HTTPException,status
 from jose import jwt, JWTError
 from schemas.index import Login,UpdatePasswordReq,RefreTokenRequest
-from services.index import loginService
+from services.index import LoginService
 from sqlalchemy.orm import Session
 from config.db import get_db
 from config.jwt_config import ALGORITHM, REFRESH_SECRET_KEY
@@ -13,15 +13,15 @@ bearer_scheme = HTTPBearer()
 
 @authentication.get("/getEmployeeByEmail")
 async def check_user_exist_by_email(email: str, db: Session = Depends(get_db)):
-    return loginService.check_user_exist_by_email(db, email)
+    return LoginService.check_user_exist_by_email(db, email)
     
 @authentication.post("/login")
 async def login_user(login_user: Login,db: Session = Depends(get_db)):
-    return loginService.login_user(db,login_user)
+    return LoginService.login_user(db,login_user)
 
 @authentication.put("/update-password")
 async def update_password(req:UpdatePasswordReq,db: Session = Depends(get_db)):
-    return loginService.update_password(db,req)
+    return LoginService.update_password(db,req)
 
 
 @authentication.post("/refresh")

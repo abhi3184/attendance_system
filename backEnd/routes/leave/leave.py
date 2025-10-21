@@ -1,97 +1,59 @@
-from fastapi import APIRouter, Depends, HTTPException,Security,status
+# routes/leave_route.py
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from schemas.leave.leave import LeaveUpdateHr, addLeaveBalanceReq
+from routes.attendance.attendance import status
+from schemas.leave.leave import LeaveResponse
 from config.db import get_db
-from schemas.index import AddleaveRequestDTO,LeaveUpdate,LeaveSummaryResp,LeaveResponseDTO
+from schemas.index import LeaveUpdateHr, AddLeaveBalanceReq
+from schemas.index import AddleaveRequestDTO, LeaveUpdate
 from services.index import LeaveService
-from typing import Dict, List
-from utils.deps import get_current_user, role_checker
+from utils.deps import get_current_user
+from typing import List
 
 leave = APIRouter()
 
-@leave.post("/addleave",)
-def add_leave(
-    request: AddleaveRequestDTO, 
-    db: Session = Depends(get_db),
-     current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.apply_leave(db,request)
-
-@leave.get("/getAllLeaveTypes")
-def get_all_leave_types(
-    db : Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.get_all_leave_type(db)
-
-@leave.put("/update_status_By_HR")
-def update_leave_status(
-    req: LeaveUpdateHr,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.update_leave_status_by_Hr(db,req)
+@leave.post("/addleave")
+def add_leave(request: AddleaveRequestDTO, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return LeaveService.apply_leave(db, request)
 
 @leave.put("/update_status_By_manager")
-def update_leave_status_by_manager(
-    req: LeaveUpdate,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.update_leave_status_by_manager(db,req)
+def update_leave_status_by_manager(req: LeaveUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return LeaveService.update_leave_status_by_manager(db, req)
 
-@leave.get("/getLeavesById")
-async def get_users_by_emp_id(
-    empId: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    leaves = LeaveService.get_leave_by_empId(db, empId)
-    return leaves
+@leave.put("/update_status_By_HR")
+def update_leave_status_by_HR(req: LeaveUpdateHr, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return LeaveService.update_leave_status_by_Hr(db, req)
 
-@leave.get("/getLeavesByManagerID/{manager_id}")
-async def get_users_by_id(
-    manager_id: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.get_leave_by_managerID(db, manager_id)
-
-@leave.get("/get_leaves_by_Hr", response_model=List[LeaveResponseDTO])
-def get_leave_leaves(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.get_all_leaves(db)
-
-
-@leave.delete("/deleteLeave")
-async def delete_leave(
-    leave_Id: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.delete_leave(db, leave_Id)
-
-@leave.get("/leave_summary/{emp_id}", response_model=List[LeaveSummaryResp])
-def get_leave_summary(
-    emp_id: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
+@leave.get("/leave_summary/{emp_id}", response_model=List)
+def get_leave_summary(emp_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     return LeaveService.get_leave_summary(db, emp_id)
 
+@leave.get("/get_all_leave_types")
+def get_all_leave_types(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return LeaveService.get_all_leave_type(db)
+
 @leave.get("/get_all_leaves")
-def get_leave_leaves(
+def get_all_leaves(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.get_all_leaves(db)
+    current_user=Depends(get_current_user)
+):
+    try:
+        leaves = LeaveService.get_all_leaves(db)
+        return {
+            "success": True,
+            "message": "Leaves fetched successfully",
+            "data": leaves or []
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@leave.delete("/delete_leave/{leave_id}")
+def delete_leave(leave_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return LeaveService.delete_leave(db, leave_id)
 
 @leave.post("/add_leave_balance")
-def add_leave_balance(
-    req: addLeaveBalanceReq,
-    db : Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return LeaveService.add_leave_type(db,req)
+def add_leave_balance(req: AddLeaveBalanceReq, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return LeaveService.add_leave_type(db, req)

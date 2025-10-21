@@ -1,8 +1,11 @@
-from sqlalchemy import Table, Column, Integer, String
-from config import db
+# models/ip_address.py
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base
 
-ipAddress = Table(
-    "ip_address", db.meta,
-    Column("ip_address_id", Integer, primary_key=True, autoincrement=True),
-    Column("address", String(50), unique=True, nullable=False)
-)
+Base = declarative_base()
+
+class IPAddress(Base):
+    __tablename__ = "ip_address"
+
+    ip_address_id = Column(Integer, primary_key=True, autoincrement=True)
+    address = Column(String(50), unique=True, nullable=False)

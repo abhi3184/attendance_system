@@ -72,7 +72,7 @@ export default function AddHolidayModal({ isOpen, onClose, onSave, holiday }) {
 
     try {
       const payload = {
-        date: formData.date,
+        holiday_date: formData.date,
         description: formData.name,
         type: formData.type.value,
       };

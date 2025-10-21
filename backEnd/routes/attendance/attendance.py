@@ -1,117 +1,45 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from config.db import get_db
-from schemas.index import CheckIn
-from repository.index import AttendanceRepo, IPRepo
+from repository.index import AttendanceRepo
 from services.index import AttendanceService
-from utils.deps import get_current_user, role_checker
 
 attendance = APIRouter()
 
 def get_service(db: Session):
     attendance_repo = AttendanceRepo(db)
-    ip_repo = IPRepo(db)
-    service = AttendanceService(attendance_repo, ip_repo)
-    return service
+    ip_repo = attendance_repo  # assuming same repo handles IP, or replace with IPRepo
+    return AttendanceService(attendance_repo, ip_repo)
 
-# ----- Check-in endpoint -----
+# ----- Check-in -----
 @attendance.post("/checkin")
-def check_in(
-    emp_id: int,manager_id: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    _: dict = Depends(role_checker(["Employee"]))
-    ):
+def check_in(emp_id: int, manager_id: int, db: Session = Depends(get_db)):
     ip_address = AttendanceRepo.get_local_ip()
-    print("ip_address", ip_address)
-    if not ip_address:
-        return {"success": False, "message": "IP not found"}
     service = get_service(db)
-    return service.check_in(emp_id,manager_id,ip_address)
+    return service.check_in(emp_id, manager_id, ip_address)
 
-# ----- Check-out endpoint -----
+# ----- Check-out -----
 @attendance.post("/checkout")
-def check_out(
-    emp_id: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    _: dict = Depends(role_checker(["Employee"]))
-    ):
+def check_out(emp_id: int, db: Session = Depends(get_db)):
     ip_address = AttendanceRepo.get_local_ip()
-    if not ip_address:
-        return {"success": False, "message": "IP not found"}
     service = get_service(db)
     return service.check_out(emp_id, ip_address)
 
-# ----- Status endpoint -----
+# ----- Status -----
 @attendance.get("/status/{emp_id}")
-def status(
-    emp_id: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
+def status(emp_id: int, db: Session = Depends(get_db)):
     service = get_service(db)
     return service.status(emp_id)
 
-
+# ----- All attendance -----
 @attendance.get("/getAllAttendance")
-def get_all_attendance(
-    db: Session = Depends(get_db),
-    filter: str = Query("today"),
-    current_user: dict = Depends(get_current_user),
-    ):
-    today = datetime.now().date()
+def get_all_attendance(db: Session = Depends(get_db), filter: str = Query("today")):
+    service = get_service(db)
+    return service.get_all_attendance(filter)
 
-    if filter == "today":
-        start_date = today
-        end_date = today
-    elif filter == "yesterday":
-        start_date = today - timedelta(days=1)
-        end_date = start_date
-    elif filter == "15days":
-        start_date = today - timedelta(days=15)
-        end_date = today
-    elif filter == "1month":
-        start_date = today - timedelta(days=30)
-        end_date = today
-    else:
-        start_date = today
-        end_date = today
-
-    records = AttendanceRepo.get_attendance(db, str(start_date), str(end_date))
-    attendance_list = AttendanceService.process_attendance(records)
-
-    return {"success": True, "data": attendance_list, "message": "Attendance fetched successfully"}
-
+# ----- Employee attendance -----
 @attendance.get("/getAttendanceByEmp/{emp_id}")
-def get_emp_attendance(
-    emp_id: int, 
-    view_type: str = "weekly", 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    try:
-        data = AttendanceService.get_emp_attendance(db, emp_id, view_type)
-        return {"success": True, "data": data, "message": "Employee attendance fetched successfully"}
-    except ValueError as e:
-        return {"success": False, "message": str(e)}
-    
-
-@attendance.get("/weekly_attendance_by_manager/{manager_id}")
-def weekly_attendance(
-    manager_id: int, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return AttendanceService.get_weekly_attendance(db, manager_id)
-    
-
-@attendance.get("/attendance_for_manager")
-def get_attendance_for_manager(
-    manager_id: int, 
-    date_filter: str, 
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-    ):
-    return AttendanceService.get_attendance(db, manager_id, date_filter)
+def get_emp_attendance(emp_id: int, view_type: str = "weekly", db: Session = Depends(get_db)):
+    service = get_service(db)
+    return {"success": True, "data": service.get_emp_attendance(emp_id, view_type), "message": "Employee attendance fetched successfully"}

@@ -107,6 +107,8 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
       case "year":
         if (!value.trim()) return "Year is required";
         if (!/^\d{4}$/.test(value)) return "Enter a valid 4-digit year";
+        const currentYear = new Date().getFullYear();
+        if (parseInt(value) > currentYear) return `Year cannot be greater than ${currentYear}`;
         break;
       case "department":
       case "role":
@@ -213,7 +215,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
         toast.error("Failed to add employee ❌");
       }
     } catch (err) {
-      toast.error("Failed to add employee ❌");
     } finally {
       setLoading(false);
     }

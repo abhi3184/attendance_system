@@ -1,23 +1,22 @@
-
-from models.employee import employeeTable
-from models.roles import roles
-from models.ipaddress import ipAddress
-from models.attendance import attendanceTable
-from models.leave import LeaveStatus,Leave
-from models.employee_address import employeeAddressTable
-from models.employee_education import employeeEducationTable
-from models.leaveType import LeaveType
-from models.holidays import holidaysTable
+from .employee import Employee
+from .roles import Roles
+from .attendance import Attendance
+from .leaveType import LeaveType
+from .leave import Leave, LeaveStatus
+from .employee_address import EmployeeAddress
+from .employee_education import EmployeeEducation
+from .holidays import Holidays
+from .ipaddress import IPAddress
 
 __all__ = [
-    "employeeTable",
-    "roles",
-    "ipAddress",
-    "attendanceTable",
+    "Employee",
+    "Roles",
+    "IPAddress",
+    "Attendance",
+    "LeaveType",
     "Leave",
     "LeaveStatus",
-    "employeeAddressTable",
-    "employeeEducationTable",
-    "LeaveType",
-    "holidaysTable"
+    "EmployeeAddress",
+    "EmployeeEducation",
+    "Holidays"
 ]

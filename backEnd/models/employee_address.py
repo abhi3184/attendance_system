@@ -1,13 +1,16 @@
-from sqlalchemy import Table, Column, Integer, String
-from config.db import meta
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from models.base_class import Base
 
-employeeAddressTable = Table(
-    "emp_address", meta,
-    Column("id_address", Integer, primary_key=True, autoincrement=True),   
-    Column("address", String(50), unique=False, nullable=False),
-    Column("city", String(100), unique=False, nullable=False),
-    Column("state", String(100), nullable=False),
-    Column("zip_code", String(15), unique=False, nullable=False),
-    Column("contact", String(15), unique=False, nullable=False),
-    Column("emp_id", String(100), unique=False, nullable=False),
-)
+class EmployeeAddress(Base):
+    __tablename__ = "emp_address"
+
+    id_address = Column(Integer, primary_key=True, autoincrement=True)
+    address = Column(String(100))
+    city = Column(String(100))
+    state = Column(String(100))
+    zip_code = Column(String(15))
+    contact = Column(String(15))
+    emp_id = Column(Integer, ForeignKey("employee.emp_id"))
+
+    employee = relationship("Employee", back_populates="address")

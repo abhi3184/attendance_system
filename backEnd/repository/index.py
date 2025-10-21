@@ -1,22 +1,23 @@
-from .registration.employeeRegistration_repo import employeRegistrationRepository
-from .auth.login_repo import loginRepo
+from .auth.login_repo import LoginRepo
 from .attendance.Ip_repo import IPRepo
 from .attendance.attendance_repo import AttendanceRepo
 from .leave.leave_repo import LeaveRepo
 from .holidays.holidays_repo import HolidaysRepo
 from .OTP.otpRepo import OTPRepository
-from .dashboard.dashboard import dashboardRepo
+from .dashboard.dashboard import DashboardRepo
+from .registration.employeeRegistration_repo import EmployeeRegistrationRepository
+
 
 __all__ = [
     "ForgotPassRepository",  
     "OTPRepository", 
-    "employeRegistrationRepository",
+    "EmployeeRegistrationRepository",
     "employeeRepos",
-    "loginRepo",
+    "LoginRepo",
     "IPRepo",
     "AttendanceRepo",
     "LeaveRepo",
     "HolidaysRepo",
     "OTPRepository",
-    "dashboardRepo"
+    "DashboardRepo"
 ]

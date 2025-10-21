@@ -112,7 +112,7 @@ export const EditEmployeeModal = ({ isOpen, onClose, employeeData, onSubmit }) =
                 toast.error("Failed to Update employee ❌");
             }
         } catch (err) {
-            toast.error("Failed to add employee ❌");
+          
         } finally {
             setLoading(false);
         }
