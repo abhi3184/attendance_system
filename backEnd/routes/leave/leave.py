@@ -21,7 +21,7 @@ def update_leave_status(req: LeaveUpdate,db: Session = Depends(get_db)):
     return LeaveService.update_leave_status(db,req)
 
 @leave.get("/getLeavesById")
-async def get_leave_by_empid(empId: int, db: Session = Depends(get_db)):
+async def get_users_by_id(empId: int, db: Session = Depends(get_db)):
     return LeaveService.get_leave_by_empId(db, empId)
 
 @leave.get("/getLeavesByManagerID/{manager_id}")
