@@ -21,6 +21,7 @@ class AttendanceRepo:
             return None
 
     def get_india_time():
+        from datetime import datetime, timedelta
         return datetime.utcnow() + timedelta(hours=5, minutes=30)
 
     def get_active_checkin(self, emp_id: int):
@@ -30,16 +31,22 @@ class AttendanceRepo:
             func.date(Attendance.check_in_time) == today,
             Attendance.check_out_time.is_(None)
         ).first()
+    
+
+    def get_today_attendance(self, emp_id: int):
+        today = date.today()
+        return self.db.query(Attendance).filter(
+            Attendance.emp_id == emp_id,
+            func.date(Attendance.check_in_time) == today
+        ).first()
 
     def checkin(self, emp_id: int, manager_id: int, ip_address: str):
-        today_check = self.get_active_checkin(emp_id)
+        today_check = self.get_today_attendance(emp_id)
 
         if today_check:
-            # जर आधीच check-in आहे आणि checkout केला असेल
             if today_check.check_out_time:
-                today_check.isPresent = 1
                 today_check.check_out_time = None
-                # first check-in time maintain करा
+                today_check.isPresent = 1
                 self.db.commit()
                 self.db.refresh(today_check)
                 return {
@@ -48,14 +55,17 @@ class AttendanceRepo:
                     "attendance_id": today_check.attendance_id
                 }
             else:
-                return {"success": True, "message": "Already checked in today."}
+                return {
+                    "success": True,
+                    "message": "Already checked in today.",
+                    "attendance_id": today_check.attendance_id
+                }
 
-        # First time check-in for today
         attendance = Attendance(
             emp_id=emp_id,
             manager_id=manager_id,
             ip_address=ip_address,
-            check_in_time= AttendanceRepo.get_india_time(),
+            check_in_time=AttendanceRepo.get_india_time(),
             isPresent=1
         )
         self.db.add(attendance)
@@ -66,6 +76,7 @@ class AttendanceRepo:
             "message": "Checked in successfully.",
             "attendance_id": attendance.attendance_id
         }
+
 
     # ----- Check-out -----
     def checkout(self, emp_id: int):

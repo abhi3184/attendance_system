@@ -156,7 +156,6 @@ const Attendance = () => {
           setIsCheckedIn(true);
           toast.success("Checked in successfully");
           await fetchStatus();
-          await fetchAttendance();
         } else {
           toast.error(response.message);
         }
@@ -166,7 +165,6 @@ const Attendance = () => {
           setIsCheckedIn(false);
           toast.success("Checked out successfully");
           await fetchStatus();
-          await fetchAttendance();
         } else {
           toast.error(response.message);
         }

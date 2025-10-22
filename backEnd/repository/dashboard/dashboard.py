@@ -31,7 +31,7 @@ class DashboardRepo:
     def attendance_count_by_manager_id(db: Session, manager_id: int) -> int:
         today = date.today()
         return db.query(func.count(Attendance.attendance_id)).filter(
-            Attendance.is_present == True,
+            Attendance.isPresent == True,
             Attendance.manager_id == manager_id,
             cast(Attendance.check_in_time, Date) == today
         ).scalar()
