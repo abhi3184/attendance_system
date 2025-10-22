@@ -25,3 +25,4 @@ class Employee(Base):
     education = relationship(
         "EmployeeEducation", back_populates="employee", cascade="all, delete-orphan"
     )
+    leaves = relationship("Leave", back_populates="employee", cascade="all, delete-orphan")

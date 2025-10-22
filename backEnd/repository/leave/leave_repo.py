@@ -113,7 +113,50 @@ class LeaveRepo:
         db.refresh(existing_leave)
         return existing_leave
     
+    @staticmethod
+    def get_leaves_by_manager_id(db: Session, manager_id: int):
+        leaves = (
+            db.query(
+                Leave.leave_id,
+                Leave.emp_id,
+                Leave.start_date,
+                Leave.end_date,
+                Leave.manager_status.label("status"),
+                Leave.reason,
+                Leave.used_days,
+                Leave.total_days,
+                Employee.firstName.label("first_name"),
+                Employee.lastName.label("last_name"),
+                LeaveType.leave_name.label("leave_type"),
+            )
+            .join(Employee, Leave.emp_id == Employee.emp_id)
+            .join(LeaveType, Leave.leave_type_id == LeaveType.leave_type_id)
+            .filter(Leave.manager_id == manager_id)
+            .all()
+        )
 
+        if not leaves:
+            return {"success": False, "data": [], "message": "Leaves not found"}
+
+        leaves_list = [
+            {
+                "leave_id": leave.leave_id,
+                "emp_id": leave.emp_id,
+                "first_name": leave.first_name,
+                "last_name": leave.last_name,
+                "start_date": leave.start_date,
+                "end_date": leave.end_date,
+                "status": leave.status,
+                "reason": leave.reason,
+                "leave_type": leave.leave_type,
+                "total_days": leave.total_days,
+                "used_days": leave.used_days,
+                "remaining_days": leave.total_days - leave.used_days
+            }
+            for leave in leaves
+        ]
+
+        return {"success": True, "data": leaves_list, "message": "Data fetched successfully"}
 
     
 

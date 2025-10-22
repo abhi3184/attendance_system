@@ -142,3 +142,6 @@ class LeaveService:
             })
 
         return {"success": True, "data": leaves_list, "message": "Data fetched successfully"}
+    
+    def get_leaves_by_manager_id(db: Session, manager_id: int):
+        return LeaveRepo.get_leaves_by_manager_id(db, manager_id)

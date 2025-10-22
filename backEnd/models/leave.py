@@ -1,10 +1,9 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Enum
+from sqlalchemy import Column, ForeignKey, Integer, String, Date, DateTime, Enum
 from pydantic import BaseModel
 from datetime import datetime
 import enum
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from models.base_class import Base
+from sqlalchemy.orm import relationship
 
 class LeaveStatus(str, enum.Enum):
     Pending = "Pending"
@@ -15,8 +14,8 @@ class Leave(Base):
     __tablename__ = "leaves"
 
     leave_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    emp_id = Column(Integer, nullable=False)
-    leave_type_id = Column(Integer, nullable=False)
+    emp_id = Column(Integer,ForeignKey("employee.emp_id"), nullable=False)
+    leave_type_id = Column(Integer,ForeignKey("leave_type.leave_type_id"), nullable=False)
     total_days = Column(Integer, nullable=False)
     used_days = Column(Integer, nullable=False, default=0)
     start_date = Column(Date, nullable=False)
@@ -29,3 +28,7 @@ class Leave(Base):
     rejected_reason = Column(String,nullable = True)
     manager_approved_on = Column(Date,nullable = True)
     hr_approved_on = Column(Date,nullable = True)
+
+
+    employee = relationship("Employee", back_populates="leaves")
+    leave_type = relationship("LeaveType", back_populates="leaves")

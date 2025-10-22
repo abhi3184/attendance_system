@@ -63,4 +63,8 @@ def add_leave_balance(req: AddLeaveBalanceReq, db: Session = Depends(get_db), cu
 def get_leave_by_emp(empId: int,db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     return LeaveService.get_leave_by_empId(db,empId)
 
+@leave.get("/getLeavesByManagerID/{manager_id}")
+async def get_leaves_by_manager(manager_id: int, db: Session = Depends(get_db)):
+    return LeaveService.get_leaves_by_manager_id(db, manager_id)
+
 
