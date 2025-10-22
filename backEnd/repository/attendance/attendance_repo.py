@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func, case, select
 from datetime import datetime, date, timedelta
 from models.index import Attendance, Employee, Holidays
 import socket
@@ -156,3 +156,45 @@ class AttendanceRepo:
     @staticmethod
     def get_holidays(db: Session, start_date: str, end_date: str):
         return db.query(Holidays).filter(Holidays.date.between(start_date, end_date)).all()
+    
+
+    @staticmethod
+    def get_attendance_by_manager(db: Session, manager_id: int, date_filter: str):
+        today = date.today()
+
+        if date_filter.lower() == "today":
+            start_date = today
+        elif date_filter.lower() == "yesterday":
+            start_date = today - timedelta(days=1)
+        elif date_filter.lower() == "weekly":
+            start_date = today - timedelta(days=7)
+        elif date_filter.lower() == "monthly":
+            start_date = today - timedelta(days=30)
+        else:
+            start_date = None
+
+        query = select(
+            Attendance.attendance_id,
+            Attendance.emp_id,
+            Attendance.check_in_time,
+            Attendance.check_out_time,
+            Attendance.total_hr,
+            Attendance.isPresent,
+            Employee.firstName,
+            Employee.lastName
+        ).join(
+            Employee, Attendance.emp_id == Employee.emp_id
+        ).where(
+            Attendance.manager_id == manager_id
+        )
+
+        if start_date:
+            query = query.where(Attendance.check_in_time >= datetime.combine(start_date, datetime.min.time()))
+
+        return db.execute(query).fetchall()
+
+    @staticmethod
+    def get_holidays(db: Session):
+        rows = db.execute(select(Holidays.date, Holidays.description)).fetchall()
+        # Ensure key is date object
+        return {datetime.fromisoformat(row.date).date() if isinstance(row.date, str) else row.date: row.description for row in rows}

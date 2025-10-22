@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import FancyDropdown from "../../components/dropdowns";
 import { attendanceTrackerService } from "../../api/services/manager/attedanceTrackerService";
 import { getDecodedToken } from "../../utils/JWTHelper";
-
+import { motion } from "framer-motion";
 const filterOptions = ["Today", "Yesterday", "Last Week", "Last Month"];
 
 export default function ManagerAttendance() {
@@ -89,7 +89,17 @@ export default function ManagerAttendance() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map(emp => (
+              {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-10">
+                  <motion.div
+                    className="flex flex-col items-center justify-center text-gray-400 text-sm"
+                  >
+                    <span className="text-md font-medium">No employees found 😢</span>
+                  </motion.div>
+                </td>
+              </tr>
+            ) : filtered.map(emp => (
                 <tr key={emp.attendance_id || emp.emp_id} className="hover:bg-purple-50 cursor-pointer transition">
                   {emp.is_holiday ? (
                     <td colSpan={6} className="px-4 py-2 text-xs text-center bg-blue-100 text-blue-800 font-medium">

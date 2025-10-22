@@ -133,3 +133,65 @@ class AttendanceService:
             })
 
         return {"success": True, "data": result, "message": "Weekly attendance fetched"}
+    
+
+
+
+    @staticmethod
+    def get_attendance(db: Session, manager_id: int, date_filter: str):
+        records = AttendanceRepo.get_attendance_by_manager(db, manager_id, date_filter)
+        if not records:
+            return {"success": False, "data": [], "message": "No attendance found"}
+
+        holidays_dict = AttendanceRepo.get_holidays(db)
+        result = []
+
+        for r in records:
+            # Convert datetime safely
+            check_in_time = r.check_in_time if isinstance(r.check_in_time, datetime) else datetime.fromisoformat(str(r.check_in_time))
+            check_out_time = r.check_out_time if isinstance(r.check_out_time, datetime) else datetime.fromisoformat(str(r.check_out_time)) if r.check_out_time else None
+
+            date_obj = check_in_time.date()
+
+            # Late calculation
+            late = None
+            if check_in_time.time() > AttendanceService.SHIFT_START:
+                delta = datetime.combine(datetime.min, check_in_time.time()) - datetime.combine(datetime.min, AttendanceService.SHIFT_START)
+                late_hours = delta.seconds // 3600
+                late_minutes = (delta.seconds % 3600) // 60
+                late = f"{late_hours}h {late_minutes}m"
+
+            # Early leaving
+            early = None
+            if check_out_time and check_out_time.time() < AttendanceService.SHIFT_END:
+                delta = datetime.combine(datetime.min, AttendanceService.SHIFT_END) - datetime.combine(datetime.min, check_out_time.time())
+                early_hours = delta.seconds // 3600
+                early_minutes = (delta.seconds % 3600) // 60
+                early = f"{early_hours}h {early_minutes}m"
+
+            # Holiday check
+            is_holiday = date_obj in holidays_dict
+            holiday_description = holidays_dict.get(date_obj, "")
+
+            # Format times in 12-hour with minutes
+            check_in_str = check_in_time.strftime("%I:%M %p") if check_in_time else None
+            check_out_str = check_out_time.strftime("%I:%M %p") if check_out_time else None
+
+            result.append({
+                "attendance_id": r.attendance_id,
+                "emp_id": r.emp_id,
+                "emp_name": f"{r.firstName} {r.lastName}",
+                "check_in_time": check_in_str,
+                "check_out_time": check_out_str,
+                "total_hr": r.total_hr,
+                "isPresent": r.isPresent,
+                "late": late,
+                "early": early,
+                "is_holiday": is_holiday,
+                "holiday_description": holiday_description
+            })
+
+        return {"success": True, "data": result, "message": "Data fetched successfully"}
+
+
+
