@@ -213,7 +213,13 @@ export default function ManagerDashboard() {
             <FaClipboardList className="text-yellow-500" /> Pending Leave Requests
           </h2>
           {pendingLeaves.length === 0 ? (
-            <p className="text-gray-400 text-sm">No pending leave requests 🎉</p>
+            <motion.div
+              className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              <span className="text-md text-purple-700">No pending leave requests 🎉</span>
+            </motion.div>
           ) : (
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {pendingLeaves.map((leave) => (
@@ -238,9 +244,13 @@ export default function ManagerDashboard() {
             <FaCalendarAlt className="text-blue-500" /> Upcoming Holidays
           </h2>
           {!upcomingHolidays || upcomingHolidays.length === 0 ? (
-            <div className="flex items-center justify-center h-[200px] text-gray-400 text-sm">
-              No upcoming holidays 🎉
-            </div>
+            <motion.div
+              className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              <span className="text-md text-purple-700">No upcoming holidays 🎉</span>
+            </motion.div>
           ) : (
             <ul className="text-sm text-gray-600 space-y-2 max-h-80 overflow-y-auto">
               {upcomingHolidays.map((holiday, index) => (

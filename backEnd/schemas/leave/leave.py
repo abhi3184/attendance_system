@@ -46,9 +46,8 @@ class LeaveStatus(str):
 
 class LeaveUpdate(BaseModel):
     leave_id: int
-    status: str  # "Approved", "Rejected", "Pending"
-    # optional: who approved
-    approved_by: Optional[int] = None
+    status: str
+    approved_by: str
 
 class LeaveUpdateHr(BaseModel):
     leave_id: int

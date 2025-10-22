@@ -146,7 +146,7 @@ class LeaveRepo:
                 "last_name": leave.last_name,
                 "start_date": leave.start_date,
                 "end_date": leave.end_date,
-                "status": leave.status,
+                "manager_status": leave.status,
                 "reason": leave.reason,
                 "leave_type": leave.leave_type,
                 "total_days": leave.total_days,

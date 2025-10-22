@@ -17,7 +17,7 @@ export default function TeamDetailsTable() {
 
 
   const filteredEmployees = employees.filter(emp =>
-    `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+    `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
 
@@ -30,7 +30,7 @@ export default function TeamDetailsTable() {
         setManager({ emp_id: decoded.id, manager_id: decoded.manager_id || null });
       } else {
         //  toast.error("Invalid token structure!"); 
-        }
+      }
     } catch (err) {
       // toast.error("Invalid token!");
     }
@@ -86,37 +86,55 @@ export default function TeamDetailsTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredEmployees.map(emp => (
-              <tr
-                key={emp.emp_id}
-                className="hover:bg-purple-50 cursor-pointer transition"
-                onClick={() => setSelectedEmployee(emp)}
-              >
-                <td className="px-4 py-2 text-xs">{emp.emp_code}</td>
-
-                <td className="px-4 py-2 text-xs">{emp.firstName} {emp.lastName}</td>
-                <td className="px-4 py-2 text-xs">{emp.emailId}</td>
-                <td className="px-4 py-2 text-xs">{emp.mobile}</td>
-                <td className="px-4 py-2 text-xs">{emp.department}</td>
-                <td className="px-4 py-2 text-xs flex items-center gap-1">
+            {filteredEmployees.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-20">
                   <motion.div
-                    animate={{ rotate: [0, 360] }}
-                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                    className="flex flex-col items-center justify-center text-gray-400 text-sm"
                   >
-                    <FaSun className="text-yellow-500" />
+                    <span className="text-md font-medium">No employees found 😢</span>
                   </motion.div>
-                  <span>{emp.shift_time}</span>
-
                 </td>
-                <td>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${emp.status === "Active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                    {emp.status}
-                  </span>
-                </td>
-                <td className="px-4 py-2text-xs"><span className="text-gray-700">₹</span> {emp.salary}</td>
               </tr>
-            ))}
+            ) : (
+              filteredEmployees.map(emp => (
+                <tr
+                  key={emp.emp_id}
+                  className="hover:bg-purple-50 cursor-pointer transition"
+                  onClick={() => setSelectedEmployee(emp)}
+                >
+                  <td className="px-4 py-2 text-xs">{emp.emp_code}</td>
+                  <td className="px-4 py-2 text-xs">{emp.firstName} {emp.lastName}</td>
+                  <td className="px-4 py-2 text-xs">{emp.emailId}</td>
+                  <td className="px-4 py-2 text-xs">{emp.mobile}</td>
+                  <td className="px-4 py-2 text-xs">{emp.department}</td>
+                  <td className="px-4 py-2 text-xs flex items-center gap-1">
+                    <span>{emp.shift_time}</span>
+                    <motion.div
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                    >
+                      <FaSun className="text-yellow-500" />
+                    </motion.div>
+                  </td>
+                  <td>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${emp.status === "Active"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                        }`}
+                    >
+                      {emp.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-xs">
+                    <span className="text-gray-700">₹</span> {emp.salary}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
+
         </table>
       </div>
 

@@ -1,9 +1,6 @@
 # models/holidays.py
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
-
+from models.base_class import Base
 class Holidays(Base):
     __tablename__ = "holidays"
 

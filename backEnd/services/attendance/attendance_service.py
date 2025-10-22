@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta, time
+from datetime import date, datetime, timedelta, time
+
+from requests import Session
 
 from repository.index import IPRepo,AttendanceRepo
 
@@ -101,3 +103,33 @@ class AttendanceService:
             current_day += timedelta(days=1)
 
         return response
+
+
+    def get_weekly_attendance(db: Session, manager_id: int):
+        today = date.today()
+        start_of_week = today - timedelta(days=today.weekday())  # Monday
+
+        start_str = start_of_week.strftime("%Y-%m-%d")
+        end_str = today.strftime("%Y-%m-%d")
+
+        # --- 1️⃣ Attendance ---
+        attendance_query = AttendanceRepo.get_attendance_by_manager(db, manager_id, start_str, end_str)
+        attendance_map = {a.day.strftime("%Y-%m-%d"): {"present": a.present, "absent": a.absent} for a in attendance_query}
+
+        # --- 2️⃣ Holidays ---
+        holidays = AttendanceRepo.get_holidays(db, start_str, end_str)
+        holidays_map = {h.date: h.description for h in holidays}
+
+        # --- 3️⃣ Build weekly response ---
+        week_dates = [start_of_week + timedelta(days=i) for i in range((today - start_of_week).days + 1)]
+        result = []
+        for d in week_dates:
+            day_str = d.strftime("%Y-%m-%d")
+            result.append({
+                "name": d.strftime("%a"),
+                "present": attendance_map.get(day_str, {}).get("present", 0),
+                "absent": attendance_map.get(day_str, {}).get("absent", 0),
+                "holiday": holidays_map.get(day_str)
+            })
+
+        return {"success": True, "data": result, "message": "Weekly attendance fetched"}

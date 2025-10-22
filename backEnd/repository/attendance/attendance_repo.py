@@ -134,3 +134,25 @@ class AttendanceRepo:
             Holidays.date >= start_date.strftime("%Y-%m-%d"),
             Holidays.date <= end_date.strftime("%Y-%m-%d")
         ).all()
+
+
+    @staticmethod
+    def get_attendance_by_manager(db: Session, manager_id: int, start_date: str, end_date: str):
+        return (
+            db.query(
+                func.date(Attendance.check_in_time).label("day"),
+                func.sum(case((Attendance.isPresent == True, 1), else_=0)).label("present"),
+                func.sum(case((Attendance.isPresent == False, 1), else_=0)).label("absent")
+            )
+            .join(Employee)
+            .filter(
+                Employee.manager_id == manager_id,
+                func.date(Attendance.check_in_time).between(start_date, end_date)
+            )
+            .group_by(func.date(Attendance.check_in_time))
+            .all()
+        )
+
+    @staticmethod
+    def get_holidays(db: Session, start_date: str, end_date: str):
+        return db.query(Holidays).filter(Holidays.date.between(start_date, end_date)).all()

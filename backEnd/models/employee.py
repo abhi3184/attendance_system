@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from models.base_class import Base
 
@@ -16,7 +16,7 @@ class Employee(Base):
     status = Column(String(100), nullable=False)
     password = Column(String(100), nullable=False)
     roles_id = Column(Integer, nullable=False)
-    manager_id = Column(Integer, nullable=False)
+    manager_id = Column(Integer,ForeignKey("employee.emp_id"), nullable=False)
 
     # Relationship names must match class names as strings
     address = relationship(
@@ -26,3 +26,4 @@ class Employee(Base):
         "EmployeeEducation", back_populates="employee", cascade="all, delete-orphan"
     )
     leaves = relationship("Leave", back_populates="employee", cascade="all, delete-orphan")
+    attendances = relationship("Attendance", back_populates="employee")

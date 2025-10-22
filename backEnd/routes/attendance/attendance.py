@@ -48,3 +48,7 @@ def get_emp_attendance(emp_id: str, view_type: str = "weekly", db: Session = Dep
         "data": data,
         "message": "Employee attendance fetched successfully"
     }
+
+@attendance.get("/weekly_attendance_by_manager/{manager_id}")
+def weekly_attendance(manager_id: int, db: Session = Depends(get_db)):
+    return AttendanceService.get_weekly_attendance(db, manager_id)
