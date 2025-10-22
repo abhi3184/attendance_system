@@ -40,6 +40,11 @@ def get_all_attendance(db: Session = Depends(get_db), filter: str = Query("today
 
 # ----- Employee attendance -----
 @attendance.get("/getAttendanceByEmp/{emp_id}")
-def get_emp_attendance(emp_id: int, view_type: str = "weekly", db: Session = Depends(get_db)):
+def get_emp_attendance(emp_id: str, view_type: str = "weekly", db: Session = Depends(get_db)):
     service = get_service(db)
-    return {"success": True, "data": service.get_emp_attendance(emp_id, view_type), "message": "Employee attendance fetched successfully"}
+    data = service.get_emp_attendance(emp_id, view_type)
+    return {
+        "success": True,
+        "data": data,
+        "message": "Employee attendance fetched successfully"
+    }

@@ -27,7 +27,8 @@ class AttendanceRepo:
         today = date.today()
         return self.db.query(Attendance).filter(
             Attendance.emp_id == emp_id,
-            func.date(Attendance.check_in_time) == today
+            func.date(Attendance.check_in_time) == today,
+            Attendance.check_out_time.is_(None)
         ).first()
 
     def checkin(self, emp_id: int, manager_id: int, ip_address: str):
@@ -54,7 +55,7 @@ class AttendanceRepo:
             emp_id=emp_id,
             manager_id=manager_id,
             ip_address=ip_address,
-            check_in_time=self.get_india_time(),
+            check_in_time= AttendanceRepo.get_india_time(),
             isPresent=1
         )
         self.db.add(attendance)
@@ -82,25 +83,6 @@ class AttendanceRepo:
         self.db.refresh(active)
         return {"success": True, "message": "Checked out successfully", "total_hours": total_hours}
 
-    # ----- Attendance by employee -----
-    def get_attendance_by_employee(self, emp_id: int, start_date: date, end_date: date):
-        records = self.db.query(Attendance).filter(
-            Attendance.emp_id == emp_id,
-            Attendance.check_in_time >= datetime.combine(start_date, datetime.min.time()),
-            Attendance.check_in_time <= datetime.combine(end_date, datetime.max.time())
-        ).all()
-        result = []
-        for r in records:
-            result.append({
-                "attendance_id": r.attendance_id,
-                "emp_id": r.emp_id,
-                "check_in_time": r.check_in_time,
-                "check_out_time": r.check_out_time,
-                "total_hr": r.total_hr,
-                "is_present": r.isPresent
-            })
-        return result
-
     # ----- All attendance -----
     def get_all_attendance(self, start_date: date, end_date: date):
         return self.db.query(Attendance).filter(
@@ -127,10 +109,17 @@ class AttendanceRepo:
         holidays = self.db.query(Holidays).filter(Holidays.date.between(start_date, end_date)).all()
         return {h.date: h.description for h in holidays}
     
+    # Get attendance for employee within date range
     def get_attendance_by_employee(self, emp_id: int, start_date: date, end_date: date):
-        records = self.db.query(Attendance).filter(
+        return self.db.query(Attendance).filter(
             Attendance.emp_id == emp_id,
             Attendance.check_in_time >= datetime.combine(start_date, datetime.min.time()),
             Attendance.check_in_time <= datetime.combine(end_date, datetime.max.time())
         ).all()
-        return records
+
+    # Get holidays within date range
+    def get_holidays_in_range(self, start_date: date, end_date: date):
+        return self.db.query(Holidays).filter(
+            Holidays.date >= start_date.strftime("%Y-%m-%d"),
+            Holidays.date <= end_date.strftime("%Y-%m-%d")
+        ).all()

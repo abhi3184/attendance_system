@@ -64,9 +64,9 @@ export default function Leave() {
   const fetchLeaveRequests = async (empId) => {
     try {
       const res = await employeeLeaveService.getLeavesByEmpID(empId);
-      console.log("response",res)
+      console.log("response", res)
       if (res.success && res.data) {
-        
+
         setRequests(res.data); // assuming res.data.data is an array of leaves
       } else {
       }
@@ -208,16 +208,34 @@ export default function Leave() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {upcomingHolidays.map((holiday, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-xs text-gray-700">
-                        {formatHolidayDate(holiday.date)}
-                      </td>
-                      <td className="px-4 py-2 text-xs text-gray-700">
-                        {holiday.description}
+                  {upcomingHolidays && upcomingHolidays.length > 0 ? (
+                    upcomingHolidays.map((holiday, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 text-xs text-gray-700">
+                          {formatHolidayDate(holiday.date)}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-gray-700">
+                          {holiday.description}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="2" className="py-6">
+                        <div className="flex justify-center">
+                          <motion.p
+                            className="text-center text-purple-600 text-sm font-semibold"
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                            style={{ maxWidth: "100%" }}
+                          >
+                            No upcoming holidays 🎉
+                          </motion.p>
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                  )}
+
                 </tbody>
               </table>
             </div>
@@ -239,17 +257,26 @@ export default function Leave() {
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leaves</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Used Leaves</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining Leaves</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Manager Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Hr Status</th>
+
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   {/* <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th> */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {requests.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-gray-500 text-sm">
-                      No leaves present
-                    </td>
+                    <td colSpan="7" className="py-6">
+                        <div className="flex justify-center">
+                          <motion.p
+                            className="text-center text-purple-600 text-sm font-semibold"
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                            style={{ maxWidth: "100%" }} // 👈 table width exceed होणार नाही
+                          >
+                            No leaves present 🎉
+                          </motion.p>
+                        </div>
+                      </td>
                   </tr>
                 ) : (
                   requests.map((req, idx) => (
@@ -289,30 +316,17 @@ export default function Leave() {
                         {req.remaining_days} days
                       </span></td>
 
-                      {/* Status */}
-                      <td className="px-4 py-2 text-xs">
-                        <span
-                          className={`inline-block w-40 text-center py-1 rounded font-semibold text-xs ${req.manager_status === "Pending"
-                            ? "bg-yellow-200 text-yellow-800"
-                            : req.manager_status === "Approved"
-                              ? "bg-green-200 text-green-800"
-                              : "bg-red-200 text-red-800"
-                            }`}
-                        >
-                          {req.manager_status}
-                        </span>
-                      </td>
 
-                       {/* Status */}
+                      {/* Status */}
                       <td className="px-4 py-2 text-xs">
                         <span
                           className={`inline-block w-40 text-center py-1 rounded font-semibold text-xs ${req.hr_status === "Pending"
                             ? "bg-yellow-200 text-yellow-800"
                             : req.hr_status === "Approved"
                               ? "bg-green-200 text-green-800"
-                            :req.hr_status === "None" 
-                            ? "bg-blue-200 text-blue-800"
-                              : "bg-red-200 text-red-800"
+                              : req.hr_status === "None"
+                                ? "bg-blue-200 text-blue-800"
+                                : "bg-red-200 text-red-800"
                             }`}
                         >
                           {req.hr_status}

@@ -216,28 +216,26 @@ export default function Home() {
 
         {/* Check In/Out Buttons */}
         <div className="flex flex-col gap-3 w-full">
-          {!isCheckedIn ? (
-            <motion.button
-              onClick={handleCheckIn}
-              disabled={loadingCheck}
-              className="w-full py-2 border-2 border-green-400 bg-transparent text-green-500 font-semibold rounded-lg hover:bg-green-100 hover:text-green text-sm shadow-md transition-colors duration-300 flex items-center justify-center gap-2"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              {loadingCheck ? "Checking in..." : "Check In"}
-            </motion.button>
-          ) : (
-            <motion.button
-              onClick={handleCheckOut}
-              disabled={loadingCheck}
-              className="w-full py-2 border-2 border-red-400 bg-transparent text-red-500 font-semibold rounded-lg hover:bg-red-100 hover:text-red text-sm shadow-md transition-colors duration-300 flex items-center justify-center gap-2"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              {loadingCheck ? "Checking out..." : "Check Out"}
-            </motion.button>
-          )}
-        </div>
+  <motion.button
+    onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
+    disabled={loadingCheck}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className={`w-full py-2 rounded-lg font-semibold text-sm shadow-md transition-all duration-300 flex items-center justify-center gap-2
+      ${isCheckedIn 
+        ? "bg-red-500 text-white border-red-600 hover:bg-red-600" 
+        : "bg-green-500 text-white border-green-600 hover:bg-green-600"
+      }`}
+  >
+    {loadingCheck 
+      ? isCheckedIn 
+        ? "Checking out..." 
+        : "Checking in..." 
+      : isCheckedIn 
+        ? "Check Out" 
+        : "Check In"}
+  </motion.button>
+</div>
       </motion.div>
 
       {/* Right Panel */}

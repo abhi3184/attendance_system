@@ -2,7 +2,8 @@ import React from "react";
 
 export default function AttendancePreview({ attendance = [] }) {
   // Helper to get day name from date string
-  const getDayName = (dateStr) => {
+  console.log("Data",attendance)
+  const getDayName = (dateStr) => { 
     const dateObj = new Date(dateStr);
     return dateObj.toLocaleString("en-US", { weekday: "long" });
   };

@@ -62,34 +62,42 @@ class AttendanceService:
         return attendance_list
 
     # ----- Get all attendance (with filter) -----
-    def get_all_attendance(self, filter_type="today"):
+    def get_emp_attendance(self, emp_id: str, view_type="weekly"):
+        from datetime import datetime
         today = datetime.now().date()
-        if filter_type == "today":
-            start_date = end_date = today
-        elif filter_type == "yesterday":
-            start_date = end_date = today - timedelta(days=1)
-        elif filter_type == "15days":
-            start_date = today - timedelta(days=15)
-            end_date = today
-        elif filter_type == "1month":
-            start_date = today - timedelta(days=30)
-            end_date = today
-        else:
-            start_date = end_date = today
+        yesterday = today - timedelta(days=1)  # कालपर्यंत data पाहिजे
 
-        records = self.attendance_repo.get_all_attendance(start_date, end_date)
-        return {"success": True, "data": self.process_attendance(records), "message": "Attendance fetched successfully"}
-
-    # ----- Get employee attendance -----
-    def get_emp_attendance(self, emp_id, view_type="weekly"):
-        today = datetime.now().date()
+        # Determine start and end date
         if view_type.lower() == "weekly":
-            start_date = today - timedelta(days=today.weekday())
+            start_date = today - timedelta(days=today.weekday())  # Monday
+            end_date = yesterday  # कालपर्यंत
         elif view_type.lower() == "monthly":
             start_date = today.replace(day=1)
+            end_date = yesterday  # कालपर्यंत
         else:
-            start_date = today
+            start_date = yesterday
+            end_date = yesterday
 
-        end_date = today
-        records = self.attendance_repo.get_attendance_by_employee(emp_id, start_date, end_date)
-        return self.process_attendance(records)
+        # Fetch records
+        attendance_records = self.attendance_repo.get_attendance_by_employee(emp_id, start_date, end_date)
+        holidays = self.attendance_repo.get_holidays_in_range(start_date, end_date)
+        holiday_dates = {h.date for h in holidays}
+
+        # Prepare day-wise response
+        response = []
+        current_day = start_date
+        while current_day <= end_date:
+            day_str = current_day.strftime("%Y-%m-%d")
+            is_holiday = day_str in holiday_dates
+            att = next((r for r in attendance_records if r.check_in_time.date() == current_day), None)
+            response.append({
+                "date": day_str,
+                "day": current_day.strftime("%A"),
+                "status": "Holiday" if is_holiday else ("Present" if att else "Absent"),
+                "check_in": att.check_in_time if att else None,
+                "check_out": att.check_out_time if att else None,
+                "total_hr": att.total_hr if att else 0
+            })
+            current_day += timedelta(days=1)
+
+        return response

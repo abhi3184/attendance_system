@@ -1,4 +1,5 @@
 # services/leave_service.py
+from requests import Session
 from repository.index import LeaveRepo
 from models.index import Leave, LeaveType
 from schemas.index import AddleaveRequestDTO, LeaveUpdate, LeaveSummaryResp
@@ -28,6 +29,7 @@ class LeaveService:
             reason=req.reason,
             applied_on=datetime.now(),
             manager_status="Pending",
+            hr_status="Pending",
             manager_id=req.manager_id
         )
         return LeaveRepo.apply_leave(db, leave)
@@ -95,3 +97,48 @@ class LeaveService:
                 return LeaveRepo.update_leave_balance(db, ex, req.total_days)
         leave_type = LeaveType(leave_name=req.leave_name, total_days=req.total_days)
         return LeaveRepo.add_leave_balance(db, leave_type)
+    
+
+
+    def get_leave_by_empId(db: Session, empId: int) -> dict:
+        leaves = LeaveRepo.get_leaves_by_empId(db, empId)
+
+        if not leaves:
+            return {"success": False, "data": [], "message": "Leaves not found"}
+
+        # Calculate total used_days per leave_type_id
+        leave_type_used = defaultdict(int)
+        for leave in leaves:
+            leave_type_used[leave.leave_type_id] += leave.used_days
+
+        leaves_list = []
+        latest_leave_id = max(leave.leave_id for leave in leaves)
+
+        leave_name = ''
+        leaveTypes = LeaveRepo.get_leave_type_by_id(db, leave.leave_type_id)
+        if leaveTypes:
+            leave_name = leaveTypes.leave_name
+        else:
+            leave_name = "Unknown"
+        for leave in leaves:
+            # If this is the latest leave for this type, calculate remaining_days considering all used_days
+            if leave.leave_id == latest_leave_id:
+                remaining_days = leave.total_days - leave_type_used[leave.leave_type_id]
+            else:
+                remaining_days = leave.total_days - leave.used_days 
+
+            leaves_list.append({
+                "leave_id": leave.leave_id,
+                "emp_id": leave.emp_id,
+                "start_date": leave.start_date,
+                "end_date": leave.end_date,
+                "hr_status": leave.hr_status,
+                "manager_status" : leave.manager_status,
+                "reason": leave.reason,
+                "leave_type": leave_name,
+                "total_days": leave.total_days,
+                "used_days": leave.used_days,
+                "remaining_days": remaining_days
+            })
+
+        return {"success": True, "data": leaves_list, "message": "Data fetched successfully"}

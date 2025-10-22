@@ -84,6 +84,10 @@ class LeaveRepo:
     @staticmethod
     def get_leave_By_id(db: Session, leave_id: int):
         return db.query(Leave).filter(Leave.leave_id == leave_id).first()
+    
+    @staticmethod 
+    def get_leave_type_by_id(db: Session, leave_type_id: int):
+        return db.query(LeaveType).filter(LeaveType.leave_type_id == leave_type_id).first()
 
     @staticmethod
     def delete_leave(db: Session, leave_id: int):
@@ -108,3 +112,9 @@ class LeaveRepo:
         db.commit()
         db.refresh(existing_leave)
         return existing_leave
+    
+
+
+    
+
+    

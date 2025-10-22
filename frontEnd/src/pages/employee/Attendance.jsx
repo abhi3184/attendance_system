@@ -4,6 +4,7 @@ import jwt_decode from "jwt-decode";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { employeeAttendanceService } from "../../api/services/employee/employeeAttendance";
+import { employeeHomeService } from "../../api/services/employee/employeeHome";
 const statusColors = {
   present: "green-500",
   weekend: "yellow-500",
@@ -28,16 +29,18 @@ const statusBorderColors = {
   absent: "border-red-400",
 };
 
+// ... imports and statusColors, statusText, statusBorderColors remain same
+
 const Attendance = () => {
   const [employee, setEmployee] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [timer, setTimer] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
   const [attendanceData, setAttendanceData] = useState([]);
-  const [viewType, setViewType] = useState("monthly"); // ✅ define here
+  const [viewType, setViewType] = useState("weekly");
   const [loading, setLoading] = useState(false);
 
-  // Decode JWT & set employee
+  // Decode JWT
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -49,51 +52,50 @@ const Attendance = () => {
           manager_id: decoded.manager_id,
         });
       }
-    } catch (err) {
-      // toast.error("Invalid token!");
-    }
+    } catch (err) { }
   }, []);
 
-  // Fetch attendance data
+  // Fetch attendance
   const fetchAttendance = async () => {
     if (!employee?.emp_id) return;
     setLoading(true);
     try {
       const res = await employeeAttendanceService.getAttendanceRecords(employee.emp_id, viewType);
+
       if (res.success && Array.isArray(res.data)) {
-        const mappedData = res.data.map((item) => {
-          const dateObj = new Date(item.date);
-          const day = dateObj.getDate();
-          const month = dateObj.toLocaleString("default", { month: "short" });
+       const mappedData = res.data.map((item) => {
+  const checkIn = item.check_in ? new Date(item.check_in) : null;
+  const checkOut = item.check_out ? new Date(item.check_out) : null;
 
-          const start = item.check_in_time
-            ? new Date(item.check_in_time).toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              })
-            : "00:00";
+  const start = checkIn
+    ? checkIn.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })
+    : "00:00";
 
-          const end = item.check_out_time
-            ? new Date(item.check_out_time).toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              })
-            : "00:00";
+  const end = checkOut
+    ? checkOut.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })
+    : "00:00";
 
-          return {
-            date: day,
-            month,
-            start,
-            end,
-            hoursWorked: item.toatl_hr
-              ? item.toatl_hr.toFixed(2)
-              : "00:00",
-            status: item.status.toLowerCase(),
-            description: item.description || "-",
-          };
-        });
+  // फक्त day number & short day
+  const dateNumber = item.date ? new Date(item.date).getDate() : "-"; // 2025-10-20 -> 20
+  const dayShort = item.day
+    ? item.day.substring(0, 3) // Monday -> Mon
+    : item.date
+    ? new Date(item.date).toLocaleDateString("en-US", { weekday: "short" })
+    : "-";
+
+  return {
+    date: dateNumber,
+    day: dayShort,
+    start,
+    end,
+    total_hr: item.total_hr ? item.total_hr.toFixed(2) : "00:00",
+    status: item.status ? item.status.toLowerCase() : "-",
+    description: item.description || "-",
+  };
+});
+
+
+
         setAttendanceData(mappedData);
       }
     } catch (err) {
@@ -103,33 +105,34 @@ const Attendance = () => {
     }
   };
 
-  // Fetch on load + when filter changes
+  // Fetch on load or viewType change
   useEffect(() => {
     if (employee?.emp_id) fetchAttendance();
   }, [employee, viewType]);
 
-  // Fetch CheckIn Status
-  useEffect(() => {
+  // Fetch check-in status
+  const fetchStatus = async () => {
     if (!employee?.emp_id) return;
-    const fetchStatus = async () => {
-      try {
-        const res = await employeeAttendanceService.getStatus(employee.emp_id);
-        if (res.success) {
-          const { checked_in, check_in_time } = res;
-          if (checked_in && check_in_time) {
-            const checkInDate = new Date(check_in_time);
-            const elapsed = Math.floor((new Date() - checkInDate) / 1000);
-            setTimer(elapsed);
-            setIsCheckedIn(true);
-          } else {
-            setTimer(0);
-            setIsCheckedIn(false);
-          }
+    try {
+      const res = await employeeAttendanceService.getStatus(employee.emp_id);
+      if (res.success) {
+        const { checked_in, check_in_time } = res;
+        if (checked_in && check_in_time) {
+          const checkInDate = new Date(check_in_time);
+          const elapsed = Math.floor((new Date() - checkInDate) / 1000);
+          setTimer(elapsed);
+          setIsCheckedIn(true);
+        } else {
+          setTimer(0);
+          setIsCheckedIn(false);
         }
-      } catch {
-        toast.error("Failed to fetch check-in status!");
       }
-    };
+    } catch {
+      toast.error("Failed to fetch check-in status!");
+    }
+  };
+
+  useEffect(() => {
     fetchStatus();
   }, [employee]);
 
@@ -143,6 +146,33 @@ const Attendance = () => {
     }
     return () => clearInterval(intervalId);
   }, [isCheckedIn]);
+
+  // Handle Check-in/out
+  const handleAttendance = async () => {
+    try {
+      if (!isCheckedIn) {
+        const response = await employeeHomeService.handleCheckIn(employee);
+        if (response.success) {
+          setIsCheckedIn(true);
+          toast.success("Checked in successfully");
+          await fetchStatus();
+          await fetchAttendance();
+        } else {
+          toast.error(response.message);
+        }
+      } else {
+        const response = await employeeHomeService.handleCheckOut(employee.emp_id);
+        if (response.success) {
+          setIsCheckedIn(false);
+          toast.success("Checked out successfully");
+          await fetchStatus();
+          await fetchAttendance();
+        } else {
+          toast.error(response.message);
+        }
+      }
+    } catch (error) { }
+  };
 
   const formatTime = (sec) => {
     const hours = String(Math.floor(sec / 3600)).padStart(2, "0");
@@ -166,21 +196,15 @@ const Attendance = () => {
         {/* Filter */}
         <div className="absolute left-1/2 -translate-x-1/2 flex space-x-2">
           <button
-            className={`px-3 py-1 rounded text-xs font-semibold ${
-              viewType === "weekly"
-                ? "bg-purple-500 text-white"
-                : "bg-purple border text-gray-700"
-            }`}
+            className={`px-3 py-1 rounded text-xs font-semibold ${viewType === "weekly" ? "bg-purple-500 text-white" : "bg-purple border text-gray-700"
+              }`}
             onClick={() => setViewType("weekly")}
           >
             Weekly
           </button>
           <button
-            className={`px-3 py-1 rounded text-xs font-semibold ${
-              viewType === "monthly"
-                ? "bg-purple-500 text-white"
-                : "bg-purple border text-gray-700"
-            }`}
+            className={`px-3 py-1 rounded text-xs font-semibold ${viewType === "monthly" ? "bg-purple-500 text-white" : "bg-purple border text-gray-700"
+              }`}
             onClick={() => setViewType("monthly")}
           >
             Monthly
@@ -191,10 +215,9 @@ const Attendance = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setIsCheckedIn(!isCheckedIn)}
-          className={`ml-auto flex flex-col items-center px-6 py-2 rounded-lg text-white font-semibold text-sm ${
-            isCheckedIn ? "bg-red-500" : "bg-green-500"
-          }`}
+          onClick={handleAttendance}
+          className={`ml-auto flex flex-col items-center px-6 py-2 rounded-lg text-white font-semibold text-sm ${isCheckedIn ? "bg-red-500" : "bg-green-500"
+            }`}
         >
           <span>{isCheckedIn ? "Check Out" : "Check In"}</span>
           <span className="text-sm font-mono mt-1">{formatTime(timer)}</span>
@@ -202,14 +225,9 @@ const Attendance = () => {
       </motion.div>
 
       {/* Attendance List */}
-      <div
-        className="max-w-5xl w-full mt-4 flex-1 overflow-y-auto space-y-3 pb-8 pr-3"
-        style={{ maxHeight: "70vh" }}
-      >
+      <div className="max-w-5xl w-full mt-4 flex-1 overflow-y-auto space-y-3 pb-8" style={{ maxHeight: "70vh" }}>
         {loading ? (
-          <div className="text-center text-gray-500 py-4">
-            Loading attendance...
-          </div>
+          <div className="text-center text-gray-500 py-4">Loading attendance...</div>
         ) : (
           attendanceData.map((item, idx) => {
             const color = statusColors[item.status] || "gray-400";
@@ -222,32 +240,26 @@ const Attendance = () => {
               >
                 <div className="w-16 text-center">
                   <div className="text-sm font-semibold">{item.date}</div>
-                  <div className="text-gray-500 text-sm">{item.month}</div>
+                  <div className="text-gray-500 text-sm">{item.day}</div>
                 </div>
 
                 <div className="flex-1 relative px-4">
-                  <div
-                    className={`absolute top-1/2 left-0 right-0 h-0.5 bg-${color}`}
-                  ></div>
-                  <div
-                    className={`absolute top-1/2 left-0 w-3 h-3 -mt-1.5 rounded-full bg-gray-300`}
-                  ></div>
-                  <div
-                    className={`absolute top-1/2 right-0 w-3 h-3 -mt-1.5 rounded-full bg-gray-300`}
-                  ></div>
+                  <div className={`absolute top-1/2 left-0 right-0 h-0.5 bg-${color}`}></div>
+                  <div className="absolute top-1/2 left-0 w-3 h-3 -mt-1.5 rounded-full bg-gray-300"></div>
+                  <div className="absolute top-1/2 right-0 w-3 h-3 -mt-1.5 rounded-full bg-gray-300"></div>
 
                   <div
-                    className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 border rounded text-sm bg-white ${statusBorderColors[item.status]} font-semibold text-center`}
+                    className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 border rounded text-sm bg-white 
+                      ${statusBorderColors[item.status]
+                      } font-semibold text-center`}
                   >
                     {statusText[item.status] || item.status}
                   </div>
                 </div>
 
                 <div className="w-24 text-center flex flex-col items-center">
-                  <div className="font-mono text-sm">
-                    {item.hoursWorked || "00:00"}
-                  </div>
-                  <div className="text-gray-500 text-xs">Hrs</div>
+                  <div className="font-mono text-md">{item.total_hr || "00:00"}</div>
+                  <div className="text-gray-500 font-medium text-xs">Hrs Worked</div>
                 </div>
               </motion.div>
             );

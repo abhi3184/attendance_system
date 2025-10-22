@@ -8,7 +8,7 @@ export const employeeLeaveService = {
     },
 
     getLeavesByEmpID : async (emp_id) => {
-        const res = await httpClient.get(`leave/getLeavesById?empId=${emp_id}`);
+        const res = await httpClient.get(`leave/get_leave_by_emp/${emp_id}`);
         return res.data || [];
     },
 

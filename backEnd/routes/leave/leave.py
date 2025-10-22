@@ -57,3 +57,10 @@ def delete_leave(leave_id: int, db: Session = Depends(get_db), current_user=Depe
 @leave.post("/add_leave_balance")
 def add_leave_balance(req: AddLeaveBalanceReq, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     return LeaveService.add_leave_type(db, req)
+
+
+@leave.get("/get_leave_by_emp/{empId}")
+def get_leave_by_emp(empId: int,db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return LeaveService.get_leave_by_empId(db,empId)
+
+
