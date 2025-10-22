@@ -31,11 +31,6 @@ class LeaveRepo:
         return leave
 
     @staticmethod
-    def get_leaves_by_empId(db: Session, emp_id: int):
-        result = db.query(Leave).filter(Leave.emp_id == emp_id).all()
-        return result
-
-    @staticmethod
     def get_leave_types(db: Session):
         return db.query(LeaveType).all()
 
@@ -56,7 +51,8 @@ class LeaveRepo:
                 Employee.firstName,
                 Employee.lastName,
                 LeaveType.leave_name,
-                LeaveType.total_days
+                LeaveType.total_days,
+                Leave.hr_status
             )
             .join(Employee, Leave.emp_id == Employee.emp_id)
             .join(LeaveType, Leave.leave_type_id == LeaveType.leave_type_id)
@@ -76,7 +72,8 @@ class LeaveRepo:
                 "firstName": l[6],
                 "lastName": l[7],
                 "leave_name": l[8],
-                "total_days": l[9]
+                "total_days": l[9],
+                "hr_status": l[10]
             })
 
         return result
@@ -157,6 +154,29 @@ class LeaveRepo:
         ]
 
         return {"success": True, "data": leaves_list, "message": "Data fetched successfully"}
+    
+
+
+    @staticmethod    
+    def get_leaves_by_empId(db: Session, empId: str):
+        return (
+            db.query(
+                Leave.leave_id,
+                Leave.emp_id,
+                Leave.start_date,
+                Leave.end_date,
+                Leave.manager_status,
+                Leave.hr_status,
+                Leave.reason,
+                Leave.used_days,
+                Leave.leave_type_id,
+                LeaveType.leave_name.label("leave_type_name"),
+                LeaveType.total_days.label("total_days")
+            )
+            .join(LeaveType, Leave.leave_type_id == LeaveType.leave_type_id)
+            .filter(Leave.emp_id == empId)  # Latest leave first
+            .all()
+        )
 
     
 

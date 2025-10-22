@@ -70,7 +70,7 @@ export default function ManagerDashboard() {
           ManagerDashboardService.getTeamMembers(manager.emp_id),
           ManagerDashboardService.getAttendanceCount(manager.emp_id),
           ManagerDashboardService.getLeaves(manager.emp_id),
-          ManagerDashboardService.getWeeklyAttendance(manager.emp_id),
+          ManagerDashboardService.getWeeklyAttendance(manager.emp_id,"weekly"),
           ManagerDashboardService.getUpcomingHolidays(),
         ]);
 
@@ -249,7 +249,7 @@ export default function ManagerDashboard() {
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ repeat: Infinity, duration: 1.5 }}
             >
-              <span className="text-md text-purple-700">No upcoming holidays 🎉</span>
+              <span className="text-md text-purple-700 ">No upcoming holidays 🎉</span>
             </motion.div>
           ) : (
             <ul className="text-sm text-gray-600 space-y-2 max-h-80 overflow-y-auto">

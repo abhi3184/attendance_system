@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, select
+from sqlalchemy import Date, cast, func, case, select
 from datetime import datetime, date, timedelta
 from models.index import Attendance, Employee, Holidays
 import socket
@@ -137,29 +137,7 @@ class AttendanceRepo:
 
 
     @staticmethod
-    def get_attendance_by_manager(db: Session, manager_id: int, start_date: str, end_date: str):
-        return (
-            db.query(
-                func.date(Attendance.check_in_time).label("day"),
-                func.sum(case((Attendance.isPresent == True, 1), else_=0)).label("present"),
-                func.sum(case((Attendance.isPresent == False, 1), else_=0)).label("absent")
-            )
-            .join(Employee)
-            .filter(
-                Employee.manager_id == manager_id,
-                func.date(Attendance.check_in_time).between(start_date, end_date)
-            )
-            .group_by(func.date(Attendance.check_in_time))
-            .all()
-        )
-
-    @staticmethod
-    def get_holidays(db: Session, start_date: str, end_date: str):
-        return db.query(Holidays).filter(Holidays.date.between(start_date, end_date)).all()
-    
-
-    @staticmethod
-    def get_attendance_by_manager(db: Session, manager_id: int, date_filter: str):
+    def get_weekly_attendance_by_manager(db: Session, manager_id: int, date_filter: str):
         today = date.today()
 
         if date_filter.lower() == "today":
@@ -173,19 +151,16 @@ class AttendanceRepo:
         else:
             start_date = None
 
-        query = select(
-            Attendance.attendance_id,
-            Attendance.emp_id,
-            Attendance.check_in_time,
-            Attendance.check_out_time,
-            Attendance.total_hr,
-            Attendance.isPresent,
-            Employee.firstName,
-            Employee.lastName
-        ).join(
-            Employee, Attendance.emp_id == Employee.emp_id
-        ).where(
-            Attendance.manager_id == manager_id
+        # 🎯 Query that groups by date
+        query = (
+            select(
+                cast(Attendance.check_in_time, Date).label("day"),
+                func.sum(case((Attendance.isPresent == True, 1), else_=0)).label("present"),
+                func.sum(case((Attendance.isPresent == False, 1), else_=0)).label("absent")
+            )
+            .where(Attendance.manager_id == manager_id)
+            .group_by(cast(Attendance.check_in_time, Date))
+            .order_by(cast(Attendance.check_in_time, Date))
         )
 
         if start_date:
@@ -194,7 +169,29 @@ class AttendanceRepo:
         return db.execute(query).fetchall()
 
     @staticmethod
-    def get_holidays(db: Session):
-        rows = db.execute(select(Holidays.date, Holidays.description)).fetchall()
-        # Ensure key is date object
-        return {datetime.fromisoformat(row.date).date() if isinstance(row.date, str) else row.date: row.description for row in rows}
+    def get_weekly_holidays_for_manager(db: Session, date_filter: str):
+        today = date.today()
+
+        if date_filter.lower() == "today":
+            start_date = today
+        elif date_filter.lower() == "yesterday":
+            start_date = today - timedelta(days=1)
+        elif date_filter.lower() == "weekly":
+            start_date = today - timedelta(days=7)
+        elif date_filter.lower() == "monthly":
+            start_date = today - timedelta(days=30)
+        else:
+            start_date = None
+
+        query = select(Holidays.date, Holidays.description)
+
+        if start_date:
+            query = query.where(Holidays.date >= start_date)
+
+        rows = db.execute(query).fetchall()
+
+        # ✅ Safe conversion (handle both str and date objects)
+        return {
+            (datetime.fromisoformat(row.date).date() if isinstance(row.date, str) else row.date): row.description
+            for row in rows
+        }

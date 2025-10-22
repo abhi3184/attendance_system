@@ -105,7 +105,7 @@ class AttendanceService:
         return response
 
 
-    def get_weekly_attendance(db: Session, manager_id: int):
+    def get_weekly_attendance_for_manager(db: Session, manager_id: int,date_filter :str):
         today = date.today()
         start_of_week = today - timedelta(days=today.weekday())  # Monday
 
@@ -113,12 +113,12 @@ class AttendanceService:
         end_str = today.strftime("%Y-%m-%d")
 
         # --- 1️⃣ Attendance ---
-        attendance_query = AttendanceRepo.get_attendance_by_manager(db, manager_id, start_str, end_str)
+        attendance_query = AttendanceRepo.get_weekly_attendance_by_manager(db, manager_id, date_filter)
         attendance_map = {a.day.strftime("%Y-%m-%d"): {"present": a.present, "absent": a.absent} for a in attendance_query}
 
         # --- 2️⃣ Holidays ---
-        holidays = AttendanceRepo.get_holidays(db, start_str, end_str)
-        holidays_map = {h.date: h.description for h in holidays}
+        holidays = AttendanceRepo.get_weekly_holidays_for_manager(db, date_filter)
+        holidays_map = {h.strftime("%Y-%m-%d"): desc for h, desc in holidays.items()}
 
         # --- 3️⃣ Build weekly response ---
         week_dates = [start_of_week + timedelta(days=i) for i in range((today - start_of_week).days + 1)]
@@ -136,9 +136,8 @@ class AttendanceService:
     
 
 
-
     @staticmethod
-    def get_attendance(db: Session, manager_id: int, date_filter: str):
+    def get_attendance_for_manager(db: Session, manager_id: int, date_filter: str):
         records = AttendanceRepo.get_attendance_by_manager(db, manager_id, date_filter)
         if not records:
             return {"success": False, "data": [], "message": "No attendance found"}

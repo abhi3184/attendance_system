@@ -28,9 +28,9 @@ export const ManagerDashboardService = {
     }
   },
 
-  getWeeklyAttendance: async (managerId) => {
+  getWeeklyAttendance: async (managerId,date_filter) => {
     try {
-      const res = await httpClient.get(`/checkIn/weekly_attendance_by_manager/${managerId}`);
+      const res = await httpClient.get(`/checkIn/weekly_attendance_by_manager/${managerId}/${date_filter}`);
       return res.data;
     } catch (err) {
       throw err;

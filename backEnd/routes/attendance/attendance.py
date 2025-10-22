@@ -49,12 +49,11 @@ def get_emp_attendance(emp_id: str, view_type: str = "weekly", db: Session = Dep
         "message": "Employee attendance fetched successfully"
     }
 
-@attendance.get("/weekly_attendance_by_manager/{manager_id}")
-def weekly_attendance(manager_id: int, db: Session = Depends(get_db)):
-    return AttendanceService.get_weekly_attendance(db, manager_id)
-
+@attendance.get("/weekly_attendance_by_manager/{manager_id}/{date_filter}")
+def weekly_attendance_by_manager(manager_id: int,date_filter: str, db: Session = Depends(get_db)):
+    return AttendanceService.get_weekly_attendance_for_manager(db, manager_id,date_filter)
 
 @attendance.get("/attendance_for_manager")
 def get_attendance_for_manager(manager_id: int, date_filter: str, db: Session = Depends(get_db)):
-    return AttendanceService.get_attendance(db, manager_id, date_filter)
+    return AttendanceService.get_attendance_for_manager(db, manager_id, date_filter)
 

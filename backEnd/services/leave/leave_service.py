@@ -106,7 +106,7 @@ class LeaveService:
         if not leaves:
             return {"success": False, "data": [], "message": "Leaves not found"}
 
-        # Calculate total used_days per leave_type_id
+        print("MyLeaves",leaves)
         leave_type_used = defaultdict(int)
         for leave in leaves:
             leave_type_used[leave.leave_type_id] += leave.used_days
@@ -145,3 +145,5 @@ class LeaveService:
     
     def get_leaves_by_manager_id(db: Session, manager_id: int):
         return LeaveRepo.get_leaves_by_manager_id(db, manager_id)
+    
+   

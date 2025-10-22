@@ -258,7 +258,7 @@ export default function ManagerLeave() {
                   <tbody className="divide-y divide-gray-100">
                     {requests.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-6 text-center text-gray-500 text-sm">No upcoming leaves</td>
+                        <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-400">No upcoming leaves</td>
                       </tr>
                     ) : (
                       requests.map((req, idx) => (
@@ -293,12 +293,17 @@ export default function ManagerLeave() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {upcomingHolidays.map((holiday, idx) => (
+                    {upcomingHolidays.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-6 text-center text-gray-400 text-sm">No upcoming leaves</td>
+                      </tr>
+                    ) : (upcomingHolidays.map((holiday, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
                         <td className="px-4 py-2 text-xs text-gray-700">{formatHolidayDate(holiday.date)}</td>
                         <td className="px-4 py-2 text-xs text-gray-700">{holiday.description}</td>
                       </tr>
-                    ))}
+                    ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -340,7 +345,7 @@ export default function ManagerLeave() {
               <tbody className="divide-y divide-gray-100">
                 {requests.filter(r => r.manager_status === teamLeaveFilter).length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-center text-gray-500 text-sm">No leaves present</td>
+                    <td colSpan={9} className="px-4 py-6 text-center text-gray-400 text-sm">No leaves present</td>
                   </tr>
                 ) : (
                   requests.filter(r => r.manager_status === teamLeaveFilter).map((req, idx) => (

@@ -68,3 +68,8 @@ async def get_leaves_by_manager(manager_id: int, db: Session = Depends(get_db)):
     return LeaveService.get_leaves_by_manager_id(db, manager_id)
 
 
+@leave.get("/getLeavesById")
+async def get_users_by_id(empId: int, db: Session = Depends(get_db)):
+    return LeaveService.get_leave_by_empId(db, empId)
+
+
