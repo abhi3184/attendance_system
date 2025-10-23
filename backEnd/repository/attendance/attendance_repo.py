@@ -116,7 +116,7 @@ class AttendanceRepo:
         return {a.day.strftime("%Y-%m-%d"): {"present": a.present, "absent": a.absent} for a in query}
 
     # ----- Holidays in range -----
-    def get_holidays_in_range(self, start_date: date, end_date: date):
+    def get_holidays_in_range_for_all(self, start_date: date, end_date: date):
         holidays = self.db.query(Holidays).filter(Holidays.date.between(start_date, end_date)).all()
         return {h.date: h.description for h in holidays}
     
@@ -195,3 +195,43 @@ class AttendanceRepo:
             (datetime.fromisoformat(row.date).date() if isinstance(row.date, str) else row.date): row.description
             for row in rows
         }
+    
+
+
+
+    @staticmethod
+    def get_attendance_by_manager_and_date_range(db: Session, manager_id: int, start_datetime: datetime, end_datetime: datetime):
+        return db.query(Attendance).filter(
+            Attendance.manager_id == manager_id,
+            Attendance.check_in_time >= start_datetime,
+            Attendance.check_in_time <= end_datetime
+        ).all()
+    
+
+    @staticmethod
+    def get_holidays_in_date_range(db: Session, start_date: str, end_date: str):
+        return db.query(Holidays).filter(
+            Holidays.date >= start_date,
+            Holidays.date <= end_date
+        ).all()
+    
+
+
+    @staticmethod
+    def get_attendance_by_date_range(db: Session, start_datetime: datetime, end_datetime: datetime):
+        return db.query(Attendance).filter(
+            Attendance.check_in_time >= start_datetime,
+            Attendance.check_in_time <= end_datetime
+        ).all()
+    
+
+
+    @staticmethod
+    def get_attendance_in_range(db: Session, target_date: datetime):
+        start_datetime = datetime.combine(target_date, datetime.min.time())
+        end_datetime = datetime.combine(target_date, datetime.max.time())
+
+        return db.query(Attendance).filter(
+            Attendance.check_in_time >= start_datetime,
+            Attendance.check_in_time <= end_datetime
+        ).all()

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
-  PieChart, Pie, Cell, Tooltip,
-  BarChart, Bar, XAxis, YAxis, ResponsiveContainer
+  PieChart, Pie, Cell, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid
 } from "recharts";
 import { motion } from "framer-motion";
 import { FaUsers, FaUserCheck, FaUserTimes, FaClipboardList, FaCalendarAlt } from "react-icons/fa";
@@ -36,7 +36,6 @@ export default function ManagerDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
-
     try {
       const decoded = jwt_decode(token);
       if (decoded.id) {
@@ -49,15 +48,14 @@ export default function ManagerDashboard() {
       toast.error("Invalid token!");
     }
   }, []);
+
   useEffect(() => {
     if (!leaves.length) return;
-
     const updatedStatusData = [
       { name: "Approved", value: leaves.filter(l => l.manager_status === "Approved").length, color: "#86efac" },
       { name: "Pending", value: leaves.filter(l => l.manager_status === "Pending").length, color: "#fde68a" },
       { name: "Rejected", value: leaves.filter(l => l.manager_status === "Rejected").length, color: "#fca5a5" },
     ];
-
     setLeaveStatus(updatedStatusData);
   }, [leaves]);
 
@@ -70,7 +68,7 @@ export default function ManagerDashboard() {
           ManagerDashboardService.getTeamMembers(manager.emp_id),
           ManagerDashboardService.getAttendanceCount(manager.emp_id),
           ManagerDashboardService.getLeaves(manager.emp_id),
-          ManagerDashboardService.getWeeklyAttendance(manager.emp_id,"weekly"),
+          ManagerDashboardService.getWeeklyAttendance(manager.emp_id, "weekly"),
           ManagerDashboardService.getUpcomingHolidays(),
         ]);
 
@@ -81,7 +79,6 @@ export default function ManagerDashboard() {
           const allLeaves = leavesRes.data;
           setLeaves(allLeaves);
           setPendingLeaves(allLeaves.filter(l => l.manager_status === "Pending"));
-
           setLeaveStatus([
             { name: "Approved", value: allLeaves.filter(l => l.manager_status === "Approved").length, color: "#86efac" },
             { name: "Pending", value: allLeaves.filter(l => l.manager_status === "Pending").length, color: "#fde68a" },
@@ -89,9 +86,21 @@ export default function ManagerDashboard() {
           ]);
         }
 
-        if (weeklyRes.data?.success) setChartData(weeklyRes.data.data);
+        if (weeklyRes?.data?.success) {
+          const raw = weeklyRes.data.data;
+          const chartReadyData = raw.map(item => ({
+            name: item.name,
+            present: Number(item.present ?? 0),
+            absent: Number(item.absent ?? 0),
+            holiday: item.holiday ? 1 : 0,
+            holidayName: item.holiday ?? ""
+          }));
+          setChartData(chartReadyData);
+        }
+
         if (holidaysRes.success) setHolidays(holidaysRes.data);
       } catch (err) {
+        console.error(err);
         toast.error("Failed to load dashboard data.");
       }
     };
@@ -99,11 +108,10 @@ export default function ManagerDashboard() {
     fetchData();
   }, [manager]);
 
-  // Open modals
+  // Confirm modal logic
   const handleApproveClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Approve" });
   const handleRejectClick = (leaveId) => setConfirmModal({ open: true, leaveId, action: "Reject" });
 
-  // Confirm modal -> update leave status
   const handleConfirmLeave = async (leaveId, action) => {
     try {
       const payload = {
@@ -113,20 +121,16 @@ export default function ManagerDashboard() {
       };
 
       const res = await EmployeeOverViewService.updateLeaveStatus(payload);
-      console.log("response:", res);
 
       if (res.success) {
         toast.success(`Leave ${action.toLowerCase()} successfully!`);
-
         const updatedLeaves = leaves.map(l =>
           l.leave_id === leaveId
             ? { ...l, manager_status: actionToDbStatus[action] }
             : l
         );
-
         setLeaves(updatedLeaves);
         setPendingLeaves(updatedLeaves.filter(l => l.manager_status === "Pending"));
-        console.log("Updated Leaves:", updatedLeaves);
       } else {
         toast.error("Failed to update leave status.");
       }
@@ -138,7 +142,7 @@ export default function ManagerDashboard() {
     }
   };
 
-  // Dashboard stats
+  // Dashboard Stats
   const totalTeam = teamMembers.length;
   const totalPending = pendingLeaves.length;
   const onLeaveToday = leaves.filter(l =>
@@ -146,11 +150,7 @@ export default function ManagerDashboard() {
   ).length;
 
   return (
-    <motion.div
-      className="p-6 max-h-screen pb-20 overflow-auto z-20"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
+    <motion.div className="p-6 max-h-screen pb-20 overflow-auto z-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6 font-sans">
         <SummaryCard title="Total Team" value={totalTeam} icon={<FaUsers className="text-blue-500" />} color="bg-blue-100" onClick={() => setTeamModalOpen(true)} />
@@ -164,41 +164,48 @@ export default function ManagerDashboard() {
         {/* Weekly Attendance */}
         <div className="bg-white p-5 rounded-2xl shadow-md">
           <h2 className="text-md font-semibold text-gray-700 mb-3">Weekly Attendance</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={attendanceChart}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="present" stackId="a" fill="#10b981" />
-              <Bar dataKey="absent" stackId="a" fill="#FDBA74" />
-              <Bar dataKey="holiday" stackId="a" fill="#a3a3a3ff" />
-            </BarChart>
-          </ResponsiveContainer>
+          {attendanceChart.length === 0 ? (
+             <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
+              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+              <span className="text-md text-purple-700">No data found 📊</span>
+            </motion.div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={attendanceChart} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={false} />
+                <Tooltip formatter={(value, name, props) => {
+                  if (name === "holiday") return props.payload.holidayName || "Holiday";
+                  return value;
+                }} />
+                <Legend />
+                <Bar dataKey="present" stackId="a" fill="#10b981" name="Present" />
+                <Bar dataKey="absent" stackId="a" fill="#FDBA74" name="Absent" />
+                <Bar dataKey="holiday" stackId="a" fill="#a3a3a3" name="Holiday" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Leave Status Pie Chart */}
         <div className="bg-white p-5 rounded-2xl shadow-md">
           <h2 className="text-md font-semibold text-gray-700 mb-3">Leave Status</h2>
           {!leaveStatusData || leaveStatusData.length === 0 ? (
-            <div className="flex items-center justify-center h-[250px] text-gray-400 text-sm">
-              No leave data available 📊
-            </div>
+             <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
+              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+              <span className="text-md text-purple-700">No pending leave requests 🎉</span>
+            </motion.div>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie
-                  data={leaveStatusData}
-                  dataKey="value"
-                  nameKey="name"
-                  outerRadius={80}
-                  innerRadius={40}
-                  label
-                >
+                <Pie data={leaveStatusData} dataKey="value" nameKey="name" outerRadius={80} innerRadius={40} label>
                   {leaveStatusData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -213,11 +220,8 @@ export default function ManagerDashboard() {
             <FaClipboardList className="text-yellow-500" /> Pending Leave Requests
           </h2>
           {pendingLeaves.length === 0 ? (
-            <motion.div
-              className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            >
+            <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
+              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
               <span className="text-md text-purple-700">No pending leave requests 🎉</span>
             </motion.div>
           ) : (
@@ -244,23 +248,15 @@ export default function ManagerDashboard() {
             <FaCalendarAlt className="text-blue-500" /> Upcoming Holidays
           </h2>
           {!upcomingHolidays || upcomingHolidays.length === 0 ? (
-            <motion.div
-              className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            >
+            <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
+              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
               <span className="text-md text-purple-700 ">No upcoming holidays 🎉</span>
             </motion.div>
           ) : (
             <ul className="text-sm text-gray-600 space-y-2 max-h-80 overflow-y-auto">
               {upcomingHolidays.map((holiday, index) => (
-                <li
-                  key={index}
-                  className="flex justify-between items-center bg-blue-50 rounded-lg px-3 py-2"
-                >
-                  <span>
-                    {holiday.emoji} {holiday.description}
-                  </span>
+                <li key={index} className="flex justify-between items-center bg-blue-50 rounded-lg px-3 py-2">
+                  <span>{holiday.emoji} {holiday.description}</span>
                   <span className="text-gray-500">
                     {new Date(holiday.date).toLocaleDateString("en-GB")}
                   </span>
@@ -280,7 +276,6 @@ export default function ManagerDashboard() {
           onConfirm={() => handleConfirmLeave(confirmModal.leaveId, confirmModal.action)}
         />
       )}
-
       <TotalTeamModal isOpen={teamModalOpen} onClose={() => setTeamModalOpen(false)} teamMembers={teamMembers} />
       <LeaveDetailsModal
         isOpen={leaveModalOpen}
@@ -291,7 +286,7 @@ export default function ManagerDashboard() {
   );
 }
 
-// SummaryCard Component
+// Summary Card Component
 const SummaryCard = ({ title, value, icon, color, onClick }) => (
   <motion.div
     className={`p-5 font-sans rounded-2xl shadow-md flex justify-between items-center ${color} cursor-pointer`}

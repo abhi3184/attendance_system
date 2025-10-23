@@ -1,16 +1,23 @@
+import calendar
 from datetime import date, datetime, timedelta, time
 
 from requests import Session
 
-from repository.index import IPRepo,AttendanceRepo
+from repository.index import IPRepo,AttendanceRepo,EmployeeRegistrationRepository,HolidaysRepo
 
 class AttendanceService:
     SHIFT_START = time(10, 0)
     SHIFT_END = time(19, 0)
 
-    def __init__(self, attendance_repo : AttendanceRepo, ip_repo : IPRepo):
+    def __init__(self, attendance_repo : AttendanceRepo, 
+                 ip_repo : IPRepo ,
+                 employeeRepo : EmployeeRegistrationRepository,
+                 holidayRepo : HolidaysRepo):
         self.attendance_repo = attendance_repo
         self.ip_repo = ip_repo
+        self.employeeRepo = employeeRepo,
+        self.holidayRepo = holidayRepo
+
 
     # ----- Check-in -----
     def check_in(self, emp_id, manager_id, ip_address):
@@ -137,60 +144,88 @@ class AttendanceService:
 
 
     @staticmethod
-    def get_attendance_for_manager(db: Session, manager_id: int, date_filter: str):
-        records = AttendanceRepo.get_attendance_by_manager(db, manager_id, date_filter)
-        if not records:
-            return {"success": False, "data": [], "message": "No attendance found"}
+    def get_attendance_by_period(db: Session, manager_id: int, period: str):
 
-        holidays_dict = AttendanceRepo.get_holidays(db)
+        today = date.today()
+
+        # Calculate start and end dates
+        if period.lower() == "weekly":
+            start_date = today - timedelta(days=today.weekday())  # Monday
+            end_date = start_date + timedelta(days=6)            # Sunday
+        elif period.lower() == "monthly":
+            start_date = today.replace(day=1)
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            end_date = today.replace(day=last_day)
+        else:
+            raise ValueError("Invalid period. Use 'weekly' or 'monthly'.")
+
+        start_datetime = datetime.combine(start_date, datetime.min.time())
+        end_datetime = datetime.combine(end_date, datetime.max.time())
+
+        # Fetch data from repo layer
+        attendance_list = AttendanceRepo.get_attendance_by_manager_and_date_range(db, manager_id, start_datetime, end_datetime)
+        holidays = AttendanceRepo.get_holidays_in_date_range(db, start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+        holidays_dict = {h.date: h.description for h in holidays}
+
+        # Merge attendance with holidays
         result = []
-
-        for r in records:
-            # Convert datetime safely
-            check_in_time = r.check_in_time if isinstance(r.check_in_time, datetime) else datetime.fromisoformat(str(r.check_in_time))
-            check_out_time = r.check_out_time if isinstance(r.check_out_time, datetime) else datetime.fromisoformat(str(r.check_out_time)) if r.check_out_time else None
-
-            date_obj = check_in_time.date()
-
-            # Late calculation
-            late = None
-            if check_in_time.time() > AttendanceService.SHIFT_START:
-                delta = datetime.combine(datetime.min, check_in_time.time()) - datetime.combine(datetime.min, AttendanceService.SHIFT_START)
-                late_hours = delta.seconds // 3600
-                late_minutes = (delta.seconds % 3600) // 60
-                late = f"{late_hours}h {late_minutes}m"
-
-            # Early leaving
-            early = None
-            if check_out_time and check_out_time.time() < AttendanceService.SHIFT_END:
-                delta = datetime.combine(datetime.min, AttendanceService.SHIFT_END) - datetime.combine(datetime.min, check_out_time.time())
-                early_hours = delta.seconds // 3600
-                early_minutes = (delta.seconds % 3600) // 60
-                early = f"{early_hours}h {early_minutes}m"
-
-            # Holiday check
-            is_holiday = date_obj in holidays_dict
-            holiday_description = holidays_dict.get(date_obj, "")
-
-            # Format times in 12-hour with minutes
-            check_in_str = check_in_time.strftime("%I:%M %p") if check_in_time else None
-            check_out_str = check_out_time.strftime("%I:%M %p") if check_out_time else None
-
+        for att in attendance_list:
+            att_date_str = att.check_in_time.date().strftime("%Y-%m-%d")
             result.append({
-                "attendance_id": r.attendance_id,
-                "emp_id": r.emp_id,
-                "emp_name": f"{r.firstName} {r.lastName}",
-                "check_in_time": check_in_str,
-                "check_out_time": check_out_str,
-                "total_hr": r.total_hr,
-                "isPresent": r.isPresent,
-                "late": late,
-                "early": early,
-                "is_holiday": is_holiday,
-                "holiday_description": holiday_description
+                "attendance_id": att.attendance_id,
+                "emp_id": att.emp_id,
+                "check_in_time": att.check_in_time,
+                "check_out_time": att.check_out_time,
+                "isPresent": att.isPresent,
+                "holiday": holidays_dict.get(att_date_str)
             })
 
-        return {"success": True, "data": result, "message": "Data fetched successfully"}
+        return {
+            "start_date": start_date,
+            "end_date": end_date,
+            "attendance": result,
+            "holidays": holidays
+        }
 
 
+    @staticmethod
+    def get_attendance(db: Session):
+        today = date.today()
+        date_str = today.strftime("%Y-%m-%d")
 
+        # Fetch all employees and attendance
+        employees = EmployeeRegistrationRepository.get_all_employees(db)
+        attendance_list = AttendanceRepo.get_attendance_in_range(db, today)
+
+        # Map emp_id -> attendance
+        attendance_map = {att.emp_id: att for att in attendance_list}
+
+        report = []
+        for emp in employees:
+            att = attendance_map.get(emp.emp_id)
+
+            if att:
+                check_in = att.check_in_time
+                check_out = att.check_out_time
+                worked_hr = att.total_hr
+
+                # Updated status logic
+                if not check_in and not check_out:
+                    status = "Absent"
+                else:
+                    status = "Present"
+            else:
+                check_in = check_out = worked_hr = None
+                status = "Absent"
+
+            report.append({
+                "name": f"{emp.firstName} {emp.lastName}",
+                "shift": emp.shift_time,
+                "date": date_str,
+                "check_in": check_in,
+                "check_out": check_out,
+                "worked_hr": worked_hr,
+                "status": status
+            })
+
+        return {"date": today, "report": report}

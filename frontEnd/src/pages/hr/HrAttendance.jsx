@@ -7,15 +7,14 @@ export default function HrAttendance() {
   const [attendanceData, setAttendanceData] = useState([]);
   const [search, setSearch] = useState("");
 
-  const today = dayjs().format("DD-MM-YYYY");
-
   const fetchAttendance = async () => {
     try {
       const res = await hrAttendanceService.getAllAttendance();
       if (res.success && res.data) {
-        setAttendanceData(res.data);
+        setAttendanceData(res.data.report);
       }
     } catch (err) {
+      console.error(err);
     }
   };
 
@@ -23,27 +22,15 @@ export default function HrAttendance() {
     fetchAttendance();
   }, []);
 
-  const filteredData = attendanceData.filter(emp =>
+  const filteredData = attendanceData?.filter(emp =>
     emp.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const getStatus = (emp) => {
-    const checkInDate = emp.check_in_time ? dayjs(emp.check_in_time).format("YYYY-MM-DD") : null;
-    const checkOutDate = emp.check_out_time ? dayjs(emp.check_out_time).format("YYYY-MM-DD") : null;
-
-    if (!checkInDate && !checkOutDate) return { label: "Yet to check-in", color: "blue" };
-    if (checkInDate && !checkOutDate) return { label: "Present", color: "yellow" };
-    if (checkInDate && checkOutDate) return { label: "Checked-Out", color: "green" };
-
-    return { label: "-", color: "gray" };
-  };
 
   const formatTime = (datetime) => {
     if (!datetime) return "-";
     const d = new Date(datetime);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   };
-
   const colClass = "px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider";
 
   return (
@@ -62,7 +49,7 @@ export default function HrAttendance() {
       {/* Table */}
       <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden border">
         {/* Table Header */}
-        <div className=" border-b">
+        <div className="border-b">
           <table className="w-full table-fixed border-collapse">
             <colgroup>
               <col style={{ width: "20%" }} />
@@ -107,40 +94,49 @@ export default function HrAttendance() {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((emp, idx) => {
-                  const status = getStatus(emp);
-                  return (
-                    <motion.tr
-                      key={emp.emp_id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.005 }}
-                      whileHover={{ backgroundColor: "rgba(243,232,255,0.2)" }}
-                    >
-                      <td className="px-4 py-2 text-xs">{emp.name}</td>
-                      <td className="px-4 py-2 text-xs">{emp.shift}</td>
-                      <td className="px-4 py-2 text-xs">{today}</td>
-                      <td className="px-4 py-2 text-xs">{formatTime(emp.check_in_time)}</td>
-                      <td className="px-4 py-2 text-xs">{formatTime(emp.check_out_time)}</td>
-                      <td className="px-4 py-2 text-xs">{emp.worked_hours?.toFixed(2) ?? "-"}</td>
-                      <td className="px-4 py-2 text-xs">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                            status.color === "green"
-                              ? "bg-green-100 text-green-700 border-green-200"
-                              : status.color === "yellow"
-                              ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                              : status.color === "red"
+                filteredData.map((emp, idx) => (
+                  <motion.tr
+                    key={emp.emp_id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.005 }}
+                    whileHover={{ backgroundColor: "rgba(243,232,255,0.2)" }}
+                  >
+                    <td className="px-4 py-2 text-xs">{emp.name}</td>
+                    <td className="px-4 py-2 text-xs">{emp.shift}</td>
+                    <td className="px-4 py-2 text-xs">{dayjs(emp.date).format("DD-MM-YYYY")}</td>
+                    <td className="px-4 py-2 text-xs">
+                      <span className="bg-purple-100 text-purple-700 px-2 rounded font-medium">
+                        {formatTime(emp.check_in)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-xs">
+                      <span className="bg-purple-100 text-purple-700 px-2 rounded font-medium">
+                        {formatTime(emp.check_out)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-xs">
+                      <span className="bg-green-100 text-green-700 px-2 font-medium">
+                        {emp.worked_hr?.toFixed(2) ?? "-"} Hrs
+                      </span>
+                      
+                      </td>
+                    <td className="px-4 py-2 text-xs">
+                      <span
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${emp.status === "Present"
+                          ? "bg-green-100 text-green-700 border-green-200"
+                          : emp.status === "Not Checked In"
+                            ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                            : emp.status === "Absent"
                               ? "bg-red-100 text-red-700 border-red-200"
                               : "bg-blue-100 text-blue-700 border-blue-200"
                           }`}
-                        >
-                          {status.label}
-                        </span>
-                      </td>
-                    </motion.tr>
-                  );
-                })
+                      >
+                        {emp.status}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))
               )}
             </tbody>
           </table>

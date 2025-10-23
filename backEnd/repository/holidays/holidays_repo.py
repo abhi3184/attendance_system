@@ -51,3 +51,12 @@ class HolidaysRepo:
         result = db.execute(stmt)
         db.commit()
         return result
+    
+
+
+    @staticmethod
+    def get_holidays_in_range(db: Session, start_date: str, end_date: str):
+        return db.query(Holidays).filter(
+            Holidays.date >= start_date,
+            Holidays.date <= end_date
+        ).all()

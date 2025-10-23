@@ -8,7 +8,7 @@ export const attendanceTrackerService = {
                 {
                     params: {
                         manager_id: managerId,
-                        date_filter: dateFilter,
+                        period : dateFilter,
                     },
                 }
             );
