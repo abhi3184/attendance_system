@@ -30,7 +30,7 @@ class employeeRegistrationService:
         if not isinstance(employee, dict):
             employee = employee.dict()
 
-        emp_fields = ["firstName", "lastName", "emailId", "mobile", "department", "shift", "roles", "manager_id"]
+        emp_fields = ["firstName", "lastName", "emailId", "mobile", "department", "shift", "roles", "manager_id","gender","salary","dateOfBirth","dateOfJoining"]
         emp_data = {k: employee[k] for k in emp_fields if k in employee}
 
         # Check if employee exists

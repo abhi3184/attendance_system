@@ -221,16 +221,20 @@ export default function Leave() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="2" className="py-6">
-                        <div className="flex justify-center">
-                          <motion.p
-                            className="text-center text-purple-600 text-sm font-semibold"
-                            animate={{ opacity: [1, 0.4, 1] }}
-                            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                            style={{ maxWidth: "100%" }}
+                      <td colSpan="2" className="">
+                        <div className="flex justify-center py-2">
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex flex-col items-center justify-center text-gray-500"
                           >
-                            No upcoming holidays 🎉
-                          </motion.p>
+                            <h3 className="text-base font-semibold text-gray-700 mb-1">
+                              No Ucoming Holidays Found
+                            </h3>
+                            <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
+                              Try adjusting your search or add a new employee to get started.
+                            </p>
+                          </motion.div>
                         </div>
                       </td>
                     </tr>
@@ -266,17 +270,32 @@ export default function Leave() {
                 {requests.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="py-6">
-                        <div className="flex justify-center">
-                          <motion.p
-                            className="text-center text-purple-600 text-sm font-semibold"
-                            animate={{ opacity: [1, 0.4, 1] }}
-                            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                            style={{ maxWidth: "100%" }} // 👈 table width exceed होणार नाही
+                      <div className="flex justify-center">
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex flex-col items-center justify-center py-10 text-gray-500"
+                        >
+                          <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                            <FaCalendarAlt className="text-purple-500 text-4xl" />
+                          </div>
+                          <h3 className="text-base font-semibold text-gray-700 mb-1">
+                            leaves not applied
+                          </h3>
+                          <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
+                            Try adjusting your search or add a new leave to get started.
+                          </p>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white text-xs font-semibold rounded-lg shadow hover:shadow-md transition-all"
                           >
-                            No leaves present 🎉
-                          </motion.p>
-                        </div>
-                      </td>
+                            <FaPlus className="text-sm" /> Apply Leave
+                          </motion.button>
+                        </motion.div>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   requests.map((req, idx) => (
@@ -353,6 +372,7 @@ export default function Leave() {
           setSelectedLeaveType(null);
         }}
         preselectedType={selectedLeaveType}
+        summaryData ={summaryData}
       />
     </div>
   );

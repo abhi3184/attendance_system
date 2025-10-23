@@ -4,6 +4,7 @@ import { attendanceTrackerService } from "../../api/services/manager/attedanceTr
 import { getDecodedToken } from "../../utils/JWTHelper";
 import { motion } from "framer-motion";
 const filterOptions = ["Today", "Yesterday", "Last Week", "Last Month"];
+import { FaCalendarAlt } from "react-icons/fa";
 
 export default function ManagerAttendance() {
   const [attendance, setAttendance] = useState([]);
@@ -90,16 +91,26 @@ export default function ManagerAttendance() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-10">
-                  <motion.div
-                    className="flex flex-col items-center justify-center text-gray-400 text-sm"
-                  >
-                    <span className="text-md font-medium">No employees found 😢</span>
-                  </motion.div>
-                </td>
-              </tr>
-            ) : filtered.map(emp => (
+                <tr>
+                  <td colSpan={8} className="py-10">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col items-center justify-center py-10 text-gray-500"
+                    >
+                      <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                        <FaCalendarAlt className="text-purple-500 text-4xl" />
+                      </div>
+                      <h3 className="text-base font-semibold text-gray-700 mb-1">
+                        No employees attendance found 😢
+                      </h3>
+                      <p className="text-xs text-gray-400 text-center max-w-xs">
+                        Please add employee.
+                      </p>
+                    </motion.div>
+                  </td>
+                </tr>
+              ) : filtered.map(emp => (
                 <tr key={emp.attendance_id || emp.emp_id} className="hover:bg-purple-50 cursor-pointer transition">
                   {emp.is_holiday ? (
                     <td colSpan={6} className="px-4 py-2 text-xs text-center bg-blue-100 text-blue-800 font-medium">

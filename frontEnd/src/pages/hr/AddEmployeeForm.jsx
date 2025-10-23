@@ -25,6 +25,10 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
     state: "",
     zip: "",
     phoneAlt: "",
+    gender: "",
+    salary: "",
+    dateOfBirth: "",
+    dateOfJoining: "",
   });
 
   const [step, setStep] = useState(1);
@@ -40,6 +44,7 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
     if (isOpen) {
       EmployeeService.getAllManagers().then(setManagers).catch();
       setFormData((prev) => ({ ...prev, managerId: "" }));
+      console.log("Managers",managers)
     }
   }, [isOpen]);
 
@@ -69,6 +74,10 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
         state: "",
         zip: "",
         phoneAlt: "",
+        gender: "",
+        salary: "",
+        dateOfBirth: "",
+        dateOfJoining: "",
       });
       setStep(1);
       setErrors({});
@@ -76,7 +85,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
     }
   }, [isOpen]);
 
-  // Field-level validation
   const validateField = (name, value) => {
     switch (name) {
       case "firstName":
@@ -114,7 +122,16 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
       case "role":
       case "shift":
       case "managerId":
+      case "gender":
         if (!value) return "Selection required";
+        break;
+      case "salary":
+        if (!value.trim()) return "Salary is required";
+        if (isNaN(value) || parseFloat(value) <= 0) return "Enter a valid salary amount";
+        break;
+      case "dateOfBirth":
+      case "dateOfJoining":
+        if (!value.trim()) return "This field is required";
         break;
       default:
         return "";
@@ -122,10 +139,9 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
     return "";
   };
 
-  // Validate all fields in current step
   const validateStep = () => {
     const stepErrors = {};
-    const fieldsStep1 = ["firstName", "lastName", "email", "mobile", "department", "role", "shift"];
+    const fieldsStep1 = ["firstName", "lastName", "email", "mobile", "department", "role", "shift", "gender", "salary", "dateOfBirth", "dateOfJoining"];
     const fieldsStep2 = ["schoolName", "university", "degree", "fieldOfStudy", "year", "location"];
     const fieldsStep3 = ["address", "city", "state", "zip", "phoneAlt"];
 
@@ -133,7 +149,7 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
 
     if (step === 1) {
       fields = [...fieldsStep1];
-      if (formData.role === 3) fields.push("managerId"); // Only Employee
+      if (formData.role === 3) fields.push("managerId");
     } else if (step === 2) {
       fields = fieldsStep2;
     } else if (step === 3) {
@@ -203,10 +219,14 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
       state: formData.state,
       zip: formData.zip,
       phoneAlt: formData.phoneAlt,
+      gender: formData.gender,
+      salary: formData.salary,
+      dateOfBirth: formData.dateOfBirth,
+      dateOfJoining: formData.dateOfJoining,
     };
 
     try {
-      const res = await EmployeeService.addEmployee(payload); // API call
+      const res = await EmployeeService.addEmployee(payload);
       if (res.success) {
         toast.success("Employee added successfully ✅");
         onSubmit();
@@ -223,9 +243,11 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
   return (
     <Modal className="max-w-xl font-sans" isOpen={isOpen} onClose={onClose} title={title}>
       <form className="flex flex-col gap-3 text-gray-700 text-sm">
-        {/* Step 1: Personal Info */}
+
+        {/* ------------------ Step 1 ------------------ */}
         {step === 1 && (
           <>
+            {/* Basic Info + DOB + DOJ + Department + Role + Shift */}
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">First Name</label>
@@ -237,7 +259,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
                 />
                 {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
               </div>
-
               <div className="flex-1 relative">
                 <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Last Name</label>
                 <input
@@ -262,7 +283,6 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
-
               <div className="flex-1 relative">
                 <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Mobile</label>
                 <input
@@ -273,6 +293,55 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
                   className={`${inputBaseClass} ${errors.mobile ? "border-red-400" : "border-gray-300"}`}
                 />
                 {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-2">
+              <div className="flex-1">
+                <FancyDropdown
+                  options={["Male", "Female", "Other"]}
+                  value={formData.gender}
+                  placeholder="Gender"
+                  onChange={(val) => handleDropdownChange("gender", val)}
+                  className={`${errors.gender ? "border-red-400" : "border-gray-300"} rounded-md`}
+                />
+                {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+              </div>
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Salary</label>
+                <input
+                  name="salary"
+                  type="number"
+                  value={formData.salary}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.salary ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.salary && <p className="text-red-500 text-xs mt-1">{errors.salary}</p>}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-2">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Date of Birth</label>
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.dateOfBirth ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth}</p>}
+              </div>
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Date of Joining</label>
+                <input
+                  type="date"
+                  name="dateOfJoining"
+                  value={formData.dateOfJoining}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.dateOfJoining ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.dateOfJoining && <p className="text-red-500 text-xs mt-1">{errors.dateOfJoining}</p>}
               </div>
             </div>
 
@@ -318,15 +387,13 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
               </div>
             </div>
 
-            {/* Manager only for Employee */}
             {formData.role === 3 && (
               <div className="flex-1 mt-2">
                 <label className="text-gray-400 text-xs font-medium mb-1 block">Manager</label>
                 <FancyDropdown
-                  options={managers.map((m) => ({
-                    label: `${m.firstName} ${m.lastName}`,
-                    value: m.emp_id,
-                  }))}
+                  options={managers
+                    .filter((m) => !formData.department || m.department === formData.department) // filter by department
+                    .map((m) => ({ label: `${m.firstName} ${m.lastName}`, value: m.emp_id }))}
                   value={formData.managerId}
                   placeholder="Select Manager"
                   onChange={(val) => handleDropdownChange("managerId", val)}
@@ -338,133 +405,141 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
           </>
         )}
 
-        {/* Step 2: Education & Experience */}
+        {/* ------------------ Step 2: Education ------------------ */}
         {step === 2 && (
           <>
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">School Name</label>
-              <input
-                name="schoolName"
-                value={formData.schoolName}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.schoolName ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.schoolName && <p className="text-red-500 text-xs mt-1">{errors.schoolName}</p>}
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">School Name</label>
+                <input
+                  name="schoolName"
+                  value={formData.schoolName}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.schoolName ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.schoolName && <p className="text-red-500 text-xs mt-1">{errors.schoolName}</p>}
+              </div>
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">University</label>
+                <input
+                  name="university"
+                  value={formData.university}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.university ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.university && <p className="text-red-500 text-xs mt-1">{errors.university}</p>}
+              </div>
             </div>
 
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">University</label>
-              <input
-                name="university"
-                value={formData.university}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.university ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.university && <p className="text-red-500 text-xs mt-1">{errors.university}</p>}
+            <div className="flex gap-3 mt-2">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Degree</label>
+                <input
+                  name="degree"
+                  value={formData.degree}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.degree ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.degree && <p className="text-red-500 text-xs mt-1">{errors.degree}</p>}
+              </div>
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Field of Study</label>
+                <input
+                  name="fieldOfStudy"
+                  value={formData.fieldOfStudy}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.fieldOfStudy ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.fieldOfStudy && <p className="text-red-500 text-xs mt-1">{errors.fieldOfStudy}</p>}
+              </div>
             </div>
 
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Degree</label>
-              <input
-                name="degree"
-                value={formData.degree}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.degree ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.degree && <p className="text-red-500 text-xs mt-1">{errors.degree}</p>}
-            </div>
+            <div className="flex gap-3 mt-2">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Passing Year</label>
+                <input
+                  name="year"
+                  value={formData.year}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.year ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.year && <p className="text-red-500 text-xs mt-1">{errors.year}</p>}
+              </div>
 
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Field Of Study</label>
-              <input
-                name="fieldOfStudy"
-                value={formData.fieldOfStudy}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.fieldOfStudy ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.fieldOfStudy && <p className="text-red-500 text-xs mt-1">{errors.fieldOfStudy}</p>}
-            </div>
-
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Year</label>
-              <input
-                name="year"
-                value={formData.year}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.year ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.year && <p className="text-red-500 text-xs mt-1">{errors.year}</p>}
-            </div>
-
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Location</label>
-              <input
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.location ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Location</label>
+                <input
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.location ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
+              </div>
             </div>
           </>
         )}
 
-        {/* Step 3: Address & Contact */}
+        {/* ------------------ Step 3: Address ------------------ */}
         {step === 3 && (
           <>
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Address</label>
-              <input
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.address ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Address</label>
+                <input
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.address ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+              </div>
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">City</label>
+                <input
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.city ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+              </div>
             </div>
 
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">City</label>
-              <input
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.city ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+            <div className="flex gap-3 mt-2">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">State</label>
+                <input
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.state ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+              </div>
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">ZIP</label>
+                <input
+                  name="zip"
+                  value={formData.zip}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.zip ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.zip && <p className="text-red-500 text-xs mt-1">{errors.zip}</p>}
+              </div>
             </div>
 
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">State</label>
-              <input
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.state ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
-            </div>
-
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">ZIP</label>
-              <input
-                name="zip"
-                value={formData.zip}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.zip ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.zip && <p className="text-red-500 text-xs mt-1">{errors.zip}</p>}
-            </div>
-
-            <div className="relative mb-2">
-              <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Alternate Phone</label>
-              <input
-                name="phoneAlt"
-                value={formData.phoneAlt}
-                onChange={handleChange}
-                className={`${inputBaseClass} ${errors.phoneAlt ? "border-red-400" : "border-gray-300"}`}
-              />
-              {errors.phoneAlt && <p className="text-red-500 text-xs mt-1">{errors.phoneAlt}</p>}
+            <div className="flex gap-3 mt-2">
+              <div className="flex-1 relative">
+                <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Alternate Phone</label>
+                <input
+                  name="phoneAlt"
+                  value={formData.phoneAlt}
+                  onChange={handleChange}
+                  className={`${inputBaseClass} ${errors.phoneAlt ? "border-red-400" : "border-gray-300"}`}
+                />
+                {errors.phoneAlt && <p className="text-red-500 text-xs mt-1">{errors.phoneAlt}</p>}
+              </div>
             </div>
           </>
         )}
@@ -500,8 +575,7 @@ export const EmployeeModal = ({ isOpen, onClose, onSubmit, title = "Add Employee
                   await handleSubmit();
                 }
               }}
-              className={`px-4 py-2 rounded text-white ${loading ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
-                }`}
+              className={`px-4 py-2 rounded text-white ${loading ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
               disabled={loading}
             >
               {step < 3 ? "Next" : loading ? "Saving..." : "Submit"}

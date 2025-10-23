@@ -121,10 +121,10 @@ class LeaveRepo:
                 Leave.manager_status.label("status"),
                 Leave.reason,
                 Leave.used_days,
-                Leave.total_days,
                 Employee.firstName.label("first_name"),
                 Employee.lastName.label("last_name"),
                 LeaveType.leave_name.label("leave_type"),
+                LeaveType.total_days.label("total_days")
             )
             .join(Employee, Leave.emp_id == Employee.emp_id)
             .join(LeaveType, Leave.leave_type_id == LeaveType.leave_type_id)
@@ -146,7 +146,6 @@ class LeaveRepo:
                 "manager_status": leave.status,
                 "reason": leave.reason,
                 "leave_type": leave.leave_type,
-                "total_days": leave.total_days,
                 "used_days": leave.used_days,
                 "remaining_days": leave.total_days - leave.used_days
             }

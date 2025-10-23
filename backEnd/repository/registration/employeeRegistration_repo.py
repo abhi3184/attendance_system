@@ -70,7 +70,7 @@ class EmployeeRegistrationRepository:
     @staticmethod
     def get_all_managers(db: Session):
         managers = db.query(Employee).filter(Employee.roles_id == 2).all()
-        return [GetManagerRes(emp_id=m.emp_id, firstName=m.firstName, lastName=m.lastName) for m in managers]
+        return [GetManagerRes(emp_id=m.emp_id, firstName=m.firstName, lastName=m.lastName,department=m.department) for m in managers]
 
     @staticmethod
     def post_user(db: Session, emp_data: dict):
@@ -86,7 +86,11 @@ class EmployeeRegistrationRepository:
             status="Active",
             password=emp_data["password"],
             roles_id=emp_data["roles"],
-            manager_id=emp_data["manager_id"]
+            manager_id=emp_data["manager_id"],
+            gender = emp_data["gender"],
+            salary = emp_data["salary"],
+            dateOfBirth = emp_data["dateOfBirth"],
+            dateOfJoining = emp_data["dateOfJoining"],
         )
 
         print("Request",new_employee)
@@ -119,7 +123,7 @@ class EmployeeRegistrationRepository:
 
     @staticmethod
     def get_all_employees(db: Session):
-        return db.query(Employee).all()
+        return db.query(Employee).filter(Employee.emp_id != 1).all()
 
     @staticmethod
     def get_employee_by_id(db: Session, emp_id: int):

@@ -1,4 +1,5 @@
 # repository/holidays_repo.py
+from datetime import date, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import select, insert, update, delete
 from models.index import Holidays
@@ -60,3 +61,33 @@ class HolidaysRepo:
             Holidays.date >= start_date,
             Holidays.date <= end_date
         ).all()
+
+
+
+    @staticmethod
+    def get_weekly_holidays_for_manager(db: Session, date_filter: str):
+        today = date.today()
+
+        if date_filter.lower() == "today":
+            start_date = today
+        elif date_filter.lower() == "yesterday":
+            start_date = today - timedelta(days=1)
+        elif date_filter.lower() == "weekly":
+            start_date = today - timedelta(days=7)
+        elif date_filter.lower() == "monthly":
+            start_date = today - timedelta(days=30)
+        else:
+            start_date = None
+
+        query = select(Holidays.date, Holidays.description)
+
+        if start_date:
+            query = query.where(Holidays.date >= start_date)
+
+        rows = db.execute(query).fetchall()
+
+        # ✅ Safe conversion (handle both str and date objects)
+        return {
+            (datetime.fromisoformat(row.date).date() if isinstance(row.date, str) else row.date): row.description
+            for row in rows
+        }

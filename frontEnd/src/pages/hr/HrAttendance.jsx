@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { hrAttendanceService } from "../../api/services/hrDashboard/hrAttendanceService";
+import { FaUsers, FaPlus } from "react-icons/fa";
 
 export default function HrAttendance() {
   const [attendanceData, setAttendanceData] = useState([]);
@@ -47,7 +48,7 @@ export default function HrAttendance() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden border">
+      <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden">
         {/* Table Header */}
         <div className="border-b">
           <table className="w-full table-fixed border-collapse">
@@ -89,8 +90,30 @@ export default function HrAttendance() {
             <tbody className="bg-white divide-y divide-gray-100">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-gray-500 text-sm">
-                    No attendance records found
+                  <td colSpan={12}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col items-center justify-center py-10 text-gray-500"
+                    >
+                      <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                        <FaUsers className="text-purple-500 text-4xl" />
+                      </div>
+                      <h3 className="text-base font-semibold text-gray-700 mb-1">
+                        No Employees Record Found
+                      </h3>
+                      <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
+                        Try adjusting your search or add a new employee to get started.
+                      </p>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={fetchAttendance}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white text-xs font-semibold rounded-lg shadow hover:shadow-md transition-all"
+                      >
+                        <FaPlus className="text-sm" /> Refresh List
+                      </motion.button>
+                    </motion.div>
                   </td>
                 </tr>
               ) : (
@@ -119,8 +142,8 @@ export default function HrAttendance() {
                       <span className="bg-green-100 text-green-700 px-2 font-medium">
                         {emp.worked_hr?.toFixed(2) ?? "-"} Hrs
                       </span>
-                      
-                      </td>
+
+                    </td>
                     <td className="px-4 py-2 text-xs">
                       <span
                         className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${emp.status === "Present"

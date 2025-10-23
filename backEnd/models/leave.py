@@ -16,7 +16,6 @@ class Leave(Base):
     leave_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     emp_id = Column(Integer,ForeignKey("employee.emp_id"), nullable=False)
     leave_type_id = Column(Integer,ForeignKey("leave_type.leave_type_id"), nullable=False)
-    total_days = Column(Integer, nullable=False)
     used_days = Column(Integer, nullable=False, default=0)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)

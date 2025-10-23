@@ -44,9 +44,10 @@ export default function LeaveRequests() {
           l.hr_status === "Approved"
             ? "Approved"
             : l.hr_status === "Rejected"
-            ? "Rejected"
-            : "Pending",
-      }));
+              ? "Rejected"
+              : "Pending",
+      }))
+        .filter((l) => l.manager_status === "Approved");
       setLeaveRequests(mappedLeaves);
       setFiltered(mappedLeaves);
     } catch (err) {
@@ -72,36 +73,36 @@ export default function LeaveRequests() {
 
   // ------------------ Add / Update Leave ------------------
   const handleAddLeave = async () => {
-  let validationErrors = {};
-  if (!newLeave.leave_type.trim()) validationErrors.leave_type = "Please enter leave type.";
-  if (!newLeave.total_days || newLeave.total_days <= 0) validationErrors.total_days = "Please enter valid total days.";
+    let validationErrors = {};
+    if (!newLeave.leave_type.trim()) validationErrors.leave_type = "Please enter leave type.";
+    if (!newLeave.total_days || newLeave.total_days <= 0) validationErrors.total_days = "Please enter valid total days.";
 
-  setErrors(validationErrors);
-  if (Object.keys(validationErrors).length > 0) return;
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
-  try {
-    // Call API to add/update leave
-    const payload = {
-      leave_name: newLeave.leave_type,
-      total_days: Number(newLeave.total_days),
-    };
+    try {
+      // Call API to add/update leave
+      const payload = {
+        leave_name: newLeave.leave_type,
+        total_days: Number(newLeave.total_days),
+      };
 
-    const res = await hrleaveService.addLeaveBalance(payload)
-    console.log("REs",res)
-    if (res) {
-      toast.success(`${newLeave.leave_type} saved successfully!`);
-      setNewLeave({ leave_type: "", total_days: "" });
-      setAddLeaveModal(false);
-      // Reload leave policy from server
-      await loadLeavePolicy();
-    } else {
-      toast.error(res.message || "Failed to add leave");
+      const res = await hrleaveService.addLeaveBalance(payload)
+      console.log("REs", res)
+      if (res) {
+        toast.success(`${newLeave.leave_type} saved successfully!`);
+        setNewLeave({ leave_type: "", total_days: "" });
+        setAddLeaveModal(false);
+        // Reload leave policy from server
+        await loadLeavePolicy();
+      } else {
+        toast.error(res.message || "Failed to add leave");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong!");
     }
-  } catch (err) {
-    console.error(err);
-    toast.error("Something went wrong!");
-  }
-};
+  };
 
 
   // ------------------ Approve / Reject Leave ------------------
@@ -149,7 +150,13 @@ export default function LeaveRequests() {
   }, [searchTerm, statusFilter, leaveRequests]);
 
   const toggleExpand = (id) => setExpandedId(expandedId === id ? null : id);
-  const openConfirmModal = (id, action) => setConfirmModal({ open: true, id, action });
+  const openConfirmModal = (id, action) => {
+    setConfirmModal((prev) => {
+      // prevent double open issue
+      if (prev.open && prev.id === id && prev.action === action) return prev;
+      return { open: true, id, action };
+    });
+  };
   const handleConfirm = async () => {
     if (!confirmModal.id) return;
     if (confirmModal.action === "Approved") await handleApprove(confirmModal.id);
@@ -165,11 +172,10 @@ export default function LeaveRequests() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-2 font-semibold transition-all text-sm ${
-              activeTab === tab
-                ? "text-purple-700 border-b-2 border-purple-700"
-                : "text-gray-500 hover:text-purple-600"
-            }`}
+            className={`pb-2 font-semibold transition-all text-sm ${activeTab === tab
+              ? "text-purple-700 border-b-2 border-purple-700"
+              : "text-gray-500 hover:text-purple-600"
+              }`}
           >
             {tab === "requests" ? "Leave Requests" : "Leave Policy"}
           </button>
@@ -204,16 +210,38 @@ export default function LeaveRequests() {
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center text-gray-500 py-10">No leave requests found.</div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-12 text-gray-500"
+              >
+                <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                  <FaSearch className="text-purple-500 text-4xl" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-700 mb-1">
+                  No Leave Requests Found
+                </h3>
+                <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
+                  Looks like there are no pending leave requests right now. Try refreshing the page or check back later.
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={loadLeaveRequests}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white text-xs font-semibold rounded-lg shadow hover:shadow-md transition-all"
+                >
+                  <FaPlus className="text-sm" /> Refresh List
+                </motion.button>
+              </motion.div>
+
             ) : (
               filtered.map((req) => (
                 <motion.div
                   key={req.leave_id}
                   layout
                   onClick={() => toggleExpand(req.leave_id)}
-                  className={`bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl shadow-sm p-4 border-l-4 cursor-pointer transition-all ${
-                    req.status === "Approved" ? "border-green-400" : req.status === "Rejected" ? "border-red-400" : "border-yellow-400"
-                  }`}
+                  className={`bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl shadow-sm p-4 border-l-4 cursor-pointer transition-all ${req.status === "Approved" ? "border-green-400" : req.status === "Rejected" ? "border-red-400" : "border-yellow-400"
+                    }`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
@@ -247,7 +275,7 @@ export default function LeaveRequests() {
                           </button>
                         </>
                       ) : (
-                        <span className={`px-3 py-1 text-xs rounded-full font-medium ${req.status === "Approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <span className={`px-3 py-1 text-xs rounded font-medium ${req.status === "Approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                           {req.status}
                         </span>
                       )}

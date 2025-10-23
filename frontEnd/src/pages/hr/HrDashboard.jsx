@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { FaUsers, FaUserTie, FaClock, FaFileAlt, FaCheck, FaTimes } from "react-icons/fa";
+import { FaUsers, FaUserTie, FaClock, FaFileAlt, FaCheck, FaTimes, FaCalendarAlt, FaCarSide } from "react-icons/fa";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "react-toastify";
 import ConfirmStatusModal from "../../modals/leaveStatusChange";
@@ -44,6 +44,7 @@ const HRDashboard = () => {
           getAttendanceCount(),
           getUpcomingHolidays(),
         ]);
+        console.log("leaves", allLeaves.data)
         setEmployees(emps);
         setLeaves(allLeaves?.data || []);
         setAttendance(attendance);
@@ -73,7 +74,7 @@ const HRDashboard = () => {
   const pendingLeaves = useMemo(() => {
     if (!leaves || !Array.isArray(leaves)) return [];
     return leaves
-      .filter(l => l.manager_status === "Approved" && l.hr_status === null)
+      .filter(l => l.manager_status === "Approved" && l.hr_status === "Pending")
       .sort((a, b) => new Date(b.applied_on) - new Date(a.applied_on));
   }, [leaves]);
 
@@ -162,18 +163,49 @@ const HRDashboard = () => {
           <h2 className="text-md font-medium mb-4 text-gray-700 border-b pb-2">Pending Leaves</h2>
           <div className="flex-1 space-y-3 overflow-y-auto pr-2">
             {pendingLeaves.length === 0 ? (
-              <p className="text-center text-gray-400 mt-10">No pending leaves</p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-10 text-gray-500"
+              >
+                <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                  <FaFileAlt className="text-purple-500 text-4xl" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-700 mb-1">
+                  No Employees Record Found
+                </h3>
+                <p className="text-xs text-gray-400 mb-4 text-center max-w-xs">
+                  Try adjusting your search or add a new employee to get started.
+                </p>
+              </motion.div>
             ) : (
               pendingLeaves.map((leave) => (
-                <div key={leave.leave_id} className="flex justify-between items-center p-3 border-l-4 border-blue-500 rounded-xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-col sm:flex-row">
-                  <div className="flex flex-col">
-                    <p className="font-semibold text-sm text-gray-800">{leave.first_name} {leave.last_name}</p>
-                    <p className="text-xs text-gray-500 flex items-center space-x-1"><FaUserTie className="w-3 h-3" /><span>{leave.department}</span></p>
-                    <p className="text-xs text-gray-400 mt-1">{formatToDDMMM(leave.start_date)} → {formatToDDMMM(leave.end_date)}</p>
+                <div key={leave.leave_id} className="flex justify-between bg-blue-50 items-center p-3 border-l-4 border-blue-500 rounded-xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-col sm:flex-row">
+                  <div className="flex flex-col rounded-xl">
+                    {/* Employee Name */}
+                    <p className="font-semibold text-sm text-gray-800 flex items-center mb-1">
+                      <FaUserTie className="w-4 h-4 text-purple-600 mr-2" />
+                      {leave.firstName} {leave.lastName}
+                    </p>
+
+                    {/* Department & Used Days */}
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span className="flex items-center">
+                        🏢 {leave.department || "N/A"}
+                      </span>
+                      <span className="text-gray-600 font-medium">
+                        🟣 {leave.used_days} days used
+                      </span>
+                    </div>
+
+                    {/* Leave Duration */}
+                    <p className="text-xs text-gray-500 mt-2 border-t pt-1">
+                      📅 {formatToDDMMM(leave.start_date)} → {formatToDDMMM(leave.end_date)}
+                    </p>
                   </div>
 
                   <div className="flex items-center space-x-2 mt-2 sm:mt-0">
-                    <span className="px-2 py-1 rounded-full text-black text-xs font-semibold">{leave.leave_type}</span>
+                    <span className="px-2 py-1 rounded-full text-black text-xs font-semibold">{leave.leave_name}</span>
                     <button onClick={() => handleApproveClick(leave.leave_id)} className="bg-green-100 hover:bg-green-200 text-green-800 p-1 rounded-md"><FaCheck /></button>
                     <button onClick={() => handleRejectClick(leave.leave_id)} className="bg-red-100 hover:bg-red-200 text-red-800 p-1 rounded-md"><FaTimes /></button>
                   </div>
@@ -188,23 +220,75 @@ const HRDashboard = () => {
       {/* Holidays + Payroll */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Holidays */}
-        <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
-          <h2 className="text-sm font-semibold mb-2">Upcoming Holidays</h2>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {holidays.map((h, idx) => (
-              <div key={idx} className="flex justify-between items-center p-2 border rounded-xl hover:bg-gray-100 transition">
-                <p className="text-sm text-slate-700">{h.description}</p>
-                <p className="text-xs text-orange-600">{formatToDDMMM(h.date)}</p>
-              </div>
-            ))}
+        <motion.div
+          className="bg-white p-5 rounded-2xl shadow-lg"
+          whileHover={{ scale: 1.03 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-800">Upcoming Holidays</h2>
+            <FaCalendarAlt className="text-purple-600 text-xl" />
+          </div>
+
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {holidays.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-12 text-gray-500"
+              >
+                <div className="bg-purple-100 rounded-full p-6 shadow-md mb-4">
+                  <FaCalendarAlt className="text-purple-700 text-4xl" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-700 mb-1">
+                  No upcoming holidays found
+                </h3>
+                <p className="text-xs text-gray-400 text-center max-w-xs">
+                  Add upcoming holidays to keep your team informed.
+                </p>
+              </motion.div>
+            ) : (
+              holidays.map((h, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-50 p-2 rounded-full">
+                      <FaCalendarAlt className="text-purple-600 text-lg" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">{h.description}</p>
+                  </div>
+                  <p className="text-xs font-semibold text-orange-600">{formatToDDMMM(h.date)}</p>
+                </div>
+              ))
+            )}
           </div>
         </motion.div>
 
         {/* Payroll */}
         <motion.div className="bg-white p-4 rounded-xl shadow-lg" whileHover={{ scale: 1.02 }}>
-          <h2 className="text-sm font-semibold mb-2">Payroll</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-800">Payroll</h2>
+            <FaCalendarAlt className="text-purple-600 text-xl" />
+          </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {employees.map(emp => (
+            {employees.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-10 text-gray-500"
+              >
+                <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                  <FaUsers className="text-purple-500 text-4xl" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-700 mb-1">
+                  No Employees Found On Payroll
+                </h3>
+                <p className="text-xs text-gray-400 text-center max-w-xs">
+                  Add Employees to get in payroll.
+                </p>
+              </motion.div>
+            ) : employees.map(emp => (
               <div key={emp.emp_id} className="flex justify-between items-center p-2 border rounded-xl hover:bg-gray-100 transition">
                 <div>
                   <p className="font-semibold text-sm">{emp.firstName} {emp.lastName}</p>

@@ -2,6 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { CalendarIcon } from "@heroicons/react/24/outline";
+import { FaCalendarAlt } from "react-icons/fa";
 
 export default function Holidays({ holidays = [] }) {
   const formatDate = (isoDate) => {
@@ -55,30 +56,22 @@ export default function Holidays({ holidays = [] }) {
           ))
         ) : (
           <motion.div
-            className="col-span-full flex justify-center items-center h-40"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.6,
-              ease: "easeOut",
-              type: "spring",
-              stiffness: 120,
-            }}
+            className="col-span-full flex flex-col items-center justify-center py-10 text-gray-500"
+            
           >
-            <motion.p
-              className="text-center text-gray-500 text-base font-medium"
-              animate={{
-                scale: [1, 1.05, 1],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              No holidays found 🎉
-            </motion.p>
+            <div className="bg-purple-50 rounded-full p-3 shadow-sm mb-4">
+              <CalendarIcon className="text-purple-500 text-4xl h-10 w-10" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-700 mb-1">
+              No upcoming holidays 🎉
+            </h3>
+            <p className="text-xs text-gray-400 text-center max-w-xs">
+              Lets employee add leave.
+            </p>
           </motion.div>
+
         )}
       </div>
     </div>

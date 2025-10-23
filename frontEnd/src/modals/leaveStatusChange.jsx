@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 const ConfirmStatusModal = ({ isOpen, onClose, onConfirm, status }) => {
   if (!isOpen) return null;
 
-  const isApprove = status === "Approve";
+  console.log("Staus",status)
+  const isApprove = status === "Approved";
   const title = isApprove ? "Approve Leave" : "Reject Leave";
   const message = isApprove
     ? "Are you sure you want to approve this leave request?"

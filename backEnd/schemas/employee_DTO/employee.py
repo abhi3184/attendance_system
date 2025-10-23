@@ -25,7 +25,10 @@ class AddEmployeeReq(EmployeeBase):
     state: Optional[str]
     zip: Optional[str]
     phoneAlt: Optional[str]
-
+    gender: Optional[str]
+    dateOfBirth : Optional[str]
+    dateOfJoining : Optional[str]
+    salary : Optional[str]
 class UpdateEmployeeRequest(BaseModel):
     emp_id: int
     firstName: str
@@ -62,6 +65,7 @@ class GetManagerRes(BaseModel):
     emp_id: int
     firstName: str
     lastName: str
+    department: str
 
 class EmployeeAddressReponse(BaseModel):
     id_address : int

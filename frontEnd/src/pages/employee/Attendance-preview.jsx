@@ -21,10 +21,10 @@ export default function AttendancePreview({ attendance = [] }) {
           {attendance.map((item, index) => (
             <tr
               key={index}
-              className="bg-gray-50 mb-2 rounded-lg"
+              className=" mb-2 rounded-lg"
             >
               {/* Column 1: Week + Date */}
-              <td className="p-4 align-middle w-1/6">
+              <td className="align-middle w-1/6">
                 <div className="flex flex-col items-center justify-center h-full">
                   <div className="font-semibold text-gray-700 text-sm">
                     {getDayName(item.date)}
@@ -37,7 +37,7 @@ export default function AttendancePreview({ attendance = [] }) {
               </td>
 
               {/* Column 2: Activity + Time */}
-              <td className="p-4 align-middle w-2/6">
+              <td className="p-3 align-middle w-2/6">
                 <div className="flex flex-col justify-center h-full bg-purple-100 border-l-4 border-purple-500 rounded-lg p-3">
                   <div className="text-gray-700 text-sm font-semibold">
                     IT General

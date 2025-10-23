@@ -90,9 +90,19 @@ export default function TeamDetailsTable() {
               <tr>
                 <td colSpan={8} className="py-20">
                   <motion.div
-                    className="flex flex-col items-center justify-center text-gray-400 text-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center justify-center py-10 text-gray-500"
                   >
-                    <span className="text-md font-medium">No employees found 😢</span>
+                    <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                      <FaCalendarAlt className="text-purple-500 text-4xl" />
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-700 mb-1">
+                      No employees found 😢
+                    </h3>
+                    <p className="text-xs text-gray-400 text-center max-w-xs">
+                      Please add employee.
+                    </p>
                   </motion.div>
                 </td>
               </tr>
@@ -120,8 +130,8 @@ export default function TeamDetailsTable() {
                   <td>
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${emp.status === "Active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
                         }`}
                     >
                       {emp.status}

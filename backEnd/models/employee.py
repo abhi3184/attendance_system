@@ -17,6 +17,10 @@ class Employee(Base):
     password = Column(String(100), nullable=False)
     roles_id = Column(Integer, nullable=False)
     manager_id = Column(Integer,ForeignKey("employee.emp_id"), nullable=False)
+    gender = Column(String(45),nullable=False)
+    salary = Column(String(45),nullable=False)
+    dateOfBirth = Column(String(45),nullable=False)
+    dateOfJoining = Column(String(45),nullable=False)
 
     # Relationship names must match class names as strings
     address = relationship(

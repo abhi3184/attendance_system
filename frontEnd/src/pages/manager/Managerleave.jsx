@@ -258,7 +258,9 @@ export default function ManagerLeave() {
                   <tbody className="divide-y divide-gray-100">
                     {requests.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-400">No upcoming leaves</td>
+                        <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-400">
+                          No upcoming leaves
+                        </td>
                       </tr>
                     ) : (
                       requests.map((req, idx) => (
@@ -345,7 +347,23 @@ export default function ManagerLeave() {
               <tbody className="divide-y divide-gray-100">
                 {requests.filter(r => r.manager_status === teamLeaveFilter).length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-center text-gray-400 text-sm">No leaves present</td>
+                    <td colSpan={9} className="px-4 py-6 text-center text-gray-400 text-sm">
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center justify-center py-10 text-gray-500"
+                      >
+                        <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                          <FaCalendarAlt className="text-purple-500 text-4xl" />
+                        </div>
+                        <h3 className="text-base font-semibold text-gray-700 mb-1">
+                          No leaves found
+                        </h3>
+                        <p className="text-xs text-gray-400 text-center max-w-xs">
+                          let Employee apply leave.
+                        </p>
+                      </motion.div>
+                    </td>
                   </tr>
                 ) : (
                   requests.filter(r => r.manager_status === teamLeaveFilter).map((req, idx) => (

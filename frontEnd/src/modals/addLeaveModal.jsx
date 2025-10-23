@@ -2,14 +2,19 @@ import React, { useState, useEffect, useRef } from "react";
 import FancyDropdown from "../components/dropdowns";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import axios from "axios";
 import jwt_decode from "jwt-decode";
 import Modal from "./modal";
 import { employeeLeaveService } from "../api/services/employee/leaveService";
 
-export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedType }) {
+export default function AddLeaveModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  preselectedType,
+  summaryData = [],
+}) {
   const [formData, setFormData] = useState({
-    leaveType: null, // { label, value }
+    leaveType: null,
     fromDate: "",
     toDate: "",
     reason: "",
@@ -18,10 +23,12 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
   const [errors, setErrors] = useState({});
   const today = new Date().toISOString().split("T")[0];
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [warning, setWarning] = useState(""); // 🔸 New: to show remaining days warning
   const fetched = useRef(false);
+
   // ✅ Fetch leave types
   useEffect(() => {
-    if (fetched.current) return; // ✅ Skip second render in StrictMode
+    if (fetched.current) return;
     fetched.current = true;
     const fetchLeaveTypes = async () => {
       try {
@@ -51,12 +58,6 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
     }
   }, [preselectedType, leaveTypes]);
 
-
-  useEffect(() => {
-  }, [preselectedType, leaveTypes, formData.leaveType]);
-
-
-
   // ✅ Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -67,6 +68,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
         reason: "",
       });
       setErrors({});
+      setWarning("");
     }
   }, [isOpen]);
 
@@ -103,6 +105,28 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
     return 0;
   };
 
+  // ✅ Check remaining leave days warning
+  useEffect(() => {
+    
+    if (formData.leaveType && formData.fromDate && formData.toDate) {
+      const totalDays = calculateTotalDays();
+      const selectedType = formData.leaveType.label;
+      const summary = summaryData.find(
+        (item) =>
+          item.label?.toLowerCase() === selectedType.toLowerCase()
+      );
+      console.log("summary",summary)
+      if (summary && totalDays > summary.available) {
+        setWarning(
+          `⚠️ You are applying for ${totalDays} days, but only ${summary.available} days are remaining.`
+        );
+      } else {
+        setWarning("");
+      }
+    } else {
+      setWarning("");
+    }
+  }, [formData.leaveType, formData.fromDate, formData.toDate, summaryData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -115,6 +139,12 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      return;
+    }
+
+    // ❌ Stop submission if totalDays > remainingDays
+    if (warning) {
+      toast.error("You cannot apply more days than remaining!");
       return;
     }
 
@@ -142,7 +172,7 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
         toast.error(res.message || "Failed to apply leave!");
       }
     } catch (err) {
-      // toast.error("Something went wrong!");
+      toast.error("Something went wrong!");
     }
   };
 
@@ -151,7 +181,10 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Apply Leave">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-gray-700 text-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 text-gray-700 text-sm"
+      >
         {/* Leave Type */}
         <div className="relative">
           <FancyDropdown
@@ -161,57 +194,82 @@ export default function AddLeaveModal({ isOpen, onClose, onSubmit, preselectedTy
               const selected = leaveTypes.find((lt) => lt.value === val);
               handleChange("leaveType", selected);
             }}
-
             placeholder="Select Leave Type"
             className={`${errors.leaveType ? "border-red-400" : "border-gray-300"} rounded-md`}
           />
-          {errors.leaveType && <p className="text-red-500 text-xs mt-1">{errors.leaveType}</p>}
+          {errors.leaveType && (
+            <p className="text-red-500 text-xs mt-1">{errors.leaveType}</p>
+          )}
         </div>
 
         {/* From & To Dates */}
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">From Date</label>
+            <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">
+              From Date
+            </label>
             <input
               type="date"
               value={formData.fromDate}
               min={today}
               onChange={(e) => handleChange("fromDate", e.target.value)}
-              className={`${inputBaseClass} ${errors.fromDate ? "border-red-400" : "border-gray-300"}`}
+              className={`${inputBaseClass} ${
+                errors.fromDate ? "border-red-400" : "border-gray-300"
+              }`}
             />
-            {errors.fromDate && <p className="text-red-500 text-xs mt-1">{errors.fromDate}</p>}
+            {errors.fromDate && (
+              <p className="text-red-500 text-xs mt-1">{errors.fromDate}</p>
+            )}
           </div>
 
           <div className="flex-1 relative">
-            <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">To Date</label>
+            <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">
+              To Date
+            </label>
             <input
               type="date"
               value={formData.toDate}
               min={formData.fromDate || today}
               onChange={(e) => handleChange("toDate", e.target.value)}
-              className={`${inputBaseClass} ${errors.toDate ? "border-red-400" : "border-gray-300"}`}
+              className={`${inputBaseClass} ${
+                errors.toDate ? "border-red-400" : "border-gray-300"
+              }`}
             />
-            {errors.toDate && <p className="text-red-500 text-xs mt-1">{errors.toDate}</p>}
+            {errors.toDate && (
+              <p className="text-red-500 text-xs mt-1">{errors.toDate}</p>
+            )}
           </div>
         </div>
 
         {/* Total Days */}
         {formData.fromDate && formData.toDate && (
           <p className="text-gray-700 text-sm font-medium">
-            Total Days: <span className="font-semibold">{calculateTotalDays()}</span>
+            Total Days:{" "}
+            <span className="font-semibold">{calculateTotalDays()}</span>
           </p>
+        )}
+
+        {/* ⚠️ Warning Message */}
+        {warning && (
+          <p className="text-red-600 text-sm font-medium">{warning}</p>
         )}
 
         {/* Reason */}
         <div className="relative">
-          <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">Reason</label>
+          <label className="absolute left-3 top-1 text-gray-400 text-xs font-medium">
+            Reason
+          </label>
           <textarea
             rows={3}
             value={formData.reason}
             onChange={(e) => handleChange("reason", e.target.value)}
-            className={`${inputBaseClass} ${errors.reason ? "border-red-400" : "border-gray-300"}`}
+            className={`${inputBaseClass} ${
+              errors.reason ? "border-red-400" : "border-gray-300"
+            }`}
           />
-          {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
+          {errors.reason && (
+            <p className="text-red-500 text-xs mt-1">{errors.reason}</p>
+          )}
         </div>
 
         {/* Submit */}

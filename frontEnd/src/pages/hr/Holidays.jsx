@@ -24,10 +24,8 @@ export default function Holidays() {
         setHolidays(res.data);
         setFiltered(res.data);
       } else {
-        toast.warning("Holdays not found");
       }
     } catch (err) {
-      toast.error("Error fetching holidays");
     } finally {
       setLoading(false);
     }
@@ -92,9 +90,20 @@ export default function Holidays() {
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center py-16 text-gray-400"
         >
-          <FaCalendarAlt className="text-5xl mb-3 opacity-60" />
-          <p className="text-lg">No holidays found</p>
-          <p className="text-sm text-gray-400">Click “Add Holiday” to create one.</p>
+          <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+            <FaCalendarAlt className="text-purple-500 text-4xl" />
+          </div>
+
+          <h3 className="text-base font-semibold text-gray-700 mb-1">No holidays found</h3>
+          <p className="text-sm text-gray-400 mb-4">Click “Add Holiday” to create one.</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white text-xs font-semibold rounded-lg shadow hover:shadow-md transition-all"
+          >
+            <FaPlus className="text-sm" /> Add Holiday
+          </motion.button>
         </motion.div>
       ) : (
         <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

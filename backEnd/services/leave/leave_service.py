@@ -22,7 +22,6 @@ class LeaveService:
         leave = Leave(
             emp_id=req.emp_id,
             leave_type_id=req.leave_type_id,
-            total_days=total_days,
             used_days=used_days,
             start_date=req.start_date,
             end_date=req.end_date,

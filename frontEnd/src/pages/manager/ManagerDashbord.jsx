@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid
 } from "recharts";
 import { motion } from "framer-motion";
-import { FaUsers, FaUserCheck, FaUserTimes, FaClipboardList, FaCalendarAlt } from "react-icons/fa";
+import { FaUsers, FaUserCheck, FaUserTimes, FaClock, FaClipboardList, FaCalendarAlt } from "react-icons/fa";
 import toast from "react-hot-toast";
 import jwt_decode from "jwt-decode";
 import ConfirmStatusModal from "../../modals/leaveStatusChange";
@@ -165,9 +165,20 @@ export default function ManagerDashboard() {
         <div className="bg-white p-5 rounded-2xl shadow-md">
           <h2 className="text-md font-semibold text-gray-700 mb-3">Weekly Attendance</h2>
           {attendanceChart.length === 0 ? (
-             <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
-              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-              <span className="text-md text-purple-700">No data found 📊</span>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center py-10 text-gray-500"
+            >
+              <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                <FaClock className="text-purple-500 text-4xl" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">
+                No Data Found for attendance
+              </h3>
+              <p className="text-xs text-gray-400 text-center max-w-xs">
+                Lets employee add attendance.
+              </p>
             </motion.div>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
@@ -192,9 +203,20 @@ export default function ManagerDashboard() {
         <div className="bg-white p-5 rounded-2xl shadow-md">
           <h2 className="text-md font-semibold text-gray-700 mb-3">Leave Status</h2>
           {!leaveStatusData || leaveStatusData.length === 0 ? (
-             <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
-              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-              <span className="text-md text-purple-700">No pending leave requests 🎉</span>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center py-10 text-gray-500"
+            >
+              <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                <FaClipboardList className="text-purple-500 text-4xl" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">
+                No employee is on leave
+              </h3>
+              <p className="text-xs text-gray-400 text-center max-w-xs">
+                Lets employee add leave.
+              </p>
             </motion.div>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
@@ -220,9 +242,20 @@ export default function ManagerDashboard() {
             <FaClipboardList className="text-yellow-500" /> Pending Leave Requests
           </h2>
           {pendingLeaves.length === 0 ? (
-            <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
-              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-              <span className="text-md text-purple-700">No pending leave requests 🎉</span>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center py-10 text-gray-500"
+            >
+              <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                <FaClipboardList className="text-purple-500 text-4xl" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">
+                Pending leaves not found
+              </h3>
+              <p className="text-xs text-gray-400 text-center max-w-xs">
+                Lets employee add leave.
+              </p>
             </motion.div>
           ) : (
             <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -248,9 +281,20 @@ export default function ManagerDashboard() {
             <FaCalendarAlt className="text-blue-500" /> Upcoming Holidays
           </h2>
           {!upcomingHolidays || upcomingHolidays.length === 0 ? (
-            <motion.div className="flex flex-col items-center justify-center h-[200px] text-gray-400 text-xs"
-              animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-              <span className="text-md text-purple-700 ">No upcoming holidays 🎉</span>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center py-10 text-gray-500"
+            >
+              <div className="bg-purple-50 rounded-full p-6 shadow-sm mb-4">
+                <FaCalendarAlt className="text-purple-500 text-4xl" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">
+                No upcoming holidays
+              </h3>
+              <p className="text-xs text-gray-400 text-center max-w-xs">
+                Lets employee add leave.
+              </p>
             </motion.div>
           ) : (
             <ul className="text-sm text-gray-600 space-y-2 max-h-80 overflow-y-auto">

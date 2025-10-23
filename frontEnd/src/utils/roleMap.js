@@ -24,7 +24,7 @@ export const sidebarTabs = [
   { key: "leaverequest", path:'eleave', label: "Leave Tracker", roles: ["hr"], icon: "CalendarDaysIcon" },
   { key: "hrattendance", path:'hattendance', label: "Attendance", roles: ["hr"], icon: "ClockIcon" },
   { key: "holiday", path:'holiday', label: "Holidays", roles: ["hr"], icon: "CalendarIcon" },
-  { key: "payroll", path:'payroll', label: "Payroll", roles: ["hr"], icon: "CurrencyDollarIcon" },
+  // { key: "payroll", path:'payroll', label: "Payroll", roles: ["hr"], icon: "CurrencyDollarIcon" },
 
   //Employee
   { key: "home", path:'home', label: "Home", roles: ["employee"], icon: "HomeIcon" },
